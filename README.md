@@ -46,5 +46,6 @@ Son los mismos que los del juego original y se pueden cambiar en **Ajustes → T
 
 ## Notas
 
+- El historial de versiones está en [CHANGELOG.md](CHANGELOG.md).
 - La física usa [planck.js](https://github.com/piqnt/planck.js) (licencia MIT), incluido dentro del HTML.
 - Todo el arte pixel y los sonidos se generan por código; no hay recursos externos.
