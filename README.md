@@ -1,1 +1,1 @@
-# people-playground
+# the-playground
