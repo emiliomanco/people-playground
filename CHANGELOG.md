@@ -1,5 +1,30 @@
 # Historial de cambios
 
+## Versión 4 (2 de octubre de 2026)
+
+- **Controles como en el original**: Z deshace, C copia y V pega (también con Ctrl), Mayús+clic selecciona varios objetos, Mayús gira más rápido, Alt ajusta a la cuadrícula y al ángulo, y F1 abre la ayuda. Con el juego en pausa, lo que arrastras se coloca directamente, sin física.
+- **Casi 100 objetos nuevos (330 en total)**:
+  - Armas de fuego: fusil de asalto clásico, pistola de 9 mm, fusil semiautomático, subfusil de cañón largo, ametralladora pesada y cañón automático de 30 mm.
+  - Armas de energía: repetidor de haces, fusil bláster, bláster automático, cañón de tormenta, aturdidor, tambor de pulsos, lanzador de arcos, reconstructor, rigidificador y cañones de rayos, láser y de haz.
+  - Lanzadores y explosivos: bazuca, lanzafragmentos, fusil de clavos automático, cañón de 120 mm, explosivo rosa, granada de púas y recipiente de energía.
+  - Armas blancas: martillo, martillo percutor, barra de hierro, palo, lanza de justa, pincho de hierro, cristal, espada legendaria y bastón de tentáculos.
+  - Electrónica: conmutador y fusible de activación, compuertas, convertidores de canal, radio, detector, electrodo, transformador eléctrico, indicador de energía, pantallas de texto y holográfica, termómetro infrarrojo, espejo conmutable y extractor de energía de la materia.
+  - Maquinaria: caja amortiguadora, decimador, giroestabilizador industrial, apuntador, proyector de partículas, pistola de gravedad, pistón industrial, deslizador, torno, minipropulsor, plataforma de propulsores, ala, ruedas sin motor, máquina de circulación extracorpórea, acoplador adhesivo y ventilador gigante flotante.
+  - Química: identificador de líquidos, centrifugadora, duplicador de líquidos, válvula, válvula de presión, presurizador, tanque de sangre y suero rosa.
+  - Iluminación: reflector, lámpara catódica y antorcha.
+  - Objetos: cubos, pirámide, muros de mampostería y de sillería (se desmoronan en piedras), roca pequeña, pilar, viga corta, carcasa redimensionable que se puede pintar, escritorio, asiento de autobús, ancla y abrazadera.
+  - Vehículos: camión, coche flotante, vagón contenedor y tanque antiguo. Todos se pueden poner en marcha atrás, reparar, romper y frenar; las ruedas se pinchan y el depósito puede explotar.
+- **Mapas nuevos**: Abismo (el antiguo Vacío), Híbrido, Gigante, Reactor A5 (reactor nuclear con barras de control, regulador automático, parada de emergencia y fusión del núcleo), Inclinado, Pequeño, Nevado, Subestructura (tres plantas con ascensor y parada de emergencia), Diminuto, Vacío y Valle. Los mapas tienen fondo, texturas, focos en los techos y su propia luz. «Limpiar escena» devuelve el mapa a su estado inicial.
+- **Editor de mapas**: dibuja bloques, rampas, agua y lava con distintas texturas y guarda tus mapas para cargarlos desde la lista.
+- **Uniones nuevas**: atadura de acero, atadura de madera (se quema), enlace sin colisión, conducto de líquido (se rompe si se estira demasiado), correa mecánica, enlace de propagación y arrastre suave.
+- **Cables rojo y azul con funciones propias**: invierten motores y ruedas, cambian de sentido el torno, ponen el freno de mano a los vehículos, cambian la polaridad del electroimán o la altura de levitación.
+- **Menú contextual**: redimensionar con un deslizador, fijar ángulo, fijar temperatura, hacer indestructible, evitar la electrocución, silenciar, curar un hueso roto, color del puntero láser y modo energía de las ruedas (consumen o generan electricidad).
+- **Personas**: pulmones perforados, hemorragia interna, desmayo por fuerza G y los efectos del suero rosa.
+- **Ajustes**: visión térmica, tamaño del ajuste a la cuadrícula y al ángulo, y límite de propagación de señales.
+- **Poderes**: un clic con el rayo lo hace caer del cielo y la piroquinesis lanza más fuego cuanto más rápido mueves el ratón.
+- Detalles del original: el extintor revienta y el lanzallamas explota si les disparas, las armas pueden dispararse solas si caen con fuerza, y el Metrónomo, el Tocadiscos y el Transformador de activación se llaman como en el juego.
+- Correcciones: el propulsor de levitación ya no rebota y las escenas guardadas en mapas con máquinas propias ya no las duplican al cargarlas.
+
 ## Versión 3 · The Playground (1 de octubre de 2026)
 
 - El juego pasa a llamarse **The Playground** y el archivo ahora es `theplayground.html`.
