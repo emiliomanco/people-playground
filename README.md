@@ -21,7 +21,7 @@ Son los del juego original y se pueden cambiar en **Ajustes → Teclas**.
 | Voltear lo que arrastras o señalas | R (una persona sigue sosteniendo lo que lleva en las manos) |
 | Activar (disparar, encender, detonar) | F (mantener para uso continuo) |
 | Agarrar con la mano de una persona | F mientras la arrastras por el brazo (F otra vez: soltar) |
-| Menú contextual (borrar, copiar, congelar una parte, poses, IA...) | Clic derecho |
+| Menú contextual (borrar, copiar, congelar una parte, poses, IA...); con varias cosas seleccionadas se aplica a todas las compatibles | Clic derecho |
 | Borrar lo seleccionado o lo que señalas | Retroceso |
 | Deshacer (también los borrados) | Z |
 | Copiar / pegar con sus uniones | C / mantén V para ver la silueta y suelta para pegar |
@@ -41,14 +41,15 @@ Con el tiempo detenido, lo que arrastras se coloca directamente sin física y co
 
 ## Qué incluye
 
-- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento, consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua). Poses (tropezar, caminar, encogerse, sentarse, pose rígida) e IA que se puede activar en cada una: huyen de los zombis, usan armas y se defienden de quien les ataque.
+- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento, consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua). Poses (tropezar, caminar, encogerse, sentarse, pose rígida) e IA que se puede activar en cada una: corren, buscan armas a las que se puede llegar, disparan, pelean, se apartan de explosivos y fuego, saltan obstáculos y se arrastran si tienen las piernas dañadas. Zombis que contagian al morder o arañar (algunos corren y otros saltan).
 - 330 objetos: armas blancas y de fuego, accesorios para armas, explosivos, lanzadores, armas de energía, electrónica, biológico, química y líquidos, maquinaria, vehículos, iluminación y objetos.
 - Electricidad con cable de cobre y señales con cables de activación verde, rojo y azul (botones, interruptores, detectores, contadores, compuertas, radios...).
 - Temperatura: fuego, metal al rojo, congelación, calefactores y refrigerantes.
 - Líquidos: matraces que vierten y recogen, jeringas que inyectan y extraen, mezclas, y conductos con presurizadores y válvulas.
 - Agua y lava con flotación. 21 mapas: los del original (Abismo, Híbrido, Gigante, Reactor A5, Inclinado, Pequeño, Nevado, Subestructura con ascensor, Diminuto, Vacío y Valle, más Mar y Foso de lava) y otros extra (Explanada, Piscina, Foso de pinchos, Plataformas, Arena cerrada, Torre, Bloques y Escaleras).
 - Editor de mapas: dibuja bloques, rampas, agua y lava, y guarda tus propios mapas.
-- Entorno: temperatura ambiente, lluvia, nieve, niebla y tormenta eléctrica.
+- Entorno: temperatura ambiente, lluvia, nieve, niebla, tormenta eléctrica y colisiones entre seres (humanos, zombis y androides).
+- El fuego consume lo que arde: los objetos acaban en ceniza y las personas, como esqueletos carbonizados.
 - Herramientas de unión (soldar, bisagras, resortes, cuerdas, cadenas, vendas, ataduras de acero y madera, correas, conductos...) y poderes (empujar, atraer, levantar, rayo, fuego, frío...).
 - Menú contextual como el del original (congelar por partes, inspeccionar, editar capa, poses, IA...), además de redimensionar, fijar ángulo y temperatura, hacer indestructible, silenciar y más.
 - Guardar escenas y guardar construcciones como artefactos en el catálogo.

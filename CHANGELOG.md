@@ -1,5 +1,20 @@
 # Historial de cambios
 
+## Versión 7 (3 de octubre de 2026)
+
+- **IA de las personas rehecha**:
+  - Andan y corren de verdad (con animación de piernas y brazos). Corren cuando están en peligro o persiguen a alguien.
+  - Deciden con calma: ya no dudan entre huir y disparar. Mantienen cada decisión un tiempo y sólo cambian si hace falta.
+  - Sólo temen a lo que es hostil: zombis vivos y conscientes, quien les ha atacado, explosivos encendidos y fuego. A los zombis muertos o caídos ni les temen ni les disparan.
+  - Buscan armas solas cuando están en peligro: miran en 10 m, eligen la más fácil de alcanzar siguiendo el suelo (escalones que se pueden saltar, sin paredes, lava ni caídas) y no van si hay un zombi o un peligro en el camino o si el enemigo llegaría antes. Si está en el suelo se agachan, si está a media altura la cogen de pie y si está alta saltan.
+  - Disparan apuntando bien aunque el arma pese (corrigen con la dirección real del cañón y el brazo hace más fuerza), mantienen la distancia, disparan ráfagas con las automáticas y no disparan si hay alguien inocente en medio.
+  - Pelean cuerpo a cuerpo con armas blancas, lanzan cócteles molotov, se apartan de los explosivos encendidos y del fuego, saltan obstáculos bajos, no se tiran por bordes ni a la lava y, si están acorralados, plantan cara.
+  - Con las piernas dañadas se arrastran con los brazos (con la cabeza por delante).
+- **Zombis**: sólo contagian al morder o arañar, y sólo si están de pie (o arrastrándose) y conscientes; un zombi muerto o inconsciente ya no contagia. El 15 % corre y el 15 % salta obstáculos (alguno hace las dos cosas), y todos se arrastran si tienen las piernas dañadas.
+- **Colisiones entre seres** (en Entorno), por separado para humanos, zombis y androides: sin colisiones entre ellos, sin colisiones con los muertos o con colisiones. Por defecto los zombis no chocan entre sí y los vivos pasan por encima de los muertos, así que las hordas avanzan.
+- **Menú contextual para varias cosas**: con una selección, cada opción (congelar, colisiones, ingravidez, curar, hacer inmortal, poses, IA, encender...) se aplica a todas las que la admiten; las demás se quedan igual. También salen las opciones que sólo tienen algunas de las seleccionadas.
+- **El fuego consume**: lo inflamable sigue ardiendo hasta deshacerse en ceniza (una caja tarda unos 20 s) y las personas que se queman hasta el final quedan como esqueletos carbonizados. Lo quemado se acumula aunque el fuego se apague y se vuelva a prender.
+
 ## Versión 6 (3 de octubre de 2026)
 
 - **Interfaz como la del original**: los objetos a la izquierda (categorías arriba, buscador «Filtrar», casillas con miniaturas y, abajo, Ajustes, Entorno, Borrar todo, Borrar restos y Borrar seres vivos); las herramientas y los poderes en una barra a la derecha (clic derecho en un botón para elegir entre las variantes de su grupo); arriba a la derecha, la herramienta actual, el objeto elegido, la pausa, el reloj con la velocidad del tiempo (100 %, 25 % en cámara lenta, 0 % en pausa), la vista detalle y la visión térmica; y los avisos abajo a la derecha, en mayúsculas. La primera vez aparecen unas pantallas con los controles básicos (se pueden borrar).
