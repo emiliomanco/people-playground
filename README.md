@@ -29,7 +29,7 @@ Son los del juego original y se pueden cambiar en **Ajustes → Teclas**.
 | Herramientas / poderes | Ctrl |
 | Herramientas | 1-9 (el mismo número otra vez pasa a la siguiente de su grupo) |
 | Bisagra en el centro de masa | Mantén M al clavarla |
-| Mover la cámara / zoom | Botón central o flechas / rueda |
+| Zoom / mover la cámara | Rueda / apretar la rueda y arrastrar (también mientras agarras algo) o flechas |
 | Ayuda con todos los controles | F1 |
 
 Con el tiempo detenido, lo que arrastras se coloca directamente sin física y los objetos congelados se pueden mover (con el tiempo en marcha no se mueven). Congelar, voltear, duplicar, seguir con la cámara y la visión térmica están en el menú contextual o en Ajustes, sin tecla por defecto, como en el original. En pantallas táctiles, con un objeto elegido, toca un hueco o usa los botones Q/E.

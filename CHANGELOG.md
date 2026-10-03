@@ -9,7 +9,7 @@
   - Lo congelado sólo se mueve con el tiempo detenido.
   - Los números eligen grupos de herramientas, y pulsar el mismo número otra vez pasa a la siguiente herramienta del grupo. Mantener M clava las bisagras en el centro de masa.
   - Retroceso borra y Z deshace, incluidos los borrados.
-  - La rueda sólo hace zoom.
+  - La rueda hace zoom y, si la aprietas y arrastras, mueve la cámara, en cualquier momento, también mientras agarras algo. Puedes soltar lo que agarras sin dejar de mover la cámara.
   - Se quitaron las teclas que no son del original (R, L, H, Inicio, Supr, Ctrl+Z/C/V/D y congelar con clic derecho). Esas acciones siguen en el menú contextual o se pueden asignar en Ajustes.
   - Las teclas se detectan por su posición, así que Mayús, Alt o la distribución del teclado no las cambian. Las teclas guardadas de versiones anteriores vuelven a las del original.
 - **Jeringas**: las de suero son infinitas (inyectan sin vaciarse). Si les disparas o les alcanza una explosión, revientan y su contenido afecta a quien esté cerca.

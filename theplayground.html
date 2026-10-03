@@ -6383,6 +6383,9 @@ const Input = {
   keys: {}, pan: null, right: null, fHeld: [], limbView: false, pointers: new Map(), pinch: null, longT: null,
   init(canvas) {
     canvas.addEventListener('pointerdown', (e) => this.onDown(e));
+    // apretar la rueda no debe activar el desplazamiento automático del navegador
+    canvas.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+    canvas.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
     window.addEventListener('pointermove', (e) => this.onMove(e));
     window.addEventListener('pointerup', (e) => this.onUp(e));
     window.addEventListener('pointercancel', (e) => this.onUp(e));
@@ -6445,16 +6448,25 @@ const Input = {
     if (e.pointerType === 'touch') return this.touchDown(e);
     e.preventDefault();
     try { e.target.setPointerCapture(e.pointerId); } catch (er) {}
-    if (e.button === 1) { this.pan = { sx: e.clientX, sy: e.clientY, cx: Cam.x, cy: Cam.y }; return; }
+    if (e.button === 1) { this.pan = { lx: e.clientX, ly: e.clientY }; return; }
     if (e.button === 2) { this.right = { sx: e.clientX, sy: e.clientY, moved: false, cx: Cam.x, cy: Cam.y }; return; }
-    if (e.button === 0) this.leftDown(e.shiftKey, e.ctrlKey || e.metaKey);
+    if (e.button === 0) { this.leftHeld = true; this.leftDown(e.shiftKey, e.ctrlKey || e.metaKey); }
   },
   onMove(e) {
     // si el puntero está sobre el lienzo, no está sobre la interfaz (al cerrar una ventana no llega «pointerout»)
     if (e.target === Renderer.canvas) UI.pointerOverUI = false;
     if (e.pointerType === 'touch') return this.touchMove(e);
+    // con un botón ya pulsado, el navegador avisa de los demás sólo con este evento: así se puede apretar
+    // la rueda para mover la cámara mientras arrastras algo (y soltar el clic izquierdo con la rueda apretada)
+    const bt = e.buttons || 0;
+    if (this.leftHeld && !(bt & 1)) { this.leftHeld = false; this.leftUp(); }
+    if ((bt & 4) && !this.pan) this.pan = { lx: e.clientX, ly: e.clientY };
+    else if (!(bt & 4) && this.pan) this.pan = null;
+    if (this.pan) {
+      Cam.x -= (e.clientX - this.pan.lx) / Cam.zoom; Cam.y -= (e.clientY - this.pan.ly) / Cam.zoom;
+      this.pan.lx = e.clientX; this.pan.ly = e.clientY; Cam.follow = null;
+    }
     this.sx = e.clientX; this.sy = e.clientY; this.updateWorld();
-    if (this.pan) { Cam.x = this.pan.cx - (e.clientX - this.pan.sx) / Cam.zoom; Cam.y = this.pan.cy - (e.clientY - this.pan.sy) / Cam.zoom; Cam.follow = null; }
     if (this.right) {
       const d = Math.hypot(e.clientX - this.right.sx, e.clientY - this.right.sy);
       if (d > 6) this.right.moved = true;
@@ -6476,7 +6488,7 @@ const Input = {
       }
       return;
     }
-    if (e.button === 0) this.leftUp();
+    if (e.button === 0) { this.leftHeld = false; this.leftUp(); }
   },
   leftDown(shift, ctrl) {
     const wx = this.wx, wy = this.wy;
@@ -7494,7 +7506,7 @@ const UI = {
       <div><b>${K('rotLeft')} / ${K('rotRight')}</b> girar lo que arrastras (<b>Mayús</b>: más rápido). Al girarlo, mantiene ese ángulo mientras no lo sueltes, aunque choque con algo blando; sólo lo rígido (el suelo, paredes, objetos congelados o mucho más pesados) puede torcerlo</div>
       <div><b>Alt</b> ajustar a la cuadrícula y al ángulo al mover, girar o colocar</div>
       <div><b>${K('activate')}</b> activar lo que señalas o lo seleccionado (mantener: uso continuo, por ejemplo para disparar)</div>
-      <div><b>Clic derecho</b> menú contextual (congelar, redimensionar, borrar uniones...) · <b>Botón central o flechas</b> mover la cámara · <b>Rueda</b> zoom</div>
+      <div><b>Clic derecho</b> menú contextual (congelar, redimensionar, borrar uniones...) · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara, también mientras agarras algo</div>
       <div><b>${K('delete')}</b> borrar lo seleccionado o lo que señalas · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar</div>
       <div><b>${K('pause')}</b> detener el tiempo (en pausa, lo que arrastras se coloca sin física y lo congelado se puede mover) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle</div>
       <div><b>1-9</b> herramientas (pulsa el mismo número otra vez para pasar a la siguiente de su grupo) · <b>${K('toolsPowers')}</b> herramientas / poderes · <b>${K('toggleUI')}</b> mostrar u ocultar el catálogo · <b>${K('pinSnap')}</b> con la bisagra: al centro de masa · <b>Esc</b> menú</div>
