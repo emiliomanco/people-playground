@@ -20,61 +20,101 @@ canvas#game { position: fixed; inset: 0; width: 100vw; height: 100vh; display: b
 button { font: inherit; color: inherit; cursor: pointer; }
 img { image-rendering: pixelated; }
 canvas { image-rendering: pixelated; }
-/* barra superior */
-.topbar { position: absolute; left: 0; right: 0; top: 0; height: 44px; display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; padding: 0 6px; background: linear-gradient(#1d2025f2, #16191df0); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
-.topbar::-webkit-scrollbar { display: none; }
-.topbar .grp { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-.topbar .tools { flex: 1; justify-content: center; }
-.topbar .sep { width: 1px; height: 26px; background: var(--line2); margin: 0 5px; }
-.tb { width: 34px; height: 34px; border: 1px solid transparent; border-radius: 6px; background: transparent; display: grid; place-items: center; padding: 0; flex-shrink: 0; }
-.tb img { width: 24px; height: 24px; }
-.tb:hover { background: #2b3038; border-color: var(--line2); }
-.tb.on { background: #3a3220; border-color: var(--accent); box-shadow: inset 0 0 0 1px #00000040; }
-.tgrp { display: flex; align-items: center; gap: 3px; }
-.modebtn { background: #262b33; border-color: var(--line2); }
-/* catálogo */
-.catalog { position: absolute; left: 0; top: 44px; bottom: 0; display: flex; transition: transform .18s ease; max-height: calc(100% - 44px); }
-.catalog.closed { transform: translateX(-100%); }
-.cats { width: 56px; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; padding: 6px 4px; overflow-y: auto; scrollbar-width: thin; }
-.cat { width: 48px; height: 48px; flex-shrink: 0; background: #20242a; border: 1px solid var(--line); border-radius: 6px; display: grid; place-items: center; padding: 0; }
-.cat canvas, .cat img { width: 40px; height: 40px; }
-.cat:hover { border-color: var(--line2); background: #282d34; }
-.cat.on { border-color: var(--accent); background: #2e2a20; }
-.items { width: 286px; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; }
-.ihead { padding: 9px 12px 8px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: 12px; color: var(--accent2); border-bottom: 1px solid var(--line); }
-.igrid { flex: 1; overflow-y: auto; padding: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; align-content: start; scrollbar-width: thin; scrollbar-color: #444 transparent; }
-.item { background: #1e2227; border: 1px solid var(--line); border-radius: 6px; padding: 4px 1px 5px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 82px; overflow: hidden; }
-.item canvas { width: 76px; height: 52px; }
-.item span { font-size: 10.5px; line-height: 1.15; text-align: center; color: #cfd5dc; padding: 0 2px; }
-.item:hover { border-color: var(--line2); background: #262b31; }
-.item.on { border-color: var(--accent); background: #2e2a20; }
-.idesc { border-top: 1px solid var(--line); padding: 8px 12px 10px; color: var(--muted); min-height: 64px; font-size: 12px; line-height: 1.35; }
-.idesc b { color: var(--text); }
+/* caja de juguetes (izquierda), como en el original */
+.toybox { position: absolute; left: 0; top: 0; bottom: 0; width: 292px; display: flex; flex-direction: column; background: rgba(20, 21, 24, 0.94); border-right: 1px solid #000; box-shadow: 2px 0 10px #0006; transition: transform .18s ease; }
+.toybox.closed { transform: translateX(-100%); }
+.tbx-cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 6px; background: rgba(0, 0, 0, 0.35); border-bottom: 1px solid #000; }
+.cat { height: 46px; background: #2b2d31; border: 1px solid #3a3d43; border-radius: 3px; display: grid; place-items: center; padding: 0; }
+.cat canvas, .cat img { width: 30px; height: 30px; }
+.cat:hover { background: #3a3d43; }
+.cat.on { background: #5a5d63; border-color: #e9e9e9; }
+.tbx-head { padding: 7px 10px 2px; font-weight: 700; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #e9e9e9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbx-filter { display: flex; align-items: center; gap: 4px; margin: 4px 8px 6px; background: #0e0f11; border: 1px solid #3a3d43; border-radius: 3px; padding: 0 2px 0 6px; }
+.tbx-filter img { width: 18px; height: 18px; opacity: .7; }
+.tbx-filter input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: #eee; font: inherit; font-size: 13px; padding: 6px 2px; user-select: text; -webkit-user-select: text; }
+.tbx-filter input::placeholder { color: #8a8d93; }
+.tbx-filter button { background: transparent; border: 0; color: #c9ccd2; font-size: 14px; padding: 2px 7px; }
+.tbx-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 8px; display: grid; grid-template-columns: repeat(3, 86px); grid-auto-rows: 86px; gap: 4px; align-content: start; justify-content: center; scrollbar-width: thin; scrollbar-color: #5a5d63 transparent; }
+.item { width: 100%; height: 100%; background: #2b2d31; border: 1px solid #3a3d43; border-radius: 3px; display: grid; place-items: center; padding: 0; overflow: hidden; }
+.item canvas { width: 64px; height: 64px; }
+.item:hover { background: #3a3d43; }
+.item.on { background: #5a5d63; border-color: #fff; }
+.tbx-empty { grid-column: 1 / -1; color: #9a9da3; font-size: 12px; line-height: 1.4; padding: 8px 4px; }
+.tbx-empty b { color: #e9e9e9; }
+.tbx-bottom { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 6px; border-top: 1px solid #000; background: rgba(0, 0, 0, 0.35); }
+.tbx-b { height: 40px; background: #2b2d31; border: 1px solid #3a3d43; border-radius: 3px; display: grid; place-items: center; padding: 0; }
+.tbx-b img { width: 24px; height: 24px; }
+.tbx-b:hover { background: #3a3d43; }
+.tbx-tab { position: absolute; left: 292px; top: 8px; width: 18px; height: 44px; padding: 0; border: 1px solid #000; border-left: 0; border-radius: 0 4px 4px 0; background: rgba(20, 21, 24, 0.94); color: #ddd; font-size: 16px; transition: left .18s ease; }
+.tbx-tab.closed { left: 0; }
+/* herramientas y poderes (derecha) */
+.rightbar { position: absolute; right: 0; top: 0; bottom: 0; width: 62px; display: flex; flex-direction: column; align-items: center; background: rgba(20, 21, 24, 0.94); border-left: 1px solid #000; box-shadow: -2px 0 10px #0006; padding-bottom: 6px; }
+.rb-tabs { display: flex; width: 100%; border-bottom: 1px solid #000; background: rgba(0, 0, 0, 0.35); }
+.rb-tabs button { flex: 1; height: 34px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; opacity: .45; }
+.rb-tabs button img { width: 20px; height: 20px; }
+.rb-tabs button.on { opacity: 1; background: #3a3d43; }
+.rb-name { font-size: 7px; font-weight: 800; letter-spacing: 0; color: #c9ccd2; padding: 5px 0 3px; white-space: nowrap; }
+.rb-list { display: flex; flex-direction: column; gap: 4px; align-items: center; overflow-y: auto; scrollbar-width: none; padding: 2px 0; width: 100%; }
+.rb-list::-webkit-scrollbar { display: none; }
+.rbt { position: relative; width: 48px; height: 48px; flex-shrink: 0; background: #2b2d31; border: 1px solid #3a3d43; border-radius: 3px; display: grid; place-items: center; padding: 0; }
+.rbt img { width: 28px; height: 28px; }
+.rbt:hover { background: #3a3d43; }
+.rbt.on { background: #5a5d63; border-color: #fff; }
+.rbt i { position: absolute; left: 3px; top: 1px; font-style: normal; font-size: 10px; color: #a9acb2; }
+.rbt.multi::after { content: ''; position: absolute; right: 3px; bottom: 3px; border: 4px solid transparent; border-right-color: #c9ccd2; border-bottom-color: #c9ccd2; }
+.rblabel { position: absolute; left: 0; top: 0; display: none; pointer-events: none !important; background: rgba(0, 0, 0, 0.86); color: #fff; padding: 4px 9px; border-radius: 3px; font-size: 12.5px; white-space: nowrap; }
+.flyout { position: absolute; display: none; background: rgba(0, 0, 0, 0.88); border: 1px solid #3a3d43; border-radius: 4px; padding: 4px; min-width: 210px; }
+.fli { display: flex; align-items: center; gap: 8px; width: 100%; background: transparent; border: 0; padding: 5px 8px; color: #fff; text-align: left; font-size: 13.5px; border-radius: 3px; }
+.fli img { width: 24px; height: 24px; }
+.fli:hover { background: #ffffff1f; }
+.fli.on { background: #ffffff33; }
+/* indicadores (arriba a la derecha) */
+.status { position: absolute; right: 70px; top: 8px; display: flex; gap: 4px; }
+.st { position: relative; min-width: 42px; height: 42px; padding: 0 4px; background: rgba(20, 21, 24, 0.88); border: 1px solid #3a3d43; border-radius: 3px; display: flex; align-items: center; justify-content: center; gap: 4px; color: #fff; }
+.st img { width: 24px; height: 24px; }
+.st canvas { width: 34px; height: 34px; }
+.st span { font-weight: 700; font-size: 12.5px; min-width: 34px; text-align: left; }
+.st:hover { background: #3a3d43; }
+.st.on { border-color: var(--accent); }
+.st.off { opacity: .45; }
 /* información flotante */
 .tip { position: absolute; left: 0; top: 0; display: none; pointer-events: none !important; background: rgba(16, 18, 22, 0.92); border: 1px solid var(--line2);
   border-radius: 6px; padding: 6px 9px; font-size: 12px; line-height: 1.4; max-width: 280px; box-shadow: 0 4px 14px #0007; }
 .tip .tn { font-weight: 700; color: #fff; }
 .tip .tn span { font-weight: 400; color: var(--muted); }
 .tip .sub, .help .sub { color: var(--muted); font-size: 11.5px; }
-/* menú contextual */
-.ctx { position: absolute; display: none; min-width: 190px; max-width: 280px; background: var(--panel2); border: 1px solid var(--line2); border-radius: 7px; padding: 4px; box-shadow: 0 8px 26px #000a; max-height: 80vh; overflow-y: auto; }
-.ctx .ct { padding: 6px 9px 7px; font-weight: 700; color: var(--accent2); border-bottom: 1px solid var(--line); margin-bottom: 3px; font-size: 12px; }
-.ctx .ci { display: block; width: 100%; text-align: left; padding: 6px 9px; border: 0; background: transparent; border-radius: 5px; font-size: 13px; }
-.ctx .ci:hover { background: #343a44; }
-.ctx .ci.danger { color: #ff8b80; }
-.ctx .csep { height: 1px; background: var(--line); margin: 3px 4px; }
-/* avisos */
-.toasts { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none !important; }
-.toast { background: rgba(16, 18, 22, 0.9); border: 1px solid var(--line2); padding: 6px 13px; border-radius: 16px; font-size: 12.5px; transition: opacity .35s, transform .35s; text-align: center; max-width: 86vw; }
-.toast.out { opacity: 0; transform: translateY(6px); }
-.hint .kk { display: inline-block; min-width: 14px; padding: 0 4px; border: 1px solid var(--line2); border-radius: 4px; color: #e3e6ea; text-align: center; font-size: 11px; }
-.hint { position: absolute; right: 8px; bottom: 8px; max-width: min(640px, 70vw); background: rgba(16, 18, 22, 0.75); border: 1px solid var(--line); padding: 5px 10px; border-radius: 6px; font-size: 12px; color: var(--muted); pointer-events: none !important; }
-.hint b { color: var(--accent2); }
-.fps { position: absolute; right: 8px; top: 52px; font: 11px ui-monospace, Menlo, Consolas, monospace; color: #9fe39f; background: #0008; padding: 3px 6px; border-radius: 4px; display: none; pointer-events: none !important; }
-.pausedtag { position: absolute; left: 50%; top: 56px; transform: translateX(-50%); background: #3a3220e8; border: 1px solid var(--accent); color: var(--accent2); font-weight: 800; letter-spacing: .2em; padding: 4px 14px; border-radius: 5px; display: none; pointer-events: none !important; }
+/* menú contextual (negro, texto blanco, sin título, como en el original) */
+.ctx { position: absolute; display: none; min-width: 180px; max-width: 290px; background: rgba(0, 0, 0, 0.86); padding: 4px 0; max-height: 72vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8a8d93 #222; box-shadow: 0 6px 20px #0008; }
+.ctx::-webkit-scrollbar { width: 8px; }
+.ctx::-webkit-scrollbar-thumb { background: #8a8d93; }
+.ctx::-webkit-scrollbar-track { background: #222; }
+.ctx .ci { display: block; width: 100%; text-align: left; padding: 3px 14px; border: 0; background: transparent; font-size: 15px; color: #fff; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctx .ci:hover { background: #ffffff26; }
+.ctx .ci.off { color: #6f7277; cursor: default; }
+.ctx .ci.off:hover { background: transparent; }
+.ctx .ci.chk::after { content: '  ✓'; color: #9be59b; }
+.ctx .csep { height: 10px; }
+/* avisos (abajo a la derecha, en mayúsculas) */
+.notes { position: absolute; right: 74px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; pointer-events: none !important; max-width: min(520px, 60vw); }
+.note { background: rgba(0, 0, 0, 0.62); color: #fff; padding: 3px 9px; font-weight: 800; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; text-align: right; transition: opacity .35s, transform .35s; border-radius: 2px; }
+.note.out { opacity: 0; transform: translateX(8px); }
+.hint .kk { display: inline-block; min-width: 14px; padding: 0 4px; border: 1px solid #5a5d63; border-radius: 3px; color: #e9e9e9; text-align: center; font-size: 11px; }
+.hint { position: absolute; left: 304px; bottom: 10px; max-width: min(620px, calc(100vw - 440px)); background: rgba(0, 0, 0, 0.66); padding: 5px 10px; border-radius: 3px; font-size: 12px; color: #c9ccd2; pointer-events: none !important; opacity: 0; transition: opacity .4s; }
+.hint.show { opacity: 1; }
+.hint.wide { left: 26px; max-width: min(620px, calc(100vw - 150px)); }
+.hint b { color: #fff; }
+.ttag { position: absolute; left: 0; top: 0; display: none; pointer-events: none !important; background: rgba(0, 0, 0, 0.78); color: #fff; font-weight: 700; font-size: 13px; padding: 2px 7px; border-radius: 2px; }
+.itip { max-width: 260px; }
+.fps { position: absolute; right: 70px; top: 58px; font: 11px ui-monospace, Menlo, Consolas, monospace; color: #9fe39f; background: #0008; padding: 3px 6px; border-radius: 4px; display: none; pointer-events: none !important; }
+.inspect { display: flex; flex-direction: column; gap: 4px; }
+.inspect table { border-collapse: collapse; margin: 6px 0; font-size: 12.5px; }
+.inspect th { text-align: left; color: var(--muted); font-weight: 600; padding: 2px 10px 4px 0; }
+.inspect td { padding: 2px 10px 2px 0; border-top: 1px solid #2b3038; white-space: nowrap; }
+.inspect tr.sel td { color: var(--accent2); }
+.hb { display: inline-block; width: 60px; height: 7px; background: #000; vertical-align: middle; margin-right: 4px; }
+.hb i { display: block; height: 100%; }
 /* botones táctiles */
-.touchbar { position: absolute; right: 12px; bottom: 48px; display: flex; flex-direction: column; gap: 10px; }
+.touchbar { position: absolute; right: 72px; bottom: 48px; display: flex; flex-direction: column; gap: 10px; }
 .touchbar button { width: 58px; height: 58px; border-radius: 50%; border: 2px solid var(--line2); background: rgba(22, 25, 30, 0.85); font-size: 22px; font-weight: 800; color: var(--accent2); }
 .touchbar button:active { background: #3a3220; border-color: var(--accent); }
 /* modales */
@@ -118,11 +158,35 @@ canvas { image-rendering: pixelated; }
 .mainbtns { display: flex; flex-direction: column; align-items: center; gap: 9px; }
 .mainbtns .btn { width: 230px; }
 .foot { margin-top: 26px; color: #8a929c; font-size: 11.5px; }
-@media (max-width: 700px) {
-  .items { width: 196px; }
-  .igrid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 760px) {
+  .toybox { width: 236px; }
+  .tbx-tab { left: 236px; }
+  .cat { height: 38px; }
+  .cat canvas, .cat img { width: 24px; height: 24px; }
+  .tbx-grid { grid-template-columns: repeat(3, 68px); grid-auto-rows: 68px; }
+  .item canvas { width: 50px; height: 50px; }
   .hint { display: none; }
-  .topbar .tools { justify-content: flex-start; }
+  .status { right: 60px; gap: 2px; top: 4px; }
+  .st { min-width: 34px; height: 34px; padding: 0 2px; }
+  .st img { width: 20px; height: 20px; }
+  .st canvas { width: 28px; height: 28px; }
+  #stHelp, #stTool { display: none; }
+  .rightbar { width: 54px; }
+  .rbt { width: 44px; height: 44px; }
+  .notes { right: auto; left: 8px; bottom: 8px; max-width: calc(100vw - 150px); align-items: flex-start; }
+  .note { font-size: 11px; text-align: left; }
+  .touchbar { right: 64px; }
+  .rb-name { display: none; }
+  #ui.boxopen .status { display: none; }
+}
+@media (max-height: 500px) {
+  .hint { display: none; }
+  .touchbar { flex-direction: row; bottom: 8px; gap: 6px; }
+  .touchbar button { width: 46px; height: 46px; font-size: 17px; }
+  .notes { bottom: 62px; }
+  .cat { height: 34px; }
+  .cat canvas, .cat img { width: 22px; height: 22px; }
+  .tbx-b { height: 32px; }
 }
 </style>
 </head>
@@ -283,7 +347,7 @@ const uid = () => _uid++;
 const Settings = {
   volume: 0.6, gravity: 1, blood: 1, gore: true, getUp: true, variety: true, grid: true, shake: true,
   ambient: 1, particleMul: 1, hiDpi: true, showFps: false, slowmo: 0.25, spawnOnce: false, showInfo: false, keys: {},
-  ambientTemp: 18, rain: false, snow: false, fog: 0, lightningChance: 0, snapGrid: 0.25, snapAngle: 15, thermal: false, sigLimit: 1500, keysV: 5,
+  ambientTemp: 18, rain: false, snow: false, fog: 0, lightningChance: 0, snapGrid: 0.25, snapAngle: 15, thermal: false, sigLimit: 1500, keysV: 7, aiDefault: true,
 };
 // Acciones de teclado (reasignables en Ajustes)
 // (por defecto, las mismas teclas que el juego original)
@@ -303,14 +367,14 @@ const KEY_ACTIONS = [
   ['toggleUI', 'Mostrar / ocultar el catálogo y las herramientas', 'tab'],
   ['toolsPowers', 'Cambiar entre herramientas y poderes', 'control'],
   ['pinSnap', 'Ajustar las bisagras al centro de masa (mantener)', 'm'],
+  ['thermal', 'Visión térmica (temperatura de lo que señalas)', 't'],
+  ['flip', 'Voltear lo que arrastras o señalas (sin soltar lo que sostiene)', 'r'],
   ['help', 'Ver los controles', 'f1'],
   // sin tecla por defecto, como en el original (se pueden asignar)
   ['freeze', 'Congelar / descongelar', 'none'],
   ['pick', 'Elegir el objeto que señalas', 'none'],
-  ['flip', 'Voltear', 'none'],
   ['duplicate', 'Duplicar', 'none'],
   ['limbView', 'Vista de extremidades', 'none'],
-  ['thermal', 'Visión térmica', 'none'],
   ['follow', 'Seguir con la cámara', 'none'],
   ['camReset', 'Centrar la cámara', 'none'],
   ['delete2', 'Borrar (otra tecla)', 'none'],
@@ -350,7 +414,16 @@ function loadSettings() {
     const s = JSON.parse(raw || '{}');
     if (migrated) { delete s.keys; delete s.showInfo; }
     // la versión 5 rehace los controles: las teclas guardadas antes vuelven a las del original
-    if (raw && !(s.keysV >= 5)) { delete s.keys; s.keysV = 5; Settings._keysReset = true; }
+    if (raw && !(s.keysV >= 5)) { delete s.keys; s.keysV = 7; Settings._keysReset = true; }
+    // teclas nuevas (v6: T visión térmica, v7: R voltear): si ya usabas esa tecla para otra cosa, la nueva queda sin asignar
+    else if (raw && s.keysV < 7) {
+      for (const [v, act, k] of [[6, 'thermal', 't'], [7, 'flip', 'r']]) {
+        if (s.keysV >= v || !s.keys) continue;
+        if (Object.entries(s.keys).some(([a, x]) => a !== act && x === k)) s.keys[act] = 'none';
+        else if (!s.keys[act] || s.keys[act] === 'none') delete s.keys[act];
+      }
+      s.keysV = 7;
+    }
     for (const k in Settings) if (k in s) Settings[k] = s[k];
   } catch (e) {}
 }
@@ -2184,6 +2257,8 @@ const LIMB_DEFS = [
 ];
 const LIMB_BY_ID = Object.fromEntries(LIMB_DEFS.map((d) => [d.id, d]));
 const HUMAN_CENTER_Y = 38;
+// las personas pesan un 30 % menos que antes (unos 49 kg); músculos y equilibrio se escalan igual
+const HUMAN_MASS_MUL = 0.7;
 let _humanGroup = 1;
 
 class Limb {
@@ -2335,7 +2410,7 @@ class Human extends Thing {
       }
       const area = d.id === 'head' ? Math.PI * hw * hh * 0.95 : 4 * hw * hh;
       const mat = MATERIALS[this.mat];
-      body.createFixture(shape, { density: (d.mass * massMul) / area, friction: d.foot ? 1.1 : mat.friction, restitution: mat.restitution, filterGroupIndex: this.group, userData: { thing: this, part: L, mat: this.mat } });
+      body.createFixture(shape, { density: (d.mass * massMul * HUMAN_MASS_MUL) / area, friction: d.foot ? 1.1 : mat.friction, restitution: mat.restitution, filterGroupIndex: this.group, userData: { thing: this, part: L, mat: this.mat } });
       this.addBody(body, L);
       L.body = body;
       this.limbs[d.id] = L; this.limbList.push(L);
@@ -2499,13 +2574,13 @@ class Human extends Thing {
       if (this.frozenSolid || L.rigid) { j.setMotorSpeed(0); j.setMaxMotorTorque(50000); continue; }
       if (lm <= 0.001) {
         j.setMotorSpeed(0);
-        j.setMaxMotorTorque(L.def.str * (this.kind === 'dummy' ? 0.02 : 0.012) + (this.alive ? 0.4 : 0.15));
+        j.setMaxMotorTorque((L.def.str * (this.kind === 'dummy' ? 0.02 : 0.012) + (this.alive ? 0.4 : 0.15)) * HUMAN_MASS_MUL);
         continue;
       }
       const tgt = (P[L.id] || 0) * f;
       const a = j.getJointAngle();
       j.setMotorSpeed(clamp((tgt - a) * 14, -14, 14));
-      j.setMaxMotorTorque(L.def.str * lm);
+      j.setMaxMotorTorque(L.def.str * lm * HUMAN_MASS_MUL);
     }
     // equilibrio
     const getup = this.state === 'getup';
@@ -2515,7 +2590,7 @@ class Human extends Thing {
       const lean = this.zombie && this.walking ? 0.06 * f : 0;
       const a = angWrap(ch.getAngle() - lean), w = ch.getAngularVelocity();
       const tmax = getup ? 2400 : 1600;
-      const tq = clamp(-a * (getup ? 1500 : 1100) - w * 150, -tmax, tmax) * Math.min(k, 1.2);
+      const tq = clamp(-a * (getup ? 1500 : 1100) - w * 150, -tmax, tmax) * Math.min(k, 1.2) * HUMAN_MASS_MUL;
       ch.applyTorque(tq * 0.5, true); mid.applyTorque(tq * 0.2, true); pel.applyTorque(tq * 0.3, true);
       let mx = 0, M = 0, vx = 0;
       for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const b = L.body, mm = b.getMass(); mx += b.getWorldCenter().x * mm; vx += b.getLinearVelocity().x * mm; M += mm; }
@@ -2540,13 +2615,13 @@ class Human extends Thing {
         for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; L.body.applyForceToCenter(V(L.body.getMass() * acc, 0), true); }
         const fb = this.limbs.footB.body.getPosition(), ff = this.limbs.footF.body.getPosition();
         const fx = (fb.x + ff.x) / 2;
-        const F = clamp(-(mx - fx) * 500, -300, 300) * k;
+        const F = clamp(-(mx - fx) * 500, -300, 300) * k * HUMAN_MASS_MUL;
         pel.applyForceToCenter(V(F * 0.55, 0), true); ch.applyForceToCenter(V(F * 0.45, 0), true);
       } else {
         // centro de masa sobre los pies
         const fb = this.limbs.footB.body.getPosition(), ff = this.limbs.footF.body.getPosition();
         const fx = (fb.x + ff.x) / 2 + 0.03 * f;
-        const F = clamp(-(mx - fx) * 900 - vx * 260, -700, 700) * k;
+        const F = clamp(-(mx - fx) * 900 - vx * 260, -700, 700) * k * HUMAN_MASS_MUL;
         pel.applyForceToCenter(V(F * 0.55, 0), true);
         ch.applyForceToCenter(V(F * 0.45, 0), true);
       }
@@ -3118,7 +3193,7 @@ class Human extends Thing {
         this.target.hurt(hit, 0.12, 'bite', lp.x + rand(-0.03, 0.03), lp.y + rand(-0.05, 0.05));
         if (this.target.zombieT <= 0 && this.target.kind === 'human') this.target.zombieT = rand(12, 20);
         Sound.play('bite', lp.x, lp.y, 0.9);
-        hit.body.applyLinearImpulse(V(this.facing * 6, -2), lp, true);
+        hit.body.applyLinearImpulse(V(this.facing * 6 * HUMAN_MASS_MUL, -2 * HUMAN_MASS_MUL), lp, true);
       }
     }
   }
@@ -3389,7 +3464,7 @@ const Holding = {
     this.attach(item, best.t, best.s);
     return true;
   },
-  attach(item, h, side) {
+  attach(item, h, side, quiet) {
     const L = h.limbs['lowerArm' + side];
     const a = L.body.getAngle();
     if (item.flip !== (h.facing < 0)) item.setFlip(h.facing < 0);
@@ -3405,7 +3480,7 @@ const Holding = {
     const j = Phys.world.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0 }, L.body, body, V(hp[0], hp[1])));
     h.held[side] = item; item.holder = h;
     this.map.set(item, { h, side, j });
-    Sound.play('click', hp[0], hp[1], 0.6);
+    if (!quiet) Sound.play('click', hp[0], hp[1], 0.6);
   },
   release(item) {
     const r = this.map.get(item); if (!r) return;
@@ -3733,7 +3808,7 @@ function explode(x, y, power, o = {}) {
   // física y daño
   const affected = new Map();
   bodiesInRadius(x, y, R * 1.5, (b, d, f) => {
-    if (b.getType() !== 'dynamic' && !(bodyData(b).thing && bodyData(b).thing.frozen)) return;
+    if (b.getType() !== 'dynamic' && !b._frozen) return;
     affected.set(b, d);
   });
   for (const [b, d0] of affected) {
@@ -5541,7 +5616,10 @@ function vehicleBuild(it, x, y, ang, flip, o) {
       const wb = it.makeBody(p[0], p[1], ang, ws, [{ circle: [o.wr, o.wr, o.wr] }], 'rubber', { mass: o.wmass, flip: false, zOff: 0.05, friction: 1.4 });
       setNoCollide(ch, wb, true);
       const axis = ch.getWorldVector(V(0, 1));
-      const j = it.joint(pl.WheelJoint({ enableMotor: true, maxMotorTorque: 0, motorSpeed: 0, frequencyHz: o.freq || 4, dampingRatio: 0.7 }, ch, wb, V(p[0], p[1]), axis));
+      // los vehículos ligeros llevan ejes rígidos: con una persona encima la suspensión se hundiría
+      const j = o.mass < 50
+        ? it.joint(pl.RevoluteJoint({ enableMotor: true, maxMotorTorque: 0, motorSpeed: 0 }, ch, wb, V(p[0], p[1])))
+        : it.joint(pl.WheelJoint({ enableMotor: true, maxMotorTorque: 0, motorSpeed: 0, frequencyHz: o.freq || 4, dampingRatio: 0.7 }, ch, wb, V(p[0], p[1]), axis));
       it.vars.wheels.push(wb); it.vars.wj.push(j);
     }
   }
@@ -5709,7 +5787,7 @@ def('skateboard', Object.assign({
   name: 'Monopatín', cat: 'vehicles', desc: 'Tabla con ruedas.',
   sprite: () => skateSprite(),
 }, vehicleBehavior({
-  sprite: () => skateSprite(), mass: 2.5, wr: 2.5, wmass: 0.15, torque: 0, speed: 0, freq: 10, motor: false,
+  sprite: () => skateSprite(), mass: 2.5, wr: 2.5, wmass: 0.3, torque: 0, speed: 0, freq: 10, motor: false,
   wheels: [[7, 5.5], [31, 5.5]], exhaust: [0, 0],
   shapes: [{ poly: [[0, 0], [38, 0], [36, 3], [2, 3]] }],
 })));
@@ -6108,6 +6186,9 @@ const Renderer = {
   draw() {
     const ctx = this.ctx;
     this.frame++;
+    // las extremidades se dibujan al actualizarse; con el tiempo detenido no hay actualización, así que
+    // se componen aquí (si no, lo que aparece en pausa sería invisible hasta reanudar)
+    for (const t of World.things) if (t.isHuman && !t.dead) for (const L of t.limbList) if (L.dirty && !L.destroyed) L.compose();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.imageSmoothingEnabled = false;
     // fondo
@@ -6316,7 +6397,7 @@ function fillBody(ctx, b, color) {
 // grupos de herramientas: cada número elige su grupo y pulsarlo otra vez pasa a la siguiente (como en el original)
 const TOOLS = [
   { id: 'drag', grp: 1, name: 'Arrastrar', hint: 'Arrastra objetos. {rot}: girar lo que arrastras (mantiene el ángulo hasta que lo sueltes) · Mayús: girar más rápido · Alt: ajustar · Mayús+clic: seleccionar · Arrastrar en vacío: seleccionar varios' },
-  { id: 'gentle', grp: 1, name: 'Arrastre suave', hint: 'Como arrastrar, pero con poca fuerza: para mover cosas con cuidado sin lanzarlas. {rot}: girar.' },
+  { id: 'gentle', grp: 1, name: 'Arrastre preciso', hint: 'Lo que agarras va justo al cursor (como Mover) pero con física y girando libremente (como Arrastrar); al girarlo con {rot} se queda en ese ángulo hasta que lo sueltes.' },
   { id: 'move', grp: 1, name: 'Mover', hint: 'Coloca objetos con precisión, sin física. {rot}: girar · Alt: ajustar a la cuadrícula.' },
   { id: 'wire', grp: 2, name: 'Cable de activación', hint: 'Conecta dos objetos: al activar uno (F) se activa el otro.' },
   { id: 'wireR', grp: 2, name: 'Cable de activación rojo', hint: 'Igual que el cable de activación, por el canal rojo.' },
@@ -6349,6 +6430,28 @@ const TOOLS = [
   { id: 'lightning', grp: 9, name: 'Rayo del cielo', hint: 'Clic para invocar un rayo desde el cielo.' },
 ];
 for (const t of TOOLS) t.key = String(t.grp);
+// todo lo unido de forma rígida a un cuerpo (articulaciones del cuerpo, soldaduras, objetos clavados o
+// sostenidos...): al arrastrar, la fuerza se calcula con todo ello, así todo se mueve igual pese lo que pese
+function rigidJoint(j) {
+  if (j._grab) return false; // la mano que agarra algo no arrastra con ella lo agarrado
+  const ty = j.getType();
+  if (ty === 'weld-joint' || ty === 'revolute-joint' || ty === 'prismatic-joint' || ty === 'wheel-joint') return true;
+  return ty === 'distance-joint' && !(j.getFrequency && j.getFrequency() > 0);
+}
+function dragIsland(b0, max = 300) {
+  const seen = new Set([b0]), out = [b0], q = [b0];
+  while (q.length && out.length < max) {
+    const b = q.pop();
+    for (let je = b.getJointList(); je; je = je.next) {
+      const o = je.other;
+      if (seen.has(o) || !rigidJoint(je.joint)) continue;
+      seen.add(o);
+      if (o.getType() !== 'dynamic') continue;
+      out.push(o); q.push(o);
+    }
+  }
+  return out;
+}
 // ¿lo que toca este cuerpo es rígido? (el suelo, las paredes, lo congelado o algo mucho más pesado)
 function touchingRigid(b, self) {
   const m = self.mass();
@@ -6390,7 +6493,8 @@ const Input = {
     window.addEventListener('pointerup', (e) => this.onUp(e));
     window.addEventListener('pointercancel', (e) => this.onUp(e));
     canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    // el menú del clic derecho del navegador nunca aparece mientras el juego está abierto (sólo el del juego)
+    document.addEventListener('contextmenu', (e) => { const tg = e.target && e.target.tagName; if (tg !== 'INPUT' && tg !== 'TEXTAREA') e.preventDefault(); }, true);
     window.addEventListener('keydown', (e) => this.onKey(e, true));
     window.addEventListener('keyup', (e) => this.onKey(e, false));
     window.addEventListener('blur', () => { this.keys = {}; this.releaseF(); this.spawnHold = null; this.pasteHold = null; });
@@ -6502,7 +6606,7 @@ const Input = {
         // con el tiempo detenido los objetos se colocan directamente; lo congelado sólo se mueve en pausa (como en el original)
         if (hit) {
           if (Game.paused) this.startMove(hit, wx, wy);
-          else if (hit.thing.frozen) UI.toast('Está congelado: detén el tiempo para moverlo');
+          else if (hit.body._frozen) UI.toast('Está congelado: detén el tiempo para moverlo');
           else this.startDrag(hit, wx, wy, this.tool === 'gentle');
         } else this.startSel(wx, wy, ctrl || shift);
         break;
@@ -6512,7 +6616,7 @@ const Input = {
         if (!this.pending) { const b = hit ? hit.body : null; if (CONN_TYPES[this.tool].signal && !b) { UI.toast('Haz clic sobre un objeto'); return; } this.pending = { type: this.tool, body: b, pt: [wx, wy], sx: this.sx, sy: this.sy, fresh: true }; }
         else this.finishPending(wx, wy);
         break;
-      case 'freeze': if (hit) { const t = hit.thing; t.setFrozen(!t.frozen); Sound.play('click'); UI.toast(t.frozen ? 'Congelado' : 'Descongelado'); } break;
+      case 'freeze': if (hit) { const b = hit.body, on = !b._frozen; hit.thing.setBodyFrozen(b, on); Sound.play('click'); UI.toast(on ? 'Congelado' : 'Descongelado'); } break;
       case 'nocollide': if (hit) { const t = hit.thing; t.setCollide(!!t.noCollide); Sound.play('click'); UI.toast(t.noCollide ? 'Sin colisión' : 'Con colisión'); } break;
       case 'delete': if (hit) { this.deleteThings([hit.thing]); } else { const c = Connections.near(wx, wy, 8 / Cam.zoom); if (c) { Connections.remove(c); Sound.play('delete'); } } break;
       case 'fire': if (hit) { if (hit.thing.igniteAt) hit.thing.igniteAt(hit.fixture, 1); else if (!hit.thing.ignite(1)) UI.toast('No es inflamable'); } else for (let i = 0; i < 12; i++) Effects.flame(wx, wy, gauss() * 1.5, -rand(0, 2), null); break;
@@ -6583,9 +6687,9 @@ const Input = {
   toolKey(n) {
     const grp = TOOLS.filter((t) => t.grp === n); if (!grp.length) return;
     const i = this.mode === 'tools' ? grp.findIndex((t) => t.id === this.tool) : -1;
-    const next = i >= 0 ? grp[(i + 1) % grp.length] : grp[0];
+    // otro grupo: su última herramienta usada; el mismo grupo: la siguiente
+    const next = i >= 0 ? grp[(i + 1) % grp.length] : (grp.find((t) => t.id === UI.grpSel[n]) || grp[0]);
     UI.setTool(next.id); Sound.play('ui');
-    if (grp.length > 1) UI.toast(`${next.name} (${grp.indexOf(next) + 1}/${grp.length})`, 1100);
   },
   doAction(id, key) {
     const target = () => (this.drag ? this.drag.thing || (this.drag.things && this.drag.things[0]) : this.hover && this.hover.thing);
@@ -6598,9 +6702,13 @@ const Input = {
         else { const t = target(); if (t) this.deleteThings([t]); else if (this.hoverConn) { Connections.remove(this.hoverConn); Sound.play('delete'); } }
         break;
       }
-      case 'flip': if (this.spawnDef) this.spawnFlip = !this.spawnFlip; else { const t = target(); if (t) flipThing(t); } break;
-      case 'freeze': { const t = target(); if (t) { if (this.drag && this.drag.kind === 'drag') this.endDrag(); t.setFrozen(!t.frozen); UI.toast(t.frozen ? 'Congelado' : 'Descongelado'); } break; }
-      case 'info': Settings.showInfo = !Settings.showInfo; saveSettings(); UI.toast(Settings.showInfo ? 'Vista detalle: activada' : 'Vista detalle: desactivada'); break;
+      case 'flip': {
+        if (this.spawnHold) { this.spawnHold.flip = !this.spawnHold.flip; break; }
+        const t = target(); if (t) { flipThing(t); if (this.drag && this.drag.kind === 'move') this.rebaseMove(); }
+        break;
+      }
+      case 'freeze': { const h = this.drag && this.drag.kind === 'drag' ? { thing: this.drag.thing, body: this.drag.body } : this.hover; if (h && h.thing && !h.thing.isTerrain) { if (this.drag && this.drag.kind === 'drag') this.endDrag(); const on = !h.body._frozen; h.thing.setBodyFrozen(h.body, on); UI.toast(on ? 'Congelado' : 'Descongelado'); } break; }
+      case 'info': Settings.showInfo = !Settings.showInfo; saveSettings(); UI.toast(Settings.showInfo ? 'Vista detalle: activada' : 'Vista detalle: desactivada'); UI.refreshTop(); break;
       case 'limbView': this.limbView = !this.limbView; UI.toast(this.limbView ? 'Vista de extremidades: activada' : 'Vista de extremidades: desactivada'); UI.refreshTop(); break;
       case 'catalog': UI.toggleCatalog(); break;
       case 'toggleUI': UI.toggleUI(); break;
@@ -6611,7 +6719,7 @@ const Input = {
       case 'copy': case 'copy2': this.copy(); break;
       case 'paste': case 'paste2': this.beginPasteHold(key); break;
       case 'help': UI.openHelp(); break;
-      case 'thermal': Settings.thermal = !Settings.thermal; saveSettings(); UI.toast(Settings.thermal ? 'Visión térmica: activada' : 'Visión térmica: desactivada'); break;
+      case 'thermal': Settings.thermal = !Settings.thermal; saveSettings(); UI.toast(Settings.thermal ? 'Visión térmica: activada' : 'Visión térmica: desactivada'); UI.refreshTop(); break;
       case 'pick': { const t = target(); if (t && !t.isTerrain) { const d = t.isHuman ? DEFS[t.kind] : t.def; if (d && DEFS[d.id]) { Input.setSpawn(d); UI.refreshCatalogSel(); } } break; }
       case 'duplicate': { const t = target(); if (t) duplicateThing(t); break; }
       case 'camReset': Cam.x = 0; Cam.y = -3; Cam.zoom = Game.defaultZoom(); Cam.follow = null; break;
@@ -6696,22 +6804,21 @@ const Input = {
   startDrag(hit, wx, wy, gentle) {
     const b = hit.body, t = hit.thing;
     if (b.getType() !== 'dynamic') return this.startMove(hit, wx, wy);
-    // el muelle del ratón se escala con la masa total (si no, agarrar una mano sería muy blando)
-    const mass = t.mass(), bm = Math.max(0.05, b.getMass());
-    const ratio = Math.sqrt(Math.max(1, mass / bm));
-    const maxF = t.isHuman ? mass * 380 : mass * 420 + 60;
-    let hz = Math.min(30, (t.isHuman ? 2.7 : 6) * ratio), damp = Math.min(6, (t.isHuman ? 0.6 : 0.75) * ratio);
-    if (gentle) { hz *= 0.35; damp = Math.max(damp, 1.2); }
-    const j = Phys.world.createJoint(pl.MouseJoint({ maxForce: maxF, frequencyHz: hz, dampingRatio: damp }, Phys.ground, b, V(wx, wy)));
+    // la fuerza del ratón se calcula con la masa de todo lo unido (no sólo de la parte agarrada):
+    // así un arma clavada en alguien, o una mano, se mueven con la misma soltura que un objeto suelto
+    const isl = dragIsland(b), P = this.dragParams(t, b, isl);
+    // arrastre preciso: el punto agarrado va justo al cursor (la unión del ratón sólo marca ese punto)
+    const j = Phys.world.createJoint(pl.MouseJoint({ maxForce: gentle ? 0 : P.maxF, frequencyHz: P.hz, dampingRatio: P.damp }, Phys.ground, b, V(wx, wy)));
     if (t.isHuman) { t.dragged = true; if (t.state === 'stand' || t.state === 'getup') t.setState('air'); }
     // sin girar, lo que arrastras cuelga y gira libremente; al girarlo con A/D se bloquea ese ángulo hasta soltarlo
-    this.drag = { kind: 'drag', body: b, thing: t, joint: j, holdAngle: null, angDamp: b.getAngularDamping(), local: b.getLocalPoint(V(wx, wy)), multi: [] };
+    this.drag = { kind: 'drag', body: b, thing: t, joint: j, holdAngle: null, angDamp: b.getAngularDamping(), local: b.getLocalPoint(V(wx, wy)), multi: [], precise: !!gentle, isl, maxF: P.maxF, islT: 0.2 };
+    if (gentle) this.makePivot(this.drag, wx, wy);
     b.setAngularDamping(t.isHuman ? 1.5 : 1.2);
     b.setAwake(true);
     // si lo agarrado forma parte de una selección, se arrastra toda la selección
     if (this.selection.has(t) && this.selection.size > 1) {
       for (const o of this.selection) {
-        if (o === t || o.dead || o.frozen || o.isTerrain) continue;
+        if (o === t || o.dead || o.anyFrozen() || o.isTerrain) continue;
         const ob = o.isHuman ? o.root.body : o.main; if (!ob || ob.getType() !== 'dynamic') continue;
         const c = ob.getWorldCenter(), om = o.mass();
         const jj = Phys.world.createJoint(pl.MouseJoint({ maxForce: o.isHuman ? om * 380 : om * 420 + 60, frequencyHz: gentle ? 2 : 5, dampingRatio: 0.9 }, Phys.ground, ob, V(c.x, c.y)));
@@ -6721,11 +6828,36 @@ const Input = {
     }
     if (t.isHuman && t.alive && t.consc > 0.5) t.fear = Math.max(t.fear, 0.3);
   },
+  dragParams(t, b, isl) {
+    const mass = Math.max(t.mass(), isl.reduce((a, o) => a + o.getMass(), 0)), bm = Math.max(0.05, b.getMass());
+    const ratio = Math.sqrt(Math.max(1, mass / bm)), hum = isl.some((o) => { const th = bodyData(o).thing; return th && th.isHuman; });
+    return { mass, maxF: hum ? mass * 380 + 60 : mass * 420 + 60, hz: Math.min(30, (hum ? 2.7 : 6) * ratio), damp: Math.min(6, (hum ? 0.6 : 0.75) * ratio) };
+  },
+  // arrastre preciso: un pivote invisible (de masa infinita) va con el cursor y lo agarrado cuelga de él
+  // por ese punto: llega justo donde está el ratón (pese lo que pese) y gira libremente a su alrededor
+  makePivot(d, wx, wy) {
+    this.dropPivot(d);
+    const kb = Phys.world.createBody({ type: 'kinematic', position: V(wx, wy) });
+    const pj = Phys.world.createJoint(pl.RevoluteJoint({ collideConnected: false, localAnchorA: V(0, 0), localAnchorB: d.body.getLocalPoint(V(wx, wy)) }, kb, d.body));
+    d.pivot = kb; d.pivotJ = pj;
+  },
+  dropPivot(d) {
+    if (d.pivotJ) { try { Phys.world.destroyJoint(d.pivotJ); } catch (e) {} d.pivotJ = null; }
+    if (d.pivot) { try { Phys.world.destroyBody(d.pivot); } catch (e) {} d.pivot = null; }
+  },
+  preciseDrive(d, tx, ty, dt) {
+    if (!d.pivot) return;
+    const p = d.pivot.getPosition();
+    let vx = (tx - p.x) / dt, vy = (ty - p.y) / dt;
+    const sp = Math.hypot(vx, vy), mx = 60; if (sp > mx) { vx *= mx / sp; vy *= mx / sp; }
+    d.pivot.setLinearVelocity(V(vx, vy));
+  },
   endDrag() {
     const d = this.drag; if (!d) return;
     this.drag = null;
     if (d.thing) d.thing.dragged = false;
     try { Phys.world.destroyJoint(d.joint); } catch (e) {}
+    this.dropPivot(d);
     for (const m of d.multi || []) { try { Phys.world.destroyJoint(m.joint); } catch (e) {} if (m.thing) m.thing.dragged = false; }
     if (d.rotJoint) { try { Phys.world.destroyJoint(d.rotJoint); } catch (e) {} }
     if (d.body && d.body.getWorld && !d.thing.dead) d.body.setAngularDamping(d.angDamp);
@@ -6742,8 +6874,9 @@ const Input = {
   startMove(hit, wx, wy) {
     const things = this.selection.has(hit.thing) && this.selection.size > 1 ? [...this.selection] : [hit.thing];
     const recs = [];
-    for (const t of things) for (const b of t.bodies) { const p = b.getPosition(); recs.push({ b, x: p.x, y: p.y, a: b.getAngle() }); }
-    this.drag = { kind: 'move', things, recs, ox: wx, oy: wy, rot: 0, holdAngle: null };
+    for (const t of things) for (const b of t.bodies) { const p = b.getPosition(), v = b.getLinearVelocity(); recs.push({ b, x: p.x, y: p.y, a: b.getAngle(), vx: v.x, vy: v.y, w: b.getAngularVelocity() }); }
+    // con el tiempo detenido, lo que mueves conserva su impulso: al reanudar sigue su trayectoria desde el nuevo sitio
+    this.drag = { kind: 'move', things, recs, ox: wx, oy: wy, rot: 0, holdAngle: null, keep: Game.paused };
   },
   applyMove() {
     const d = this.drag;
@@ -6759,9 +6892,17 @@ const Input = {
       if (!rc.b.getWorld) continue;
       const q = rot(rc.x - d.ox, rc.y - d.oy, r);
       rc.b.setTransform(V(d.ox + q[0] + dx, d.oy + q[1] + dy), rc.a + r);
-      if (rc.b.getType() !== 'static') { rc.b.setLinearVelocity(V(0, 0)); rc.b.setAngularVelocity(0); }
+      if (rc.b.getType() !== 'static') {
+        if (d.keep) { rc.b.setLinearVelocity(V(rc.vx, rc.vy)); rc.b.setAngularVelocity(rc.w); }
+        else { rc.b.setLinearVelocity(V(0, 0)); rc.b.setAngularVelocity(0); }
+      }
       rc.b.setAwake(true);
     }
+  },
+  rebaseMove() {
+    const d = this.drag; if (!d || d.kind !== 'move') return;
+    for (const rc of d.recs) { if (!rc.b.getWorld) continue; const p = rc.b.getPosition(), v = rc.b.getLinearVelocity(); Object.assign(rc, { x: p.x, y: p.y, a: rc.b.getAngle(), vx: v.x, vy: v.y, w: rc.b.getAngularVelocity() }); }
+    d.ox = this.wx; d.oy = this.wy; d.rot = 0;
   },
   endMove() { if (this.drag) { this.applyMove(); for (const t of this.drag.things) if (!t.dead && t.def && t.def.grip && !t.holder) Holding.tryGrab(t); } this.drag = null; },
   // ---------------- selección por caja ----------------
@@ -6812,6 +6953,14 @@ const Input = {
     const tx = this.keys.alt ? snapPos(this.wx) : this.wx, ty = this.keys.alt ? snapPos(this.wy) : this.wy;
     d.joint.setTarget(V(tx, ty));
     for (const m of d.multi) if (m.body.getWorld && !m.thing.dead) m.joint.setTarget(V(tx + m.off[0], ty + m.off[1]));
+    // lo unido cambia (un arma que sale de un cuerpo, alguien que suelta lo que sostiene...): se recalcula cada poco
+    d.islT -= dt;
+    if (d.islT <= 0) {
+      d.islT = 0.2; d.isl = dragIsland(d.body);
+      const P = this.dragParams(d.thing, d.body, d.isl); d.maxF = P.maxF;
+      if (!d.precise) { d.joint.setMaxForce(P.maxF); d.joint.setFrequency(P.hz); d.joint.setDampingRatio(P.damp); }
+    }
+    if (d.precise) this.preciseDrive(d, tx, ty, dt);
     if (d.rotJoint) {
       // el ángulo elegido se mantiene al chocar con cosas blandas o ligeras; sólo lo rígido (suelo, paredes,
       // objetos congelados o mucho más pesados) puede torcerlo, y al separarse vuelve a su ángulo
@@ -6856,7 +7005,7 @@ const Input = {
         d.holdAngle = d.body.getAngle();
         // una unión de motor (sin fuerza lineal) sujeta el ángulo; su fuerza depende de lo que pesa y mide el objeto
         const bb = bodyAABB(d.body), r = Math.max(0.1, Math.hypot(bb[2] - bb[0], bb[3] - bb[1]) / 2);
-        d.rotStrong = d.joint.getMaxForce() * r * 3; d.rotWeak = d.rotStrong * 0.02;
+        d.rotStrong = (d.maxF || d.joint.getMaxForce()) * r * 3; d.rotWeak = d.rotStrong * 0.02;
         d.rotJoint = Phys.world.createJoint(pl.MotorJoint({ maxForce: 0, maxTorque: d.rotStrong, correctionFactor: 0.5, angularOffset: d.holdAngle }, Phys.ground, d.body));
       }
       d.holdAngle += da;
@@ -6876,6 +7025,7 @@ const Input = {
     if (bp) { let cx = 0, cy = 0; for (const t of us) { const p = (t.isHuman ? t.root.body : t.main).getPosition(); cx += p.x; cy += p.y; } Undo.push({ type: 'del', bp, x: cx / us.length, y: cy / us.length }); }
     for (const t of ts) t.destroy(true);
     Sound.play('delete');
+    UI.toast(ts.length === 1 ? `Eliminado: ${ts[0].name}` : `Eliminados: ${ts.length} objetos`, 1300);
   },
   // ---------------- táctil ----------------
   touchDown(e) {
@@ -7074,6 +7224,13 @@ const ICONS = {
   conduit: ['.........rrr', '........rRRr', '.......rRRr.', '......rRRr..', '.....rRRr...', '....rRRr....', '...rRRr.....', '..rRRr......', '.rRRr.......', 'rRRr........', 'rrr.........', '............'],
   belt: ['............', '............', '............', '............', '..kkkkkkkk..', '.kgg.kk.ggk.', 'kgWWgkkgWWgk', 'kgWWgkkgWWgk', '.kgg.kk.ggk.', '..kkkkkkkk..', '............', '............'],
   link: ['..........jj', '.........jj.', '............', '.......jj...', '......jj....', '............', '....jj......', '...jj.......', '............', '.jj.........', 'jj..........', '............'],
+  env: ['.Y...Y......', '..Y.YYY.....', '...YYYYY....', 'YYYYYYYYY...', '...YYYWWWW..', '..Y.YWWWWWW.', '.Y..WWWWWWWW', '...WWWWWWWWW', '..WWWWWWWWWW', '..WWWWWWWWW.', '............', '............'],
+  debris: ['............', '.gg.........', '.gWg....gg..', '..gg...gWWg.', '.......gWWg.', '....g...gg..', '...gWg......', '...gWWg..g..', '....gg..gWg.', '.gg......g..', 'gWWg........', '.gg.........'],
+  skull: ['...WWWWWW...', '..WWWWWWWW..', '.WWWWWWWWWW.', '.WWkkWWkkWW.', '.WkkkWWkkkW.', '.WWkkWWkkWW.', '..WWWkkWWW..', '..WWWWWWWW..', '...WkWWkW...', '...WWWWWW...', '............', '............'],
+  clock: ['...WWWWWW...', '..W......W..', '.W...WW...W.', 'W....WW....W', 'W....WW....W', 'W....WWWW..W', 'W..........W', 'W..........W', '.W........W.', '..W......W..', '...WWWWWW...', '............'],
+  eye: ['............', '............', '....WWWW....', '..WW....WW..', '.W..cccc..W.', 'W..cckkcc..W', 'W..cckkcc..W', '.W..cccc..W.', '..WW....WW..', '....WWWW....', '............', '............'],
+  thermo: ['.....WW.....', '....W..W....', '....W..W....', '....WrrW....', '....WrrW....', '....WrrW....', '....WrrW....', '...WrrrrW...', '..WrrrrrrW..', '..WrrrrrrW..', '...WrrrrW...', '....WWWW....'],
+  search: ['..WWWW......', '.W....W.....', 'W......W....', 'W......W....', 'W......W....', 'W......W....', '.W....W.....', '..WWWWWW....', '.......WW...', '........WW..', '.........WW.', '..........W.'],
 };
 const ICON_PAL = { p: '#b07ad8', w: '#9aa3ad', W: '#e3e6ea', g: '#6e757e', G: '#2f6f3a', j: '#6fd17f', a: '#f0b23c', Y: '#ffd76a', y: '#f2a23a', o: '#e0602a', k: '#2a2d32', b: '#6c4729', n: '#a07a4a', r: '#c94a3a', R: '#e07a6a', c: '#7fd3ff', u: '#2e5fa8' };
 const _iconCache = {};
@@ -7102,88 +7259,133 @@ function thumbCanvas(def, size = 56, hsize) {
 }
 const CAT_ICON = { entities: 'human', melee: 'knife', firearms: 'pistol', attachments: 'att_laser', explosives: 'grenade', launchers: 'rocket_launcher', energy: null, electronics: 'battery', bio: 'syr_life', chemistry: 'flask_water', machinery: 'wheel', vehicles: 'car', lighting: 'bulb', props: 'crate' };
 
+// iconos blancos de las categorías (como en el original): la silueta del objeto, en blanco
+function whiteIcon(src, size = 30) {
+  const c = makeCanvas(size, size), ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const w = src.width, h = src.height, k = Math.min(size / w, size / h);
+  ctx.drawImage(src, Math.round((size - w * k) / 2), Math.round((size - h * k) / 2), Math.round(w * k), Math.round(h * k));
+  // en blanco y grises (se conservan los detalles del dibujo)
+  const im = ctx.getImageData(0, 0, size, size), d = im.data;
+  let lo = 255, hi = 0;
+  for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 20) { const l = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; lo = Math.min(lo, l); hi = Math.max(hi, l); }
+  const span = Math.max(1, hi - lo);
+  for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) { const l = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; d[i] = d[i + 1] = d[i + 2] = 125 + 130 * (l - lo) / span; }
+  ctx.putImageData(im, 0, 0);
+  return c;
+}
+const normTxt = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
 const UI = {
-  root: null, cat: 'entities', ctxOpen: false, flashA: 0, pointerOverUI: false, modals: [], tipT: 0, catalogOpen: true,
+  root: null, cat: 'entities', ctxOpen: false, flashA: 0, pointerOverUI: false, modals: [], tipT: 0, catalogOpen: true, filter: '', grpSel: {},
   $(sel) { return document.querySelector(sel); },
   el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; },
   init() {
     this.root = this.$('#ui');
-    // barra superior
-    const top = this.el('div', 'topbar');
-    top.innerHTML = `
-      <div class="grp">
-        <button class="tb" id="btnMenu" title="Menú (Esc)"><img src="${iconURL('menu')}"></button>
-        <button class="tb" id="btnCatalog" title="Catálogo"><img src="${iconURL('book')}"></button>
-      </div>
-      <div class="grp tools" id="tools"></div>
-      <div class="grp">
-        <button class="tb" id="btnPause" title="Pausa (Espacio)"><img src="${iconURL('pause')}"></button>
-        <button class="tb" id="btnSlow" title="Cámara lenta (G)"><img src="${iconURL('slow')}"></button>
-        <button class="tb" id="btnUndo" title="Deshacer (Ctrl+Z)"><img src="${iconURL('undo')}"></button>
-        <button class="tb" id="btnLimbs" title="Vista de extremidades (L)"><img src="${iconURL('limbs')}"></button>
-        <button class="tb" id="btnLight" title="Día / noche"><img src="${iconURL('light')}"></button>
-        <button class="tb" id="btnClear" title="Limpiar escena"><img src="${iconURL('trash')}"></button>
-        <button class="tb" id="btnSettings" title="Ajustes"><img src="${iconURL('gear')}"></button>
-        <button class="tb" id="btnHelp" title="Controles"><img src="${iconURL('help')}"></button>
+    // ---- caja de juguetes (izquierda): categorías, filtro, objetos y botones de abajo ----
+    const box = this.el('div', 'toybox');
+    box.innerHTML = `
+      <div class="tbx-cats" id="cats"></div>
+      <div class="tbx-head" id="ihead"></div>
+      <div class="tbx-filter"><img src="${iconURL('search', 24)}"><input id="filter" type="text" placeholder="Filtrar" spellcheck="false" autocomplete="off"><button id="filterX" title="Borrar el filtro">✕</button></div>
+      <div class="tbx-grid" id="igrid"></div>
+      <div class="tbx-bottom">
+        <button class="tbx-b" id="bSettings" title="Ajustes"><img src="${iconURL('gear')}"></button>
+        <button class="tbx-b" id="bEnv" title="Entorno"><img src="${iconURL('env')}"></button>
+        <button class="tbx-b" id="bClearAll" title="Borrar todo"><img src="${iconURL('trash')}"></button>
+        <button class="tbx-b" id="bClearDebris" title="Borrar restos"><img src="${iconURL('debris')}"></button>
+        <button class="tbx-b" id="bClearLiving" title="Borrar seres vivos"><img src="${iconURL('skull')}"></button>
       </div>`;
-    this.root.appendChild(top);
-    const tools = top.querySelector('#tools');
-    const modeBtn = this.el('button', 'tb modebtn', `<img src="${iconURL('tools')}">`);
-    modeBtn.id = 'btnMode'; modeBtn.title = 'Herramientas / poderes (Ctrl)';
-    modeBtn.onclick = () => this.setMode(Input.mode === 'powers' ? 'tools' : 'powers');
-    tools.appendChild(modeBtn);
-    const tbar = this.el('div', 'tgrp'); tbar.id = 'toolsBar'; tools.appendChild(tbar);
-    const pbar = this.el('div', 'tgrp'); pbar.id = 'powersBar'; pbar.style.display = 'none'; tools.appendChild(pbar);
-    const groups = []; for (const t of TOOLS) (groups[t.grp - 1] = groups[t.grp - 1] || []).push(t.id);
-    for (const g of groups) {
-      const sep = this.el('div', 'sep'); tbar.appendChild(sep);
-      for (const id of g) {
-        const t = TOOLS.find((x) => x.id === id);
-        const b = this.el('button', 'tb tool', `<img src="${iconURL(id)}">`);
-        b.dataset.tool = id; b.title = `${t.name} (${t.key}${g.length > 1 ? `, pulsa ${t.key} otra vez para la siguiente` : ''})`;
-        b.onclick = () => this.setTool(id);
-        tbar.appendChild(b);
-      }
-    }
-    pbar.appendChild(this.el('div', 'sep'));
-    const picon = { push: 'push', pull: 'pull', lift: 'lift', lightning: 'lightning', pyro: 'fire', freezep: 'freeze', explode: 'explode', heal: 'heal' };
-    for (const pw of POWERS) {
-      const b = this.el('button', 'tb power', `<img src="${iconURL(picon[pw.id])}">`);
-      b.dataset.power = pw.id; b.title = pw.name;
-      b.onclick = () => { Powers.current = pw.id; this.setMode('powers'); };
-      pbar.appendChild(b);
-    }
-    top.querySelector('#btnMenu').onclick = () => this.openPause();
-    top.querySelector('#btnCatalog').onclick = () => this.toggleCatalog();
-    top.querySelector('#btnPause').onclick = () => Game.togglePause();
-    top.querySelector('#btnSlow').onclick = () => Game.toggleSlow();
-    top.querySelector('#btnUndo').onclick = () => { if (!Undo.pop()) this.toast('Nada que deshacer'); };
-    top.querySelector('#btnLimbs').onclick = () => { Input.limbView = !Input.limbView; this.refreshTop(); };
-    top.querySelector('#btnLight').onclick = () => { Settings.ambient = Settings.ambient > 0.6 ? 0.12 : 1; saveSettings(); this.refreshTop(); this.toast(Settings.ambient < 1 ? 'Modo noche' : 'Modo día'); };
-    top.querySelector('#btnClear').onclick = () => this.confirm('¿Borrar todos los objetos de la escena?', () => { World.clearAll(true); Undo.clear(); this.toast('Escena limpia'); });
-    top.querySelector('#btnSettings').onclick = () => this.openSettings();
-    top.querySelector('#btnHelp').onclick = () => this.openHelp();
-    // catálogo
-    const cat = this.el('div', 'catalog');
-    cat.innerHTML = `<div class="cats" id="cats"></div><div class="items"><div class="ihead" id="ihead"></div><div class="igrid" id="igrid"></div><div class="idesc" id="idesc"></div></div>`;
-    this.root.appendChild(cat);
-    this.catalogEl = cat;
-    const cats = cat.querySelector('#cats');
+    this.root.appendChild(box);
+    this.catalogEl = box;
+    this.boxTab = this.el('button', 'tbx-tab', '‹'); this.boxTab.title = 'Mostrar / ocultar los objetos';
+    this.boxTab.onclick = () => this.toggleCatalog();
+    this.root.appendChild(this.boxTab);
+    const cats = box.querySelector('#cats');
     for (const c of CATEGORIES) {
       const b = this.el('button', 'cat');
       b.dataset.cat = c.id; b.title = c.name;
-      if (CAT_ICON[c.id]) b.appendChild(thumbCanvas(DEFS[CAT_ICON[c.id]], 40));
-      else { const im = this.el('img'); im.src = iconURL(c.id === 'contraptions' ? 'tools' : 'energy', 36); b.appendChild(im); }
-      b.onclick = () => { this.cat = c.id; this.buildItems(); };
+      let src = null;
+      try { src = CAT_ICON[c.id] ? thumbCanvas(DEFS[CAT_ICON[c.id]], 40) : null; } catch (e) {}
+      if (!src) { const ic = new Image(); ic.src = iconURL(c.id === 'contraptions' ? 'tools' : 'energy', 36); b.appendChild(ic); ic.onload = () => { b.innerHTML = ''; b.appendChild(whiteIcon(ic, 30)); }; }
+      else b.appendChild(whiteIcon(src, 30));
+      b.onclick = () => { this.cat = c.id; this.setFilter(''); Sound.play('ui'); };
       cats.appendChild(b);
     }
-    // información flotante, menú contextual, avisos, pista
+    const fi = box.querySelector('#filter');
+    fi.addEventListener('input', () => { this.filter = fi.value; this.buildItems(); });
+    fi.addEventListener('keydown', (e) => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); fi.blur(); } e.stopPropagation(); });
+    fi.addEventListener('keyup', (e) => e.stopPropagation());
+    box.querySelector('#filterX').onclick = () => { this.setFilter(''); };
+    box.querySelector('#bSettings').onclick = () => this.openSettings();
+    box.querySelector('#bEnv').onclick = () => this.openEnvironment();
+    box.querySelector('#bClearAll').onclick = () => this.confirm('¿Borrar todo lo que hay en la escena?', () => Clear.everything());
+    box.querySelector('#bClearDebris').onclick = () => Clear.debris();
+    box.querySelector('#bClearLiving').onclick = () => Clear.living();
+    // ---- herramientas y poderes (derecha) ----
+    const rb = this.el('div', 'rightbar');
+    rb.innerHTML = `<div class="rb-tabs"><button id="tabTools" title="Herramientas (${keyLabel(keyOf('toolsPowers'))})"><img src="${iconURL('tools')}"></button><button id="tabPowers" title="Poderes (${keyLabel(keyOf('toolsPowers'))})"><img src="${iconURL('powers')}"></button></div><div class="rb-name" id="rbName">HERRAMIENTAS</div><div class="rb-list" id="toolsBar"></div><div class="rb-list" id="powersBar" style="display:none"></div>`;
+    this.root.appendChild(rb);
+    this.rightEl = rb;
+    rb.querySelector('#tabTools').onclick = () => { this.setMode('tools'); Sound.play('ui'); };
+    rb.querySelector('#tabPowers').onclick = () => { this.setMode('powers'); Sound.play('ui'); };
+    const tbar = rb.querySelector('#toolsBar'), pbar = rb.querySelector('#powersBar');
+    const groups = []; for (const t of TOOLS) (groups[t.grp - 1] = groups[t.grp - 1] || []).push(t);
+    groups.forEach((g, gi) => {
+      const n = gi + 1;
+      this.grpSel[n] = g[0].id;
+      const b = this.el('button', 'rbt tool' + (g.length > 1 ? ' multi' : ''), `<img src="${iconURL(g[0].id, 28)}"><i>${n}</i>`);
+      b.dataset.grp = n;
+      b.onclick = () => {
+        const cur = TOOLS.find((t) => t.id === Input.tool);
+        if (Input.mode === 'tools' && cur && cur.grp === n && g.length > 1) Input.toolKey(n);
+        else { this.setTool(this.grpSel[n]); Sound.play('ui'); }
+      };
+      b.oncontextmenu = (e) => { e.preventDefault(); this.openFlyout(b, g); };
+      b.onmouseenter = () => this.showLabel(b, TOOLS.find((t) => t.id === this.grpSel[n]).name + (g.length > 1 ? `  (${g.length}: clic derecho para elegir)` : ''));
+      b.onmouseleave = () => this.hideLabel();
+      tbar.appendChild(b);
+    });
+    const picon = { push: 'push', pull: 'pull', lift: 'lift', lightning: 'lightning', pyro: 'fire', freezep: 'freeze', explode: 'explode', heal: 'heal' };
+    for (const pw of POWERS) {
+      const b = this.el('button', 'rbt power', `<img src="${iconURL(picon[pw.id], 28)}">`);
+      b.dataset.power = pw.id;
+      b.onclick = () => { Powers.current = pw.id; this.setMode('powers'); Sound.play('ui'); };
+      b.onmouseenter = () => this.showLabel(b, pw.name);
+      b.onmouseleave = () => this.hideLabel();
+      pbar.appendChild(b);
+    }
+    this.label = this.el('div', 'rblabel'); this.root.appendChild(this.label);
+    this.flyout = this.el('div', 'flyout'); this.root.appendChild(this.flyout);
+    // ---- indicadores (arriba a la derecha) ----
+    const st = this.el('div', 'status');
+    st.innerHTML = `
+      <button class="st" id="stMenu" title="Menú (Esc)"><img src="${iconURL('menu')}"></button>
+      <button class="st" id="stTool" title="Herramienta actual"><img></button>
+      <button class="st" id="stItem" title="Objeto elegido para aparecer (clic: deseleccionar)"></button>
+      <button class="st" id="stPause" title="Detener / reanudar el tiempo (${keyLabel(keyOf('pause'))})"><img></button>
+      <button class="st wide" id="stTime" title="Cámara lenta (${keyLabel(keyOf('slowmo'))})"><img src="${iconURL('clock')}"><span id="stPct">100%</span></button>
+      <button class="st" id="stDetail" title="Vista detalle (${keyLabel(keyOf('info'))})"><img src="${iconURL('eye')}"></button>
+      <button class="st" id="stThermal" title="Visión térmica (${keyLabel(keyOf('thermal'))})"><img src="${iconURL('thermo')}"></button>
+      <button class="st" id="stHelp" title="Controles (${keyLabel(keyOf('help'))})"><img src="${iconURL('help')}"></button>`;
+    this.root.appendChild(st);
+    this.statusEl = st;
+    st.querySelector('#stMenu').onclick = () => this.openPause();
+    st.querySelector('#stTool').onclick = () => this.setMode(Input.mode === 'powers' ? 'tools' : 'powers');
+    st.querySelector('#stItem').onclick = () => { if (Input.spawnDef) { Input.cancelSpawn(); Sound.play('ui'); } };
+    st.querySelector('#stPause').onclick = () => Game.togglePause();
+    st.querySelector('#stTime').onclick = () => Game.toggleSlow();
+    st.querySelector('#stDetail').onclick = () => Input.doAction('info');
+    st.querySelector('#stThermal').onclick = () => Input.doAction('thermal');
+    st.querySelector('#stHelp').onclick = () => this.openHelp();
+    // ---- información flotante, menú contextual, avisos, pista ----
     this.tip = this.el('div', 'tip'); this.root.appendChild(this.tip);
+    this.itip = this.el('div', 'tip itip'); this.root.appendChild(this.itip);
+    this.ttag = this.el('div', 'ttag'); this.root.appendChild(this.ttag);
     this.ctx = this.el('div', 'ctx'); this.root.appendChild(this.ctx);
-    this.toasts = this.el('div', 'toasts'); this.root.appendChild(this.toasts);
+    this.toasts = this.el('div', 'notes'); this.root.appendChild(this.toasts);
     this.hint = this.el('div', 'hint'); this.root.appendChild(this.hint);
     this.fps = this.el('div', 'fps'); this.root.appendChild(this.fps);
-    this.pausedTag = this.el('div', 'pausedtag', 'PAUSA'); this.root.appendChild(this.pausedTag);
     // botones táctiles
     this.touchBar = this.el('div', 'touchbar');
     this.touchBar.innerHTML = `<button id="tQ">Q</button><button id="tE">E</button><button id="tF">F</button><button id="tRot">⟳</button><button id="tCancel">✕</button>`;
@@ -7202,84 +7404,173 @@ const UI = {
     // detectar si el puntero está sobre la interfaz
     this.root.addEventListener('pointerover', (e) => { this.pointerOverUI = e.target !== this.root && !e.target.classList.contains('passthru'); });
     this.root.addEventListener('pointerout', () => { this.pointerOverUI = false; });
+    document.addEventListener('pointerdown', (e) => { if (this.flyout.style.display === 'block' && !this.flyout.contains(e.target)) this.flyout.style.display = 'none'; }, true);
     this.buildItems();
     this.setTool('drag');
     this.refreshTop();
-    if (window.innerWidth < 700) this.toggleCatalog(false);
+    if (window.innerWidth < 760) this.toggleCatalog(false);
   },
+  // ancho que ocupan los paneles (para centrar la cámara en lo que queda libre)
+  sideWidths() {
+    const l = this.catalogOpen && !this.uiHidden && this.catalogEl ? this.catalogEl.offsetWidth : 0;
+    const r = !this.uiHidden && this.rightEl ? this.rightEl.offsetWidth : 0;
+    return [l, r];
+  },
+  setFilter(v) { this.filter = v; const fi = this.$('#filter'); if (fi) fi.value = v; this.buildItems(); },
   buildItems() {
-    for (const b of this.catalogEl.querySelectorAll('.cat')) b.classList.toggle('on', b.dataset.cat === this.cat);
+    const f = normTxt(this.filter.trim());
+    for (const b of this.catalogEl.querySelectorAll('.cat')) b.classList.toggle('on', !f && b.dataset.cat === this.cat);
     const c = CATEGORIES.find((x) => x.id === this.cat);
-    this.$('#ihead').textContent = c.name;
+    this.$('#ihead').textContent = f ? `Resultados: «${this.filter.trim()}»` : c.name;
+    this.$('#filterX').style.visibility = f ? 'visible' : 'hidden';
     const grid = this.$('#igrid'); grid.innerHTML = '';
-    const desc = this.$('#idesc');
-    desc.textContent = `Elige un objeto y mantén ${keyLabel(keyOf('spawnLeft'))} o ${keyLabel(keyOf('spawnRight'))} sobre el escenario: suelta para colocarlo.`;
-    if (this.cat === 'contraptions') {
+    const tile = (d, name, desc, extra) => {
+      const b = this.el('button', 'item');
+      try { b.appendChild(thumbCanvas(d, 64, 64)); } catch (er) {}
+      b.dataset.id = d.id;
+      b.onclick = () => {
+        Sound.unlock(); Sound.play('ui');
+        if (Input.spawnDef && Input.spawnDef.id === d.id) Input.cancelSpawn(); else Input.setSpawn(d);
+        this.refreshCatalogSel(); this.$('#filter').blur();
+        if (window.innerWidth < 760) this.toggleCatalog(false);
+      };
+      b.onmouseenter = () => this.showItemTip(b, name, desc);
+      b.onmouseleave = () => { this.itip.style.display = 'none'; };
+      if (extra) extra(b);
+      grid.appendChild(b);
+    };
+    if (!f && this.cat === 'contraptions') {
       const l = Contraptions.list();
-      desc.innerHTML = l.length ? `Clic: elegir el artefacto y mantén ${keyLabel(keyOf('spawnLeft'))}/${keyLabel(keyOf('spawnRight'))} para colocarlo · Clic derecho: borrarlo del catálogo.` : 'Aún no hay artefactos. Selecciona objetos (arrastra en vacío para hacer un recuadro) o señala una construcción, abre el menú con clic derecho y elige <b>Guardar como artefacto</b>.';
+      if (!l.length) grid.appendChild(this.el('div', 'tbx-empty', 'Aún no hay artefactos. Selecciona objetos (arrastra en un hueco para hacer un recuadro) o señala una construcción y, con clic derecho, elige <b>Guardar</b>.'));
       l.forEach((e, i) => {
         const d = Contraptions.def(i);
-        const b = this.el('button', 'item');
-        try { b.appendChild(thumbCanvas(d, 76, 52)); } catch (er) {}
-        b.appendChild(this.el('span', '', e.name));
-        b.dataset.id = d.id;
-        b.onclick = () => { Sound.unlock(); Sound.play('ui'); if (Input.spawnDef && Input.spawnDef.id === d.id) Input.cancelSpawn(); else Input.setSpawn(d); this.refreshCatalogSel(); if (window.innerWidth < 700) this.toggleCatalog(false); };
-        b.oncontextmenu = (ev) => { ev.preventDefault(); this.confirm(`¿Borrar el artefacto «${e.name}»?`, () => { Contraptions.remove(i); if (Input.spawnDef && Input.spawnDef.blueprint) Input.cancelSpawn(); this.buildItems(); }); };
-        b.onmouseenter = () => { desc.innerHTML = `<b>${e.name}</b><br>${d.desc}`; };
-        grid.appendChild(b);
+        tile(d, e.name, (d.desc || '') + '<br><i>Clic derecho: borrarlo del catálogo</i>', (b) => {
+          b.oncontextmenu = (ev) => { ev.preventDefault(); this.confirm(`¿Borrar el artefacto «${e.name}»?`, () => { Contraptions.remove(i); if (Input.spawnDef && Input.spawnDef.blueprint) Input.cancelSpawn(); this.buildItems(); }); };
+        });
       });
       this.refreshCatalogSel();
       return;
     }
+    let n = 0;
     for (const d of DEF_LIST) {
-      if (d.cat !== this.cat) continue;
-      const b = this.el('button', 'item');
-      b.appendChild(thumbCanvas(d, 76, 52));
-      b.appendChild(this.el('span', '', d.name));
-      b.onclick = () => { Sound.unlock(); Sound.play('ui'); if (Input.spawnDef === d) Input.cancelSpawn(); else Input.setSpawn(d); this.refreshCatalogSel(); if (window.innerWidth < 700) this.toggleCatalog(false); };
-      b.onmouseenter = () => { desc.innerHTML = `<b>${d.name}</b><br>${d.desc || ''}`; };
-      b.dataset.id = d.id;
-      grid.appendChild(b);
+      if (!d.cat || d.cat === 'map' || !CATEGORIES.some((x) => x.id === d.cat)) continue;
+      if (f ? !normTxt(d.name + ' ' + (d.desc || '')).includes(f) : d.cat !== this.cat) continue;
+      tile(d, d.name, d.desc || ''); n++;
     }
+    if (f && !n) grid.appendChild(this.el('div', 'tbx-empty', 'No hay nada con ese nombre.'));
     this.refreshCatalogSel();
   },
-  refreshCatalogSel() { for (const b of this.catalogEl.querySelectorAll('.item')) b.classList.toggle('on', Input.spawnDef && b.dataset.id === Input.spawnDef.id); this.refreshHint(); },
-  toggleCatalog(force) { this.catalogOpen = force !== undefined ? force : !this.catalogOpen; this.catalogEl.classList.toggle('closed', !this.catalogOpen); },
+  showItemTip(b, name, desc) {
+    const t = this.itip;
+    t.innerHTML = `<div class="tn">${name}</div>${desc ? `<div class="sub">${desc}</div>` : ''}`;
+    t.style.display = 'block';
+    const r = b.getBoundingClientRect();
+    const x = Math.min(r.right + 8, window.innerWidth - t.offsetWidth - 8), y = Math.min(r.top, window.innerHeight - t.offsetHeight - 8);
+    t.style.transform = `translate(${x}px,${y}px)`;
+  },
+  showLabel(b, txt) {
+    const r = b.getBoundingClientRect();
+    this.label.textContent = txt; this.label.style.display = 'block';
+    this.label.style.transform = `translate(${r.left - this.label.offsetWidth - 8}px,${r.top + r.height / 2 - this.label.offsetHeight / 2}px)`;
+  },
+  hideLabel() { this.label.style.display = 'none'; },
+  // lista de variantes de un grupo de herramientas (clic derecho en su botón)
+  openFlyout(b, g) {
+    this.hideLabel();
+    const fl = this.flyout; fl.innerHTML = '';
+    for (const t of g) {
+      const it = this.el('button', 'fli' + (Input.mode === 'tools' && Input.tool === t.id ? ' on' : ''), `<img src="${iconURL(t.id, 24)}"><span>${t.name}</span>`);
+      it.onclick = () => { fl.style.display = 'none'; this.setTool(t.id); Sound.play('ui'); };
+      fl.appendChild(it);
+    }
+    fl.style.display = 'block';
+    const r = b.getBoundingClientRect();
+    fl.style.left = Math.max(4, r.left - fl.offsetWidth - 6) + 'px';
+    fl.style.top = Math.max(4, Math.min(r.top, window.innerHeight - fl.offsetHeight - 6)) + 'px';
+  },
+  refreshCatalogSel() {
+    for (const b of this.catalogEl.querySelectorAll('.item')) b.classList.toggle('on', !!(Input.spawnDef && b.dataset.id === Input.spawnDef.id));
+    this.refreshHint(); this.refreshTop();
+  },
+  toggleCatalog(force) {
+    this.catalogOpen = force !== undefined ? force : !this.catalogOpen;
+    this.catalogEl.classList.toggle('closed', !this.catalogOpen);
+    this.boxTab.classList.toggle('closed', !this.catalogOpen);
+    this.boxTab.textContent = this.catalogOpen ? '‹' : '›';
+    this.hint.classList.toggle('wide', !this.catalogOpen);
+    this.root.classList.toggle('boxopen', this.catalogOpen);
+    if (!this.catalogOpen) this.itip.style.display = 'none';
+  },
   toggleUI(force) {
     this.uiHidden = force !== undefined ? force : !this.uiHidden;
-    for (const el of [this.root.querySelector('.topbar'), this.catalogEl, this.hint]) el.style.display = this.uiHidden ? 'none' : '';
+    for (const el of [this.catalogEl, this.boxTab, this.rightEl, this.statusEl, this.hint]) el.style.display = this.uiHidden ? 'none' : '';
+    if (this.uiHidden) { this.itip.style.display = 'none'; this.hideLabel(); this.flyout.style.display = 'none'; }
   },
   setMode(m) {
     Input.mode = m; Input.pending = null; Powers.up(); Powers.stopLoop();
     this.$('#toolsBar').style.display = m === 'tools' ? '' : 'none';
     this.$('#powersBar').style.display = m === 'powers' ? '' : 'none';
-    this.$('#btnMode img').src = iconURL(m === 'tools' ? 'tools' : 'powers');
+    this.$('#tabTools').classList.toggle('on', m === 'tools');
+    this.$('#tabPowers').classList.toggle('on', m === 'powers');
+    this.$('#rbName').textContent = m === 'tools' ? 'HERRAMIENTAS' : 'PODERES';
     for (const b of this.root.querySelectorAll('.power')) b.classList.toggle('on', b.dataset.power === Powers.current);
-    this.refreshHint();
+    if (m === 'powers' && this._notePow !== Powers.current && Game.started) this.toast(`Poder: ${(POWERS.find((x) => x.id === Powers.current) || {}).name}`, 1300);
+    this._notePow = m === 'powers' ? Powers.current : null;
+    if (m === 'tools') this._noteTool = null;
+    this.refreshHint(true); this.refreshTop();
   },
   setTool(id) {
     Input.tool = id; Input.pending = null;
+    const t = TOOLS.find((x) => x.id === id);
+    if (t) {
+      this.grpSel[t.grp] = id;
+      const b = this.root.querySelector(`.tool[data-grp="${t.grp}"] img`); if (b) b.src = iconURL(id, 28);
+    }
     if (Input.mode !== 'tools') this.setMode('tools');
-    for (const b of this.root.querySelectorAll('.tool')) b.classList.toggle('on', b.dataset.tool === id);
-    this.refreshHint();
+    for (const b of this.root.querySelectorAll('.tool')) b.classList.toggle('on', !!t && +b.dataset.grp === t.grp);
+    this.refreshHint(true); this.refreshTop();
+    if (this._noteTool !== id && Game.started) { const g = t ? TOOLS.filter((x) => x.grp === t.grp) : []; this.toast(`Herramienta: ${t ? t.name : id}${g.length > 1 ? ` (${g.indexOf(t) + 1}/${g.length})` : ''}`, 1300); }
+    this._noteTool = id;
   },
-  refreshHint() {
-    if (Input.spawnDef) this.hint.innerHTML = `<b>${Input.spawnDef.name}</b> · Mantén <b>${keyLabel(keyOf('spawnLeft'))}</b> o <b>${keyLabel(keyOf('spawnRight'))}</b> para ver dónde aparece (mirando a la izquierda o a la derecha) y suelta para colocarlo · Alt: ajustar a la cuadrícula · Esc o clic en el catálogo: deseleccionar${isTouchDevice ? ' · En táctil: toca un hueco o usa los botones Q/E' : ''}`;
-    else if (Input.mode === 'powers') { const pw = POWERS.find((x) => x.id === Powers.current); this.hint.innerHTML = `<b>Poder: ${pw.name}</b> · ${pw.hint} · Ctrl: volver a herramientas`; }
+  // la pista sólo aparece un rato al cambiar de herramienta, de poder o de objeto
+  refreshHint(show) {
+    if (Input.spawnDef) this.hint.innerHTML = `<b>${Input.spawnDef.name}</b> · Mantén <b>${keyLabel(keyOf('spawnLeft'))}</b> o <b>${keyLabel(keyOf('spawnRight'))}</b> para ver dónde aparece (mirando a la izquierda o a la derecha) y suelta para colocarlo · Alt: ajustar · Esc: deseleccionar${isTouchDevice ? ' · En táctil: toca un hueco o usa los botones Q/E' : ''}`;
+    else if (Input.mode === 'powers') { const pw = POWERS.find((x) => x.id === Powers.current); this.hint.innerHTML = `<b>${pw.name}</b> · ${pw.hint}`; }
     else { const t = TOOLS.find((x) => x.id === Input.tool); this.hint.innerHTML = `<b>${t.name}</b> <span class="kk">${t.key}</span> · ${t.hint.replace('{rot}', keyLabel(keyOf('rotLeft')) + '/' + keyLabel(keyOf('rotRight'))).replace('{pin}', keyLabel(keyOf('pinSnap')))}`; }
+    if (show || Input.spawnDef) {
+      this.hint.classList.add('show');
+      clearTimeout(this._hintT);
+      this._hintT = setTimeout(() => this.hint.classList.remove('show'), Input.spawnDef ? 9000 : 6000);
+    }
   },
   refreshTop() {
-    const p = this.$('#btnPause img'); if (p) p.src = iconURL(Game.paused ? 'play' : 'pause');
-    this.$('#btnPause').classList.toggle('on', Game.paused);
-    this.$('#btnSlow').classList.toggle('on', Game.slow);
-    this.$('#btnLimbs').classList.toggle('on', Input.limbView);
-    this.$('#btnLight').classList.toggle('on', Settings.ambient < 1);
-    this.pausedTag.style.display = Game.paused && Game.started ? 'block' : 'none';
+    if (!this.statusEl) return;
+    const $s = (id) => this.statusEl.querySelector(id);
+    $s('#stPause img').src = iconURL(Game.paused ? 'play' : 'pause');
+    $s('#stPause').classList.toggle('on', Game.paused);
+    const pct = Game.paused ? 0 : Game.slow ? Math.round(Settings.slowmo * 100) : 100;
+    $s('#stPct').textContent = pct + '%';
+    $s('#stTime').classList.toggle('on', Game.slow || Game.paused);
+    $s('#stDetail').classList.toggle('off', !Settings.showInfo);
+    $s('#stThermal').classList.toggle('off', !Settings.thermal);
+    const ti = Input.mode === 'powers' ? { push: 'push', pull: 'pull', lift: 'lift', lightning: 'lightning', pyro: 'fire', freezep: 'freeze', explode: 'explode', heal: 'heal' }[Powers.current] : Input.tool;
+    $s('#stTool img').src = iconURL(ti || 'drag');
+    $s('#stTool').title = 'Herramienta actual: ' + (Input.mode === 'powers' ? (POWERS.find((x) => x.id === Powers.current) || {}).name : (TOOLS.find((x) => x.id === Input.tool) || {}).name);
+    const si = $s('#stItem'), d = Input.spawnDef;
+    if (si._def !== d) {
+      si._def = d; si.innerHTML = '';
+      if (d) { try { si.appendChild(thumbCanvas(d, 40, 40)); } catch (e) {} si.title = d.name + ' (clic: deseleccionar)'; si.classList.remove('off'); }
+      else { si.title = 'Ningún objeto elegido'; si.classList.add('off'); }
+    }
+    // aviso al detener o reanudar el tiempo
+    if (this._paused !== undefined && this._paused !== Game.paused && Game.started && !this._quiet && !this.modalOpen()) this.toast(Game.paused ? 'Pausa' : 'Tiempo reanudado', 1200);
+    this._paused = Game.paused;
   },
+  // avisos (abajo a la derecha, en mayúsculas, como en el original)
   toast(msg, ms = 1800) {
-    const t = this.el('div', 'toast', msg);
+    const t = this.el('div', 'note', msg);
     this.toasts.appendChild(t);
-    while (this.toasts.children.length > 4) this.toasts.firstChild.remove();
+    while (this.toasts.children.length > 5) this.toasts.firstChild.remove();
     setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, ms);
   },
   whiteFlash(a) { this.flashA = Math.max(this.flashA, a); },
@@ -7289,7 +7580,8 @@ const UI = {
     if (this.tipT <= 0) {
       this.tipT = 0.08;
       const h = Input.hover;
-      if (Settings.showInfo && h && h.thing && !h.thing.dead && !this.ctxOpen && !Input.spawnHold && !this.pointerOverUI) {
+      const showing = h && h.thing && !h.thing.dead && !this.ctxOpen && !Input.spawnHold && !this.pointerOverUI;
+      if (Settings.showInfo && showing) {
         const t = h.thing;
         let html = `<div class="tn">${t.name}${h.limb ? ` <span>· ${h.limb.def.name}</span>` : ''}</div>`;
         for (const [txt, col] of t.info()) html += `<div style="color:${col}">${txt}</div>`;
@@ -7297,7 +7589,7 @@ const UI = {
           const L = h.limb;
           html += `<div class="sub">Salud de la extremidad: ${Math.round(L.health * 100)}%${L.broken ? ' · <span style="color:#c070ff">hueso roto</span>' : ''}</div>`;
         }
-        if (t.frozen) html += `<div style="color:#7fd3ff">Congelado</div>`;
+        if (t.frozen || (h.body && h.body._frozen)) html += `<div style="color:#7fd3ff">${t.frozen ? 'Congelado' : 'Esta parte está congelada'}</div>`;
         if (!t.isHuman) {
           const T = t.temp !== undefined ? t.temp : Settings.ambientTemp;
           { const M = t.mass() || t.def.mass || 0; html += `<div class="sub">Masa: ${M >= 10 ? Math.round(M) : M.toFixed(1)} kg · ${Math.round(T)} °C</div>`; }
@@ -7308,64 +7600,144 @@ const UI = {
         const x = Math.min(Input.sx + 16, window.innerWidth - this.tip.offsetWidth - 8), y = Math.min(Input.sy + 18, window.innerHeight - this.tip.offsetHeight - 8);
         this.tip.style.transform = `translate(${x}px,${y}px)`;
       } else this.tip.style.display = 'none';
+      // visión térmica: la temperatura de lo que señalas
+      if (Settings.thermal && showing) {
+        const t = h.thing, L = h.limb;
+        const T = t.isHuman ? (L && L.temp !== undefined ? L.temp : L ? 37 : Heat.tempOf(t)) : Heat.tempOf(t);
+        this.ttag.textContent = `${T.toFixed(1)} °C`; this.ttag.style.display = 'block';
+        const below = Settings.showInfo ? -26 : 18;
+        this.ttag.style.transform = `translate(${Math.min(Input.sx + 16, window.innerWidth - this.ttag.offsetWidth - 6)}px,${Math.max(4, Input.sy + below)}px)`;
+      } else this.ttag.style.display = 'none';
       if (Settings.showFps) { this.fps.style.display = 'block'; this.fps.textContent = `${Game.fps | 0} FPS · ${World.countDynamic()} objetos · ${Effects.n} partículas`; } else this.fps.style.display = 'none';
     }
   },
-  // ---------------- menú contextual ----------------
+  // ---------------- menú contextual (el mismo orden que el original) ----------------
   openContext(sx, sy, wx, wy) {
     const hit = Input.pickAt(wx, wy, 4 / Cam.zoom);
     const items = [];
-    let title = '';
-    if (hit) {
-      const t = hit.thing;
-      title = t.name + (hit.limb ? ` · ${hit.limb.def.name}` : '');
-      const spec = t.isHuman ? t.menu(hit.limb) : t.menu();
-      for (const m of spec) items.push(m);
-      if (items.length) items.push('-');
-      if (t.links.size || t.conns.size) items.push({ label: 'Quitar uniones y cables', fn: () => { Connections.removeThing(t); for (const o of t.links) o.links.delete(t); t.links.clear(); } });
-      items.push({ label: t.frozen ? 'Descongelar' : 'Congelar', fn: () => t.setFrozen(!t.frozen) });
-      items.push({ label: t.noCollide ? 'Activar colisiones' : 'Desactivar colisiones', fn: () => t.setCollide(!!t.noCollide) });
-      items.push({ label: t.weightless ? 'Restaurar gravedad' : 'Hacer ingrávido', fn: () => t.setWeightless(!t.weightless) });
-      if (t.isFlammable()) items.push(t.fire > 0 ? { label: 'Apagar fuego', fn: () => t.extinguish() } : { label: 'Prender fuego', fn: () => t.ignite(1) });
-      items.push({ label: 'Duplicar', fn: () => duplicateThing(t) });
-      items.push({ label: 'Guardar como artefacto', fn: () => Contraptions.save(Input.selection.has(t) ? [...Input.selection] : Blueprint.group(t)) });
-      if (!t.isHuman && !t.def.build) items.push({ label: 'Voltear', fn: () => flipThing(t) });
-      for (const m of extraContextItems(t, hit)) items.push(m);
-      items.push({ label: 'Traer al frente', fn: () => { t.z = ++World.zc; } });
-      items.push({ label: 'Enviar al fondo', fn: () => { let mn = 0; for (const o of World.things) if (!o.isTerrain) mn = Math.min(mn, o.z); t.z = mn - 1; } });
-      items.push({ label: Cam.follow === t ? 'Dejar de seguir' : 'Seguir con la cámara', fn: () => { Cam.follow = Cam.follow === t ? null : t; } });
-      items.push({ label: 'Eliminar', cls: 'danger', fn: () => Input.deleteThings(Input.selection.has(t) ? [...Input.selection] : [t]) });
+    const add = (label, fn, o = {}) => items.push(Object.assign({ label, fn }, o));
+    const sep = () => { if (items.length && items[items.length - 1] !== '-') items.push('-'); };
+    const pasteHere = () => { const ox = Input.wx, oy = Input.wy; Input.wx = wx; Input.wy = wy; try { Input.paste(); } finally { Input.wx = ox; Input.wy = oy; } };
+    const hasClip = !!(Input.clip && Input.clip.things && Input.clip.things.length);
+    if (hit && !hit.thing.isTerrain) {
+      const t = hit.thing, L = hit.limb, b = hit.body;
+      const group = () => (Input.selection.has(t) ? [...Input.selection] : [t]);
+      add('Eliminar', () => Input.deleteThings(group()));
+      add('Copiar', () => { const bp = Blueprint.capture(group()); if (bp) { Input.clip = bp; this.toast(`Copiado: ${bp.things.length} objeto(s)`); } });
+      add('Pegar', pasteHere, { off: !hasClip });
+      add('Guardar', () => Contraptions.save(Input.selection.has(t) ? [...Input.selection] : Blueprint.group(t)));
+      sep();
+      add(Cam.follow === t ? 'Dejar de seguir' : 'Seguir', () => { Cam.follow = Cam.follow === t ? null : t; });
+      add('Activar', () => activateThing(t));
+      if (t.isFlammable()) add(t.fire > 0 ? 'Apagar fuego' : 'Prender fuego', () => (t.fire > 0 ? t.extinguish() : t.ignite(1)));
+      if (b && t.bodies.includes(b)) add(b._frozen ? 'Descongelar' : 'Congelar', () => t.setBodyFrozen(b, !b._frozen));
+      if (t.bodies.length > 1 && t.anyFrozen() && !(b && b._frozen && t.frozenIdx().length === 1)) add('Descongelar todo', () => t.setFrozen(false));
+      add(t.noCollide ? 'Activar colisiones' : 'Desactivar colisiones', () => t.setCollide(!!t.noCollide));
+      add(t.weightless ? 'Quitar ingravidez' : 'Hacer ingrávido', () => t.setWeightless(!t.weightless));
+      if (!t.isHuman && !t.def.build) add('Redimensionar', () => openResize(group()));
+      add('Editar capa', () => this.openLayer(t));
+      sep();
+      add('Fijar temperatura', () => { const v = askNumber('Temperatura en °C', Math.round(t.isHuman && L && L.temp !== undefined ? L.temp : Heat.tempOf(t))); if (v === null) return; if (t.isHuman) for (const l of t.limbList) l.temp = v; else t.temp = v; });
+      add('Fijar ángulo', () => {
+        const ref = t.isHuman ? t.root.body : t.main;
+        const v = askNumber('Ángulo en grados', Math.round(ref.getAngle() * 180 / Math.PI)); if (v === null) return;
+        const c = ref.getPosition(), cx = c.x, cy = c.y, da = v * Math.PI / 180 - ref.getAngle();
+        for (const bb of t.bodies) { const p = bb.getPosition(); const r = rot(p.x - cx, p.y - cy, da); bb.setTransform(V(cx + r[0], cy + r[1]), bb.getAngle() + da); bb.setAwake(true); }
+      });
+      if (t.isHuman) {
+        add('Inspeccionar', () => this.openInspect(t, L));
+        if (L && !L.destroyed && !L.broken && t.kind !== 'android') add('Romper hueso', () => t.breakBone(L));
+        for (const [id, name] of HUMAN_POSES) add(name, () => t.setPose(id), { on: t.forcedPose === id });
+        if (t.forcedPose) add('Pose normal', () => t.setPose(t.forcedPose));
+        if (!t.zombie) add(t.aiOn() ? 'IA: activada' : 'IA: desactivada', () => { t.ai = !t.aiOn(); this.toast(t.ai ? 'IA activada' : 'IA desactivada'); if (!t.ai) { t.aiGoal = null; t.aiAim = null; t.walking = false; } }, { on: t.aiOn() });
+      } else add('Inspeccionar', () => this.openInspect(t, null));
+      // lo propio de cada objeto o persona
+      const spec = (t.isHuman ? t.menu(L) : t.menu()).filter((m) => !/^(Romper hueso|Voltear)/.test(m.label));
+      if (spec.length) { sep(); for (const m of spec) items.push(m); }
+      sep();
+      if (t.grabs && (t.grabs.F || t.grabs.B)) add('Soltar lo agarrado', () => { for (const s of ['F', 'B']) if (t.grabs[s]) t.releaseGrab(s); });
+      add('Voltear', () => flipThing(t));
+      add('Duplicar', () => duplicateThing(t));
+      if (t.links.size || t.conns.size) add('Quitar uniones y cables', () => { Connections.removeThing(t); for (const o of t.links) o.links.delete(t); t.links.clear(); });
+      for (const m of extraContextItems(t, hit)) if (!/^(Redimensionar|Fijar ángulo|Fijar temperatura)/.test(m.label)) items.push(m);
     } else {
       const c = Connections.near(wx, wy, 8 / Cam.zoom);
       if (c) {
-        title = CONN_TYPES[c.type].name;
-        if (c.type === 'motor') items.push({ label: 'Invertir giro', fn: () => { c.dir = -(c.dir || 4); } });
-        if ((c.type === 'rope' || c.type === 'cable' || c.type === 'chain') && c.joint) { items.push({ label: 'Acortar cuerda', fn: () => c.joint.setMaxLength(Math.max(0.1, c.joint.getMaxLength() * 0.8)) }); items.push({ label: 'Alargar cuerda', fn: () => c.joint.setMaxLength(c.joint.getMaxLength() * 1.25) }); }
-        items.push({ label: 'Eliminar unión', cls: 'danger', fn: () => Connections.remove(c) });
+        add('Eliminar', () => Connections.remove(c));
+        if (c.type === 'motor') add('Invertir giro', () => { c.dir = -(c.dir || 4); });
+        if ((c.type === 'rope' || c.type === 'cable' || c.type === 'chain') && c.joint) { add('Acortar', () => c.joint.setMaxLength(Math.max(0.1, c.joint.getMaxLength() * 0.8))); add('Alargar', () => c.joint.setMaxLength(c.joint.getMaxLength() * 1.25)); }
       } else {
-        title = 'Escena';
-        if (Input.lastDef) items.push({ label: `Colocar aquí: ${Input.lastDef.name}`, fn: () => { const d = Input.spawnDef; Input.spawnDef = Input.lastDef; Input.spawnAt(wx, wy); Input.spawnDef = d; } });
-        items.push({ label: 'Detener todo', fn: () => { for (let b = Phys.world.getBodyList(); b; b = b.getNext()) { b.setLinearVelocity(V(0, 0)); b.setAngularVelocity(0); } } });
-        items.push({ label: 'Curar a todos', fn: () => { for (const t of World.things) if (t.isHuman) t.heal(); } });
-        items.push({ label: 'Apagar todos los fuegos', fn: () => { for (const t of World.things) t.extinguish && t.extinguish(); } });
-        items.push({ label: Settings.ambient < 1 ? 'Hacer de día' : 'Hacer de noche', fn: () => { Settings.ambient = Settings.ambient < 1 ? 1 : 0.12; saveSettings(); this.refreshTop(); } });
-        items.push({ label: 'Limpiar escena', cls: 'danger', fn: () => { World.clearAll(true); Undo.clear(); } });
+        add('Pegar', pasteHere, { off: !hasClip });
+        if (Input.lastDef) add(`Colocar aquí: ${Input.lastDef.name}`, () => { const d = Input.spawnDef; Input.spawnDef = Input.lastDef; Input.spawnAt(wx, wy); Input.spawnDef = d; });
+        sep();
+        add('Detener todo', () => { for (let bb = Phys.world.getBodyList(); bb; bb = bb.getNext()) { bb.setLinearVelocity(V(0, 0)); bb.setAngularVelocity(0); } });
+        add('Curar a todos', () => { for (const t of World.things) if (t.isHuman) t.heal(); });
+        add('Apagar todos los fuegos', () => { for (const t of World.things) t.extinguish && t.extinguish(); });
+        add(Settings.ambient < 1 ? 'Hacer de día' : 'Hacer de noche', () => { Settings.ambient = Settings.ambient < 1 ? 1 : 0.12; saveSettings(); this.refreshTop(); });
+        sep();
+        add('Borrar restos', () => Clear.debris());
+        add('Borrar seres vivos', () => Clear.living());
+        add('Borrar todo', () => this.confirm('¿Borrar todo lo que hay en la escena?', () => Clear.everything()));
       }
     }
-    this.ctx.innerHTML = `<div class="ct">${title}</div>`;
+    while (items[items.length - 1] === '-') items.pop();
+    this.ctx.innerHTML = '';
     for (const m of items) {
       if (m === '-') { this.ctx.appendChild(this.el('div', 'csep')); continue; }
-      const b = this.el('button', 'ci ' + (m.cls || ''), m.label);
-      b.onclick = () => { this.closeContext(); Sound.play('ui'); m.fn(); };
+      const b = this.el('button', 'ci' + (m.off ? ' off' : '') + (m.on ? ' chk' : ''), m.label);
+      if (!m.off) b.onclick = () => { this.closeContext(); Sound.play('ui'); m.fn(); };
       this.ctx.appendChild(b);
     }
     this.ctx.style.display = 'block';
+    this.ctx.scrollTop = 0;
     const w = this.ctx.offsetWidth, h = this.ctx.offsetHeight;
-    this.ctx.style.left = Math.min(sx, window.innerWidth - w - 6) + 'px';
-    this.ctx.style.top = Math.min(sy, window.innerHeight - h - 6) + 'px';
+    this.ctx.style.left = Math.max(4, Math.min(sx, window.innerWidth - w - 6)) + 'px';
+    this.ctx.style.top = Math.max(4, Math.min(sy, window.innerHeight - h - 6)) + 'px';
     this.ctxOpen = true;
   },
   closeContext() { if (this.ctx) this.ctx.style.display = 'none'; this.ctxOpen = false; },
+  // ---------------- inspeccionar ----------------
+  openInspect(t, limb) {
+    let html = `<h2>${t.name}</h2><div class="inspect">`;
+    for (const [txt, col] of t.info()) html += `<div style="color:${col}">${txt}</div>`;
+    if (t.isHuman) {
+      html += '<table><tr><th>Parte</th><th>Salud</th><th>Hueso</th><th>Temp.</th></tr>';
+      for (const L of t.limbList) {
+        const h = L.destroyed ? 0 : clamp(L.health, 0, 1);
+        const col = L.destroyed ? '#777' : h > 0.5 ? '#3ce65a' : h > 0.25 ? '#e8d23c' : '#e8493c';
+        html += `<tr${L === limb ? ' class="sel"' : ''}><td>${L.def.name}</td><td><span class="hb"><i style="width:${Math.round(h * 100)}%;background:${col}"></i></span> ${L.destroyed ? 'destruida' : Math.round(h * 100) + '%'}</td><td>${L.destroyed ? '—' : L.broken ? '<span style="color:#c070ff">roto</span>' : L.severed ? 'arrancado' : 'sano'}</td><td>${L.destroyed ? '—' : (L.temp !== undefined ? L.temp : 37).toFixed(1) + ' °C'}</td></tr>`;
+      }
+      html += '</table>';
+      html += `<div class="sub">Sangre: ${Math.round(clamp(t.blood, 0, 1) * 100)}% · Consciencia: ${Math.round(clamp(t.consc, 0, 1) * 100)}% · IA: ${t.zombie ? 'zombi' : t.aiOn() ? 'activada' : 'desactivada'}</div>`;
+    } else {
+      const M = t.mass() || t.def.mass || 0;
+      html += `<div class="sub">Masa: ${M >= 10 ? Math.round(M) : M.toFixed(2)} kg · Temperatura: ${Heat.tempOf(t).toFixed(1)} °C${t.def.mat ? ' · Material: ' + t.def.mat : ''}</div>`;
+      if (t.def.desc) html += `<p>${t.def.desc}</p>`;
+    }
+    html += '</div><div class="row"><button class="btn" id="iBack">Cerrar</button></div>';
+    const b = this.openModal(html);
+    b.querySelector('#iBack').onclick = () => this.closeModal();
+  },
+  // ---------------- editar capa (delante / detrás de los demás) ----------------
+  openLayer(t) {
+    const b = this.openModal(`<h2>Editar capa: ${t.name}</h2><div class="col">
+      <button class="btn" id="lTop">Traer al frente</button><button class="btn" id="lUp">Subir una capa</button>
+      <button class="btn" id="lDown">Bajar una capa</button><button class="btn" id="lBottom">Enviar al fondo</button></div>
+      <div class="row"><button class="btn" id="lBack">Cerrar</button></div>`);
+    const others = () => World.things.filter((o) => o !== t && !o.isTerrain && !o.dead);
+    b.querySelector('#lTop').onclick = () => { t.z = ++World.zc; this.toast('Al frente'); };
+    b.querySelector('#lBottom').onclick = () => { let mn = 0; for (const o of others()) mn = Math.min(mn, o.z); t.z = mn - 1; this.toast('Al fondo'); };
+    const step = (dir) => {
+      const zs = others().map((o) => o.z).filter((z) => (dir > 0 ? z > t.z : z < t.z)).sort((a, c) => (dir > 0 ? a - c : c - a));
+      if (!zs.length) { this.toast(dir > 0 ? 'Ya está delante de todo' : 'Ya está detrás de todo'); return; }
+      t.z = zs.length > 1 ? (zs[0] + zs[1]) / 2 : zs[0] + dir;
+      World.zc = Math.max(World.zc, Math.ceil(t.z));
+      this.toast(dir > 0 ? 'Una capa más arriba' : 'Una capa más abajo');
+    };
+    b.querySelector('#lUp').onclick = () => step(1);
+    b.querySelector('#lDown').onclick = () => step(-1);
+    b.querySelector('#lBack').onclick = () => this.closeModal();
+  },
   finishCapture(combo) {
     const act = this.capture, btn = this.captureBtn;
     this.capture = null; this.captureBtn = null;
@@ -7415,7 +7787,7 @@ const UI = {
   openPause() {
     if (!Game.started) return;
     const wasPaused = Game.paused;
-    Game.setPaused(true);
+    this._quiet = true; Game.setPaused(true); this._quiet = false;
     const b = this.openModal(`<h2>Menú</h2>
       <div class="col">
         <button class="btn big" id="pRes">Continuar</button>
@@ -7425,7 +7797,7 @@ const UI = {
         <button class="btn" id="pSet">Ajustes</button>
         <button class="btn" id="pHelp">Controles</button>
         <button class="btn" id="pMain">Menú principal</button>
-      </div>`, { onClose: () => { Game.setPaused(wasPaused); } });
+      </div>`, { onClose: () => { this._quiet = true; Game.setPaused(wasPaused); this._quiet = false; } });
     b.querySelector('#pRes').onclick = () => this.closeModal();
     b.querySelector('#pMaps').onclick = () => this.openMaps(false);
     b.querySelector('#pSave').onclick = () => this.openSaves(true);
@@ -7442,48 +7814,16 @@ const UI = {
     for (const el of b.querySelectorAll('.mapbtn')) el.onclick = () => { loadMap(el.dataset.id); this.closeAllModals(); if (!Game.started) Game.start(true); else Game.setPaused(false); this.toast('Mapa: ' + MAPS[el.dataset.id].name); };
     b.querySelector('#mBack').onclick = () => this.closeModal();
   },
-  openSettings() {
+  // filas de ajustes (deslizadores y casillas) que se guardan al cambiarlas
+  settingsRows(rows) {
     const S = Settings;
-    const rows = [
-      ['range', 'volume', 'Volumen', 0, 1, 0.05],
-      ['range', 'gravity', 'Gravedad', 0, 2, 0.05],
-      ['range', 'blood', 'Cantidad de sangre', 0, 3, 0.1],
-      ['range', 'ambient', 'Luz ambiente', 0.05, 1, 0.05],
-      ['range', 'slowmo', 'Velocidad cámara lenta', 0.05, 0.6, 0.05],
-      ['range', 'particleMul', 'Límite de partículas', 0.2, 1, 0.1],
-      ['check', 'gore', 'Desmembramiento'],
-      ['check', 'getUp', 'Las personas se levantan solas'],
-      ['check', 'variety', 'Apariencia variada de las personas'],
-      ['check', 'grid', 'Mostrar cuadrícula'],
-      ['check', 'shake', 'Temblor de cámara'],
-      ['check', 'hiDpi', 'Alta resolución (pantallas retina)'],
-      ['check', 'showFps', 'Mostrar FPS'],
-      ['check', 'thermal', 'Visión térmica'],
-      ['range', 'snapGrid', 'Ajuste a la cuadrícula con Alt (m)', 0.05, 2, 0.05],
-      ['range', 'snapAngle', 'Ajuste de ángulo con Alt (°)', 1, 90, 1, 0],
-      ['range', 'sigLimit', 'Límite de propagación de señales', 100, 10000, 100, 0],
-    ];
-    const envRows = [
-      ['range', 'ambientTemp', 'Temperatura ambiente (°C)', -60, 120, 1, 0],
-      ['check', 'rain', 'Lluvia'],
-      ['check', 'snow', 'Nieve'],
-      ['range', 'fog', 'Niebla', 0, 1, 0.05],
-      ['range', 'lightningChance', 'Tormenta eléctrica (rayos)', 0, 1, 0.05],
-    ];
-    const rowHtml = (r) => (r[0] === 'range'
+    return rows.map((r) => (r[0] === 'range'
       ? `<label class="srow"><span>${r[2]}</span><input type="range" data-k="${r[1]}" data-d="${r[6] !== undefined ? r[6] : 2}" min="${r[3]}" max="${r[4]}" step="${r[5]}" value="${S[r[1]]}"><em data-v="${r[1]}">${(+S[r[1]]).toFixed(r[6] !== undefined ? r[6] : 2)}</em></label>`
-      : `<label class="srow chk"><span>${r[2]}</span><input type="checkbox" data-k="${r[1]}" ${S[r[1]] ? 'checked' : ''}></label>`);
-    let html = '<h2>Ajustes</h2><div class="settings">';
-    for (const r of rows) html += rowHtml(r);
-    html += '</div><h2 style="margin-top:16px">Entorno</h2><div class="settings">';
-    for (const r of envRows) html += rowHtml(r);
-    html += '</div><h2 style="margin-top:16px">Teclas</h2><div class="settings keys">';
-    for (const [id, label] of KEY_ACTIONS) html += `<div class="srow chk"><span>${label}</span><button class="btn keybtn" data-act="${id}">${keyLabel(keyOf(id))}</button></div>`;
-    html += '</div><div class="row"><button class="btn" id="kReset">Restablecer teclas</button><button class="btn" id="sBack">Hecho</button></div>';
-    const b = this.openModal(html);
-    for (const kb of b.querySelectorAll('.keybtn')) kb.onclick = () => { this.capture = kb.dataset.act; this.captureBtn = kb; kb.textContent = 'Pulsa una tecla…'; kb.classList.add('cap'); };
-    b.querySelector('#kReset').onclick = () => { Settings.keys = {}; saveSettings(); for (const kb of b.querySelectorAll('.keybtn')) kb.textContent = keyLabel(keyOf(kb.dataset.act)); this.toast('Teclas restablecidas'); };
-    for (const inp of b.querySelectorAll('input')) {
+      : `<label class="srow chk"><span>${r[2]}</span><input type="checkbox" data-k="${r[1]}" ${S[r[1]] ? 'checked' : ''}></label>`)).join('');
+  },
+  bindSettings(b) {
+    const S = Settings;
+    for (const inp of b.querySelectorAll('input[data-k]')) {
       inp.oninput = () => {
         const k = inp.dataset.k;
         S[k] = inp.type === 'checkbox' ? inp.checked : parseFloat(inp.value);
@@ -7496,26 +7836,70 @@ const UI = {
         saveSettings();
       };
     }
+  },
+  openSettings() {
+    const rows = [
+      ['range', 'volume', 'Volumen', 0, 1, 0.05],
+      ['range', 'blood', 'Cantidad de sangre', 0, 3, 0.1],
+      ['range', 'particleMul', 'Límite de partículas', 0.2, 1, 0.1],
+      ['check', 'gore', 'Desmembramiento'],
+      ['check', 'getUp', 'Las personas se levantan solas'],
+      ['check', 'aiDefault', 'IA de las personas activada (se puede cambiar en cada una con clic derecho)'],
+      ['check', 'variety', 'Apariencia variada de las personas'],
+      ['check', 'grid', 'Mostrar cuadrícula'],
+      ['check', 'shake', 'Temblor de cámara'],
+      ['check', 'hiDpi', 'Alta resolución (pantallas retina)'],
+      ['check', 'showFps', 'Mostrar FPS'],
+      ['range', 'snapGrid', 'Ajuste a la cuadrícula con Alt (m)', 0.05, 2, 0.05],
+      ['range', 'snapAngle', 'Ajuste de ángulo con Alt (°)', 1, 90, 1, 0],
+      ['range', 'sigLimit', 'Límite de propagación de señales', 100, 10000, 100, 0],
+    ];
+    let html = `<h2>Ajustes</h2><div class="settings">${this.settingsRows(rows)}</div>`;
+    html += '<h2 style="margin-top:16px">Teclas</h2><div class="settings keys">';
+    for (const [id, label] of KEY_ACTIONS) html += `<div class="srow chk"><span>${label}</span><button class="btn keybtn" data-act="${id}">${keyLabel(keyOf(id))}</button></div>`;
+    html += '</div><div class="row"><button class="btn" id="sEnv">Entorno…</button><button class="btn" id="kReset">Restablecer teclas</button><button class="btn" id="sBack">Hecho</button></div>';
+    const b = this.openModal(html);
+    for (const kb of b.querySelectorAll('.keybtn')) kb.onclick = () => { this.capture = kb.dataset.act; this.captureBtn = kb; kb.textContent = 'Pulsa una tecla…'; kb.classList.add('cap'); };
+    b.querySelector('#kReset').onclick = () => { Settings.keys = {}; saveSettings(); for (const kb of b.querySelectorAll('.keybtn')) kb.textContent = keyLabel(keyOf(kb.dataset.act)); this.toast('Teclas restablecidas'); };
+    this.bindSettings(b);
+    b.querySelector('#sEnv').onclick = () => this.openEnvironment();
     b.querySelector('#sBack').onclick = () => this.closeModal();
+  },
+  // entorno: gravedad, luz, temperatura, tiempo y velocidad de la cámara lenta
+  openEnvironment() {
+    const rows = [
+      ['range', 'gravity', 'Gravedad', 0, 2, 0.05],
+      ['range', 'ambient', 'Luz ambiente (día / noche)', 0.05, 1, 0.05],
+      ['range', 'ambientTemp', 'Temperatura ambiente (°C)', -60, 120, 1, 0],
+      ['check', 'rain', 'Lluvia'],
+      ['check', 'snow', 'Nieve'],
+      ['range', 'fog', 'Niebla', 0, 1, 0.05],
+      ['range', 'lightningChance', 'Tormenta eléctrica (rayos)', 0, 1, 0.05],
+      ['range', 'slowmo', 'Velocidad de la cámara lenta', 0.05, 0.6, 0.05],
+    ];
+    const b = this.openModal(`<h2>Entorno</h2><div class="settings">${this.settingsRows(rows)}</div><div class="row"><button class="btn" id="eDay">Día</button><button class="btn" id="eNight">Noche</button><button class="btn" id="eBack">Hecho</button></div>`);
+    this.bindSettings(b);
+    const setAmb = (v) => { Settings.ambient = v; saveSettings(); const r = b.querySelector('input[data-k="ambient"]'); r.value = v; b.querySelector('em[data-v="ambient"]').textContent = v.toFixed(2); this.refreshTop(); };
+    b.querySelector('#eDay').onclick = () => setAmb(1);
+    b.querySelector('#eNight').onclick = () => setAmb(0.12);
+    b.querySelector('#eBack').onclick = () => this.closeModal();
   },
   openHelp() {
     const K = (a) => keyLabel(keyOf(a));
     const html = `<h2>Controles</h2><div class="help">
-      <div><b>Catálogo</b> elige un objeto con un clic · <b>mantén ${K('spawnLeft')} / ${K('spawnRight')}</b> para ver su silueta en el cursor y <b>suelta</b> para que aparezca mirando a la izquierda / derecha</div>
-      <div><b>Clic izquierdo</b> agarrar y arrastrar · en un hueco: seleccionar con un recuadro · <b>Mayús + clic</b> añadir o quitar de la selección (arrastrar uno mueve toda la selección)</div>
-      <div><b>${K('rotLeft')} / ${K('rotRight')}</b> girar lo que arrastras (<b>Mayús</b>: más rápido). Al girarlo, mantiene ese ángulo mientras no lo sueltes, aunque choque con algo blando; sólo lo rígido (el suelo, paredes, objetos congelados o mucho más pesados) puede torcerlo</div>
-      <div><b>Alt</b> ajustar a la cuadrícula y al ángulo al mover, girar o colocar</div>
-      <div><b>${K('activate')}</b> activar lo que señalas o lo seleccionado (mantener: uso continuo, por ejemplo para disparar)</div>
-      <div><b>Clic derecho</b> menú contextual (congelar, redimensionar, borrar uniones...) · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara, también mientras agarras algo</div>
-      <div><b>${K('delete')}</b> borrar lo seleccionado o lo que señalas · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar</div>
-      <div><b>${K('pause')}</b> detener el tiempo (en pausa, lo que arrastras se coloca sin física y lo congelado se puede mover) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle</div>
-      <div><b>1-9</b> herramientas (pulsa el mismo número otra vez para pasar a la siguiente de su grupo) · <b>${K('toolsPowers')}</b> herramientas / poderes · <b>${K('toggleUI')}</b> mostrar u ocultar el catálogo · <b>${K('pinSnap')}</b> con la bisagra: al centro de masa · <b>Esc</b> menú</div>
-      <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas (ahí también hay acciones sin tecla, como congelar, voltear o duplicar). En Ajustes → Entorno: temperatura, lluvia, nieve, niebla y tormenta.</div>
+      <div><b>Objetos</b> (a la izquierda): elige uno con un clic (o escribe en <b>Filtrar</b>) · <b>mantén ${K('spawnLeft')} / ${K('spawnRight')}</b> para ver su silueta en el cursor y <b>suelta</b> para que aparezca mirando a la izquierda / derecha</div>
+      <div><b>Herramientas y poderes</b> (a la derecha): <b>1-9</b> o un clic en su botón (pulsa otra vez para la siguiente del grupo; clic derecho para elegir) · <b>${K('toolsPowers')}</b> cambia entre herramientas y poderes</div>
+      <div><b>Clic izquierdo</b> agarrar y arrastrar · en un hueco: seleccionar con un recuadro · <b>Mayús + clic</b> añadir o quitar de la selección</div>
+      <div><b>${K('rotLeft')} / ${K('rotRight')}</b> girar lo que arrastras (<b>Mayús</b>: más rápido); mantiene ese ángulo mientras no lo sueltes · <b>${K('flip')}</b> voltear lo que arrastras o señalas (una persona sigue sosteniendo lo que tenga en las manos)</div>
+      <div><b>${K('activate')}</b> activar lo que señalas (mantener: uso continuo) · arrastrando a alguien por el brazo, <b>${K('activate')}</b> hace que su mano agarre lo que tenga cerca (otra vez: soltar)</div>
+      <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA...) · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
+      <div><b>${K('delete')}</b> borrar · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar · <b>Alt</b> ajustar a la cuadrícula</div>
+      <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas)</div>
+      <div><b>${K('toggleUI')}</b> ocultar la interfaz · <b>${K('pinSnap')}</b> con la bisagra: al centro de masa · <b>Esc</b> menú</div>
+      <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
+      <div class="sub">IA: las personas huyen de los zombis (o los atacan si tienen un arma) y se defienden de quien les ataque. Se activa o desactiva en cada una con clic derecho.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable de cobre a lámparas, motores, máquinas... o a una persona. Señales: botones, detectores, contadores y retardadores se unen con el cable de activación.</div>
-      <div class="sub">Cables de colores: las señales por el cable rojo o azul hacen cosas distintas (invertir motores, frenar vehículos, cambiar la polaridad del imán...). Los convertidores pasan señales de un color a otro.</div>
-      <div class="sub">Conductos de líquido: unen recipientes y personas; con un presurizador el líquido sale a presión, y las válvulas lo dejan pasar o lo cortan.</div>
-      <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer). Prueba a mezclar tritio con otros sueros.</div>
-      <div class="sub">Consejos: suelta un arma junto a la mano de una persona y la empuñará; actívala a ella (F) para que dispare. Arrastra accesorios (mira láser, silenciador...) encima de un arma para montarlos.</div>
+      <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
     const b = this.openModal(html);
@@ -7552,7 +7936,7 @@ const SaveSys = {
     const idx = new Map();
     things.forEach((t, i) => {
       idx.set(t, i);
-      out.things.push({ id: t.isHuman ? t.kind : t.def.id, human: !!t.isHuman, flip: t.isHuman ? t.facing < 0 : t.flip, frozen: t.frozen, on: !!t.on, z: t.z,
+      out.things.push({ id: t.isHuman ? t.kind : t.def.id, human: !!t.isHuman, flip: t.isHuman ? t.facing < 0 : t.flip, frozen: t.frozen, fz: t.frozenIdx(), on: !!t.on, z: t.z,
         bodies: t.bodies.map((b) => { const p = b.getPosition(); return [+p.x.toFixed(4), +p.y.toFixed(4), +b.getAngle().toFixed(4)]; }) });
     });
     const mo = World.mapObjs || [];
@@ -7578,7 +7962,7 @@ const SaveSys = {
         else t = new Item(DEFS[r.id], p[0], p[1], { flip: r.flip, angle: p[2] });
       } catch (e) { made.push(null); continue; }
       t.bodies.forEach((b, k) => { const q = r.bodies[k]; if (q) b.setTransform(V(q[0], q[1]), q[2]); });
-      if (r.frozen) t.setFrozen(true);
+      restoreFrozen(t, r);
       if (r.on && !t.on && t.activate) { try { t.activate(); } catch (e) {} }
       t.z = r.z || t.z; World.zc = Math.max(World.zc, t.z);
       made.push(t);
@@ -9421,7 +9805,7 @@ const Blueprint = {
     const idx = new Map(), recs = [];
     things.forEach((t, i) => {
       idx.set(t, i);
-      recs.push({ id: t.isHuman ? t.kind : t.def.id, human: !!t.isHuman, flip: t.isHuman ? t.facing < 0 : t.flip, frozen: t.frozen, on: !!t.on, liq: t.liq ? Object.assign({}, t.liq.c) : undefined,
+      recs.push({ id: t.isHuman ? t.kind : t.def.id, human: !!t.isHuman, flip: t.isHuman ? t.facing < 0 : t.flip, frozen: t.frozen, fz: t.frozenIdx(), on: !!t.on, liq: t.liq ? Object.assign({}, t.liq.c) : undefined,
         bodies: t.bodies.map((b) => { const p = b.getPosition(); return [+(p.x - cx).toFixed(4), +(p.y - cy).toFixed(4), +b.getAngle().toFixed(4)]; }) });
     });
     const conns = [];
@@ -9445,7 +9829,7 @@ const Blueprint = {
       if (!t) { made.push(null); continue; }
       t.bodies.forEach((b, k) => { const q = r.bodies[k]; if (q) { b.setTransform(V(x + q[0], y + q[1]), q[2]); b.setLinearVelocity(V(0, 0)); b.setAngularVelocity(0); } });
       if (r.liq && t.liq) { t.liq.c = Object.assign({}, r.liq); }
-      if (r.frozen) t.setFrozen(true);
+      restoreFrozen(t, r);
       if (r.on && !t.on && t.activate) { try { t.activate(); } catch (e) {} }
       made.push(t);
     }
@@ -10751,7 +11135,7 @@ function crumble(it, pieceDef, cols, rows, cw, ch) {
   const b = it.main, a = b.getAngle(), v = b.getLinearVelocity(); const pts = [];
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) pts.push(it.worldPt(c * cw + cw / 2, r * ch + ch / 2));
   it.destroy(true); Sound.play('impact_stone', pts[0][0], pts[0][1], 1); Effects.dust(pts[0][0], pts[0][1], 14, [150, 140, 130]);
-  for (const p of pts) { const k = new Item(DEFS[pieceDef], p[0], p[1], { angle: a }); k.main.setLinearVelocity(V(v.x + gauss(), v.y + gauss())); }
+  for (const p of pts) { const k = new Item(DEFS[pieceDef], p[0], p[1], { angle: a }); k.isDebris = true; k.main.setLinearVelocity(V(v.x + gauss(), v.y + gauss())); }
 }
 def('cobble_wall', {
   name: 'Muro de mampostería', cat: 'props', mat: 'concrete', mass: 220, hp: 7, fragile: 32, desc: 'Muro de piedras irregulares. Se desmorona con explosiones o golpes muy fuertes.',
@@ -11623,6 +12007,668 @@ MapEditor.register();
   };
 }
 
+/* ---- 31_v6.js ---- */
+/* =========================================================================
+   VERSIÓN 6: congelar por partes, poses de las personas, agarrar con la
+   mano, borrar restos / seres vivos, vista detalle y pantallas de ayuda
+   ========================================================================= */
+
+/* ---------------- congelar por partes (una extremidad o el objeto) ---------------- */
+Thing.prototype.setBodyFrozen = function (b, on) {
+  if (!b || !this.bodies.includes(b)) return;
+  if (on && !b._frozen) { b._wasType = b.getType(); b.setType('static'); b._frozen = true; }
+  else if (!on && b._frozen) { b.setType(b._wasType || 'dynamic'); b._frozen = false; b.setAwake(true); }
+  this.frozen = this.bodies.length > 0 && this.bodies.every((x) => x._frozen);
+};
+Thing.prototype.setFrozen = function (on) { for (const b of this.bodies) this.setBodyFrozen(b, on); };
+Thing.prototype.frozenIdx = function () { const r = []; this.bodies.forEach((b, i) => { if (b._frozen) r.push(i); }); return r; };
+Thing.prototype.anyFrozen = function () { return this.bodies.some((b) => b._frozen); };
+function restoreFrozen(t, r) {
+  if (r.fz && r.fz.length) { for (const i of r.fz) if (t.bodies[i]) t.setBodyFrozen(t.bodies[i], true); }
+  else if (r.frozen) t.setFrozen(true);
+}
+
+/* ---------------- poses de las personas (las del menú del original) ---------------- */
+const HUMAN_POSES = [['stumble', 'Tropezar'], ['walk', 'Caminar'], ['cower', 'Encogerse'], ['sit', 'Sentarse'], ['flat', 'Pose rígida']];
+const POSE_CURL = { head: 0.55, middleBody: -0.4, lowerBody: -0.35, upperLegF: -2.1, lowerLegF: 2.3, upperLegB: -2.0, lowerLegB: 2.3, upperArmF: -2.4, lowerArmF: -2.1, upperArmB: -2.2, lowerArmB: -2.1, footF: 0.3, footB: 0.3 };
+const POSE_SIT = { head: 0.05, middleBody: -0.05, lowerBody: 0, upperLegF: -1.5, lowerLegF: 1.45, upperLegB: -1.45, lowerLegB: 1.5, upperArmF: -0.35, lowerArmF: -0.7, upperArmB: -0.25, lowerArmB: -0.6, footF: -0.15, footB: -0.15 };
+Human.prototype.setPose = function (p) {
+  this.forcedPose = this.forcedPose === p ? null : p;
+  this.walking = false;
+  if ((this.forcedPose === 'cower' || this.forcedPose === 'sit') && (this.state === 'stand' || this.state === 'getup')) this.setState('lying');
+  UI.toast(this.forcedPose ? HUMAN_POSES.find((x) => x[0] === this.forcedPose)[1] : 'Pose normal');
+};
+Human.prototype.posing = function () { return this.forcedPose && this.alive && this.consc >= 0.35 && !this.frozenSolid && this.shock <= 0; };
+{
+  const cp = Human.prototype.computePose;
+  Human.prototype.computePose = function (dt) {
+    const fp = this.forcedPose;
+    if (!fp || !this.posing()) return cp.call(this, dt);
+    if (fp === 'flat') { const P = {}; for (const k in POSES.stand) P[k] = 0; return { P, str: 2.4, bal: this.state === 'stand' ? 1 : 0 }; }
+    if (fp === 'cower') return { P: Object.assign({}, POSE_CURL), str: 1, bal: 0 };
+    if (fp === 'sit') return { P: Object.assign({}, POSE_SIT), str: 1, bal: 0 };
+    const r = cp.call(this, dt);
+    if (this.state === 'stand' && !this.dragged) {
+      const T = this.t, s = this.seed, w = Math.sin(T * (fp === 'walk' ? 6 : 7.5) + s);
+      Object.assign(r.P, { upperLegF: -0.12 - w * 0.5, lowerLegF: 0.12 + Math.max(0, w) * 0.75, upperLegB: -0.12 + w * 0.5, lowerLegB: 0.12 + Math.max(0, -w) * 0.75 });
+      if (!this.held.F && !this.held.B) Object.assign(r.P, { upperArmF: 0.3 * w, lowerArmF: -0.35, upperArmB: -0.3 * w, lowerArmB: -0.35 });
+      if (fp === 'stumble') {
+        const n = (o) => noise1(T * 1.7, s + o);
+        r.P.head = 0.25 + n(1) * 0.3; r.P.middleBody = -0.15 + n(2) * 0.25; r.P.upperArmF = -1.2 + n(3) * 0.9; r.P.upperArmB = -1.0 + n(4) * 0.9;
+        r.bal *= 0.72;
+      }
+    }
+    return r;
+  };
+  // sentado o encogido no intenta levantarse
+  const us = Human.prototype.updateState;
+  Human.prototype.updateState = function (dt) {
+    const fp = this.forcedPose;
+    if ((fp === 'cower' || fp === 'sit') && this.posing()) {
+      this.stateT += dt;
+      if (this.state !== 'lying' && !this.dragged) this.setState('lying');
+      return;
+    }
+    return us.call(this, dt);
+  };
+  // sentado: el tronco se mantiene derecho
+  const fo = Human.prototype.forces;
+  Human.prototype.forces = function (dt) {
+    fo.call(this, dt);
+    if (this.dead || !this.root || this.forcedPose !== 'sit' || !this.posing() || this.dragged) return;
+    const ch = this.root.body, a = angWrap(ch.getAngle()), w = ch.getAngularVelocity();
+    const tq = clamp(-a * 700 - w * 90, -900, 900) * clamp(this.muscle(), 0, 1.2);
+    const tm = tq * HUMAN_MASS_MUL; ch.applyTorque(tm * 0.6, true); this.limbs.middleBody.body.applyTorque(tm * 0.25, true); this.limbs.lowerBody.body.applyTorque(tm * 0.15, true);
+  };
+  // caminar y tropezar
+  const hu = Human.prototype.update;
+  Human.prototype.update = function (dt) {
+    hu.call(this, dt);
+    if (this.dead) return;
+    const fp = this.forcedPose;
+    if (!this.zombie) {
+      if ((fp === 'walk' || fp === 'stumble') && this.posing() && this.state === 'stand' && !this.dragged) {
+        this.walking = true;
+        if (fp === 'stumble') { this._stT = (this._stT || 0) - dt; if (this._stT <= 0) { this._stT = rand(0.5, 1.4); this.walkDir = Math.random() < 0.7 ? this.facing : -this.facing; } }
+        else this.walkDir = this.facing;
+        // si se queda atascado contra algo, se da la vuelta
+        const vx = this.root.body.getLinearVelocity().x;
+        if (Math.abs(vx) < 0.12) { this._stuckT = (this._stuckT || 0) + dt; if (this._stuckT > 1.6) { this._stuckT = 0; this.flipFacing(); } } else this._stuckT = 0;
+      } else this.walking = false;
+    }
+    this.updateGrabs(dt);
+  };
+}
+
+/* ---------------- agarrar con la mano (F mientras arrastras un brazo) ---------------- */
+Human.prototype.toggleGrab = function (side) {
+  this.grabs = this.grabs || {};
+  if (this.grabs[side]) { this.releaseGrab(side); UI.toast('Suelta'); return; }
+  const L = this.limbs['lowerArm' + side];
+  if (!L || L.destroyed || !L.connected) return;
+  if (!this.alive || this.consc < 0.35) { UI.toast('No puede agarrar nada: está inconsciente'); return; }
+  const hp = this.handPoint(side), own = new Set(this.bodies);
+  let found = null;
+  for (const r of [0, 0.06, 0.12, 0.18, 0.25]) {
+    const n = r ? 12 : 1;
+    for (let k = 0; k < n && !found; k++) {
+      const a = (k / n) * TAU, x = hp[0] + Math.cos(a) * r, y = hp[1] + Math.sin(a) * r, P = V(x, y);
+      queryAABB(x - 0.01, y - 0.01, x + 0.01, y + 0.01, (f) => {
+        if (f.isSensor() || own.has(f.getBody()) || !f.testPoint(P)) return true;
+        const t = thingOf(f); if (!t || t.dead) return true;
+        found = { b: f.getBody(), t }; return false;
+      });
+    }
+    if (found) break;
+  }
+  if (!found) { UI.toast('No hay nada cerca de la mano'); return; }
+  const t = found.t;
+  // un arma u objeto con empuñadura: lo sostiene como siempre
+  if (!t.isTerrain && !t.isHuman && t.def && t.def.grip && !t.holder && !t.frozen) { Holding.attach(t, this, side); return; }
+  const hb = L.body;
+  const j = Phys.world.createJoint(pl.RevoluteJoint({ collideConnected: false }, hb, found.b, V(hp[0], hp[1])));
+  j._grab = true;
+  setNoCollide(hb, found.b, true);
+  this.grabs[side] = { j, b: found.b, t, hb, heavy: !lightThing(t, this) };
+  Sound.play('clunk', hp[0], hp[1], 0.5, { pitch: 1.4 });
+  UI.toast(`Agarra: ${t.isTerrain ? 'el suelo' : t.name}`);
+};
+Human.prototype.releaseGrab = function (side) {
+  const g = this.grabs && this.grabs[side]; if (!g) return;
+  this.grabs[side] = null;
+  try { Phys.world.destroyJoint(g.j); } catch (e) {}
+  if (!g.t.dead) Stuck.pend.push({ a: g.hb, b: g.b, t: 0.3 });
+  // el hombro vuelve a su rango normal (si se había ampliado para el brazo al revés)
+  const U = this.limbs['upperArm' + side];
+  if (g.wide && U && U.joint === g.wideJ) U.joint.setLimits(g.wide[0], g.wide[1]);
+};
+Human.prototype.updateGrabs = function (dt) {
+  if (!this.grabs) return;
+  for (const side of ['F', 'B']) {
+    const g = this.grabs[side]; if (!g) continue;
+    const L = this.limbs['lowerArm' + side];
+    let bad = !this.alive || this.consc < 0.35 || L.destroyed || !L.connected || g.t.dead || (g.t.isHuman && !g.t.bodies.includes(g.b));
+    if (!bad) { try { if (g.j.getReactionForce(1 / (dt / Phys.substeps)).length() > 6500 * (this.strengthMul || 1)) bad = true; } catch (e) { bad = true; } }
+    if (bad) this.releaseGrab(side);
+  }
+};
+{
+  // al destruir a alguien que agarra algo, se sueltan sus manos
+  const hd = Human.prototype.destroy;
+  Human.prototype.destroy = function (silent) { if (this.grabs) for (const s of ['F', 'B']) if (this.grabs[s]) this.releaseGrab(s); return hd.call(this, silent); };
+  const pf = Input.pressF.bind(Input);
+  Input.pressF = function () {
+    const d = this.drag;
+    if (d && d.kind === 'drag' && d.thing && d.thing.isHuman) {
+      const L = bodyData(d.body).part;
+      if (L && /^(upper|lower)Arm[FB]$/.test(L.id)) { const side = L.id.slice(-1); if (!d.thing.held[side]) { d.thing.toggleGrab(side); this.fHeld = []; return; } }
+    }
+    return pf();
+  };
+}
+
+/* ---------------- voltear (R) sin soltar nada ---------------- */
+// lo ligero (armas, objetos pequeños de una pieza) gira con la persona y lo sigue sosteniendo;
+// lo pesado o fijo (un coche, el suelo, otra persona) se queda donde está y la mano lo sigue
+// agarrando por el mismo punto, con el brazo al revés
+function lightThing(t, h) {
+  if (!t || t.dead || t.isHuman || t.isTerrain || t.mapObj || !t.main || t.bodies.length !== 1) return false;
+  if (t.anyFrozen() || t.main.getType() !== 'dynamic' || t.mass() > 25) return false;
+  if (t.holder && t.holder !== h) return false;
+  return !Connections.list.some((c) => c.bA === t.main || c.bB === t.main);
+}
+// refleja un cuerpo respecto a la vertical x = ax (vx: velocidad horizontal que se conserva)
+function mirrorBody(b, ax, vx) {
+  const p = b.getPosition(), v = b.getLinearVelocity();
+  b.setTransform(V(2 * ax - p.x, p.y), -b.getAngle());
+  b.setLinearVelocity(V(2 * vx - v.x, v.y)); b.setAngularVelocity(-b.getAngularVelocity());
+  b.setAwake(true);
+}
+const cpv = (v) => ({ x: v.x, y: v.y });
+// la unión del ratón sigue sujetando el mismo punto de lo que arrastras
+Input.remirrorDrag = function (b) {
+  const d = this.drag; if (!d || d.kind !== 'drag' || d.body !== b || !d.joint) return;
+  const j = d.joint, la = b.getLocalPoint(j.getAnchorB()), lp = V(-la.x, la.y), wp = b.getWorldPoint(lp);
+  const nj = Phys.world.createJoint(pl.MouseJoint({ maxForce: j.getMaxForce(), frequencyHz: j.getFrequency(), dampingRatio: j.getDampingRatio() }, Phys.ground, b, V(wp.x, wp.y)));
+  try { Phys.world.destroyJoint(j); } catch (e) {}
+  nj.setTarget(V(this.wx, this.wy)); d.joint = nj; d.local = lp;
+  if (d.pivot) { d.pivot.setTransform(V(wp.x, wp.y), 0); d.pivot.setLinearVelocity(V(0, 0)); this.makePivot(d, wp.x, wp.y); }
+};
+// coloca el brazo para que la mano llegue a (tx, ty) (dos huesos); si hace falta, amplía el giro del hombro
+Human.prototype.reachArm = function (side, tx, ty) {
+  const U = this.limbs['upperArm' + side], A = this.limbs['lowerArm' + side];
+  if (!U || !A || U.destroyed || A.destroyed || !U.joint || !A.joint) return null;
+  const jU = U.joint, jA = A.joint, P = U.parent.body;
+  const S = jU.getAnchorA(), sU = jU.getLocalAnchorB(), eU = jA.getLocalAnchorA(), eA = jA.getLocalAnchorB();
+  const hp = this.handPoint(side), hA = A.body.getLocalPoint(V(hp[0], hp[1]));
+  const l1 = Math.hypot(eU.x - sU.x, eU.y - sU.y), l2 = Math.hypot(hA.x - eA.x, hA.y - eA.y);
+  const dx = tx - S.x, dy = ty - S.y;
+  const D = clamp(Math.hypot(dx, dy), Math.abs(l1 - l2) + 1e-4, l1 + l2 - 1e-4);
+  const base = Math.atan2(dy, dx), k = Math.acos(clamp((l1 * l1 + D * D - l2 * l2) / (2 * l1 * D), -1, 1));
+  const o1 = Math.atan2(eU.y - sU.y, eU.x - sU.x), o2 = Math.atan2(hA.y - eA.y, hA.x - eA.x);
+  const pa = P.getAngle(), lo = jA.getLowerLimit(), hi = jA.getUpperLimit();
+  // dos soluciones (el codo hacia un lado o hacia el otro): la que respeta el codo
+  let best = null;
+  for (const sg of [1, -1]) {
+    const a1 = base + sg * k, ex = S.x + Math.cos(a1) * l1, ey = S.y + Math.sin(a1) * l1;
+    const a2 = Math.atan2(ty - ey, tx - ex);
+    const t1 = pa + angWrap(a1 - o1 - pa), t2 = t1 + angWrap((a2 - o2) - (a1 - o1));
+    const rel = t2 - t1, err = rel < lo ? lo - rel : rel > hi ? rel - hi : 0;
+    if (!best || err < best.err - 1e-6) best = { t1, t2, err };
+  }
+  const r1 = rot(sU.x, sU.y, best.t1);
+  U.body.setTransform(V(S.x - r1[0], S.y - r1[1]), best.t1);
+  const E = U.body.getWorldPoint(eU), r2 = rot(eA.x, eA.y, best.t2);
+  A.body.setTransform(V(E.x - r2[0], E.y - r2[1]), best.t2);
+  const v = P.getLinearVelocity();
+  for (const b of [U.body, A.body]) { b.setLinearVelocity(V(v.x, v.y)); b.setAngularVelocity(0); b.setAwake(true); }
+  const ja = best.t1 - pa, ulo = jU.getLowerLimit(), uhi = jU.getUpperLimit();
+  if (ja < ulo || ja > uhi) { jU.setLimits(Math.min(ulo, ja - 0.25), Math.max(uhi, ja + 0.25)); return { wide: [ulo, uhi], j: jU }; }
+  return {};
+};
+Human.prototype.flipFacing = function () {
+  if (this.frozenSolid || this.dead || !this.root || this.anyFrozen()) return false;
+  const live = this.limbList.filter((L) => !L.destroyed && L.body);
+  if (!live.length) return false;
+  // grupos de partes unidas (el cuerpo y los trozos sueltos): cada uno gira sobre su propio eje
+  const had = new Set(live.filter((L) => L.joint && L.parent && !L.parent.destroyed));
+  const top = (L) => { while (had.has(L)) L = L.parent; return L; };
+  const groups = new Map();
+  for (const L of live) { const r = top(L); if (!groups.has(r)) groups.set(r, { limbs: [] }); groups.get(r).limbs.push(L); }
+  const grabs = [];
+  if (this.grabs) for (const s of ['F', 'B']) {
+    const g = this.grabs[s]; if (!g) continue;
+    grabs.push({ s, g, la: cpv(g.j.getLocalAnchorA()), lb: cpv(g.j.getLocalAnchorB()), w: cpv(g.j.getAnchorB()), light: lightThing(g.t, this) });
+  }
+  const d = Input.drag, dragL = d && d.kind === 'drag' && d.thing === this ? this.limbList.find((L) => L.body === d.body) : null;
+  for (const g of groups.values()) {
+    const core = g.limbs.filter((L) => /^(upper|middle|lower)Body$/.test(L.id)), pts = core.length ? core : g.limbs;
+    g.ax = pts.reduce((a, L) => a + L.body.getWorldCenter().x, 0) / pts.length;
+    // si lo arrastras (y no agarra nada pesado), gira alrededor del punto que sujetas
+    if (dragL && g.limbs.includes(dragL) && !grabs.some((e) => !e.light)) g.ax = d.joint.getAnchorB().x;
+    let M = 0, vx = 0;
+    for (const L of g.limbs) { const m = L.body.getMass(); M += m; vx += L.body.getLinearVelocity().x * m; }
+    g.vx = M ? vx / M : 0;
+  }
+  const groupOf = (L) => groups.get(top(L));
+  // lo que sostiene en las manos: se suelta un instante y se vuelve a poner en la mano ya girada
+  const held = [];
+  for (const s of ['F', 'B']) {
+    const it = this.held[s], r = it && Holding.map.get(it); if (!r) continue;
+    Holding.map.delete(it); try { Phys.world.destroyJoint(r.j); } catch (e) {}
+    this.held[s] = null; it.holder = null; held.push([it, s]);
+  }
+  // lo clavado en el cuerpo: lo ligero gira con la persona (sigue clavado); lo demás se desclava
+  const stuck = [];
+  for (const r of [...Stuck.list]) {
+    if (r.target !== this) continue;
+    const it = r.item, j = r.joint;
+    if (!j || !r.limb || !lightThing(it, null) || !Stuck.list.every((o) => o.item !== it || o.target === this)) { Stuck.drop(r); continue; }
+    stuck.push({ r, la: cpv(j.getLocalAnchorA()), lb: cpv(j.getLocalAnchorB()), axis: cpv(j.getLocalAxisA()), ref: j.getReferenceAngle(), lo: j.getLowerLimit(), hi: j.getUpperLimit() });
+    try { Phys.world.destroyJoint(j); } catch (e) {}
+    r.joint = null; Stuck.list.splice(Stuck.list.indexOf(r), 1);
+  }
+  for (const e of grabs) { try { Phys.world.destroyJoint(e.g.j); } catch (er) {} this.grabs[e.s] = null; }
+  // el cuerpo: se deshacen las articulaciones, se refleja y se vuelven a unir
+  for (const L of live) if (L.joint) { try { Phys.world.destroyJoint(L.joint); } catch (e) {} L.joint = null; }
+  this.joints = [];
+  for (const L of live) { const g = groupOf(L); mirrorBody(L.body, g.ax, g.vx); }
+  this.facing = -this.facing; this.flip = this.facing < 0;
+  for (const L of this.limbList) if (L.part) L.part.flip = this.facing < 0;
+  for (const L of had) this.makeJoint(L);
+  const moved = new Set();
+  const flipItem = (t, g) => {
+    if (moved.has(t)) return; moved.add(t);
+    mirrorBody(t.main, g.ax, g.vx);
+    if (t.setFlip && !t.def.build) t.setFlip(!t.flip);
+  };
+  for (const st of stuck) {
+    const r = st.r, g = groupOf(r.limb);
+    flipItem(r.item, g);
+    r.joint = Phys.world.createJoint(pl.PrismaticJoint({
+      enableLimit: true, lowerTranslation: st.lo, upperTranslation: st.hi, enableMotor: true, maxMotorForce: r.sh.friction || 60, motorSpeed: 0,
+      localAnchorA: V(-st.la.x, st.la.y), localAnchorB: V(-st.lb.x, st.lb.y), localAxisA: V(-st.axis.x, st.axis.y), referenceAngle: -st.ref,
+    }, r.bO, r.bS));
+    r._fr = undefined; r.x = 2 * g.ax - r.x;
+    Stuck.list.push(r);
+  }
+  for (const e of grabs) {
+    const L = this.limbs['lowerArm' + e.s];
+    if (L.destroyed || !L.body) continue;
+    let wide = null, j;
+    if (e.light) {
+      flipItem(e.g.t, groupOf(L));
+      j = Phys.world.createJoint(pl.RevoluteJoint({ collideConnected: false, localAnchorA: V(-e.la.x, e.la.y), localAnchorB: V(-e.lb.x, e.lb.y) }, L.body, e.g.b));
+      j._grab = true;
+    } else {
+      // lo pesado no se mueve: el brazo se coloca al revés para seguir agarrando el mismo punto
+      const r = this.reachArm(e.s, e.w.x, e.w.y);
+      if (r && r.wide) wide = r;
+      j = Phys.world.createJoint(pl.RevoluteJoint({ collideConnected: false, localAnchorA: V(-e.la.x, e.la.y), localAnchorB: V(e.lb.x, e.lb.y) }, L.body, e.g.b));
+      j._grab = true;
+    }
+    this.grabs[e.s] = { j, b: e.g.b, t: e.g.t, hb: L.body, heavy: !e.light, wide: wide ? wide.wide : null, wideJ: wide ? wide.j : null };
+  }
+  for (const [it, s] of held) if (!it.dead && !this.limbs['lowerArm' + s].destroyed) Holding.attach(it, this, s, true); else if (!it.dead) for (const ib of it.bodies) for (const lb of this.bodies) Stuck.pend.push({ a: ib, b: lb, t: 0.4 });
+  if (dragL) Input.remirrorDrag(dragL.body);
+  return true;
+};
+{
+  // el brazo que agarra algo pesado no lucha contra el agarre: se queda quieto (con poca fuerza)
+  const fo = Human.prototype.forces;
+  Human.prototype.forces = function (dt) {
+    fo.call(this, dt);
+    if (this.dead || !this.grabs || this.frozenSolid) return;
+    const m = clamp(this.muscle(), 0.05, 1.2);
+    for (const s of ['F', 'B']) {
+      const g = this.grabs[s]; if (!g || !g.heavy) continue;
+      for (const id of ['upperArm' + s, 'lowerArm' + s]) {
+        const L = this.limbs[id], j = L.joint; if (!j || L.destroyed || L.rigid) continue;
+        j.setMotorSpeed(0); j.setMaxMotorTorque(L.def.str * m * 0.35 * HUMAN_MASS_MUL);
+      }
+    }
+  };
+}
+// R: voltear lo que arrastras o señalas (un reflejo de verdad: también el ángulo)
+flipThing = function (t) {
+  if (!t || t.dead || t.isTerrain) return;
+  if (t.holder && !t.holder.dead) t = t.holder; // lo que alguien sostiene gira con esa persona
+  if (t.anyFrozen()) { UI.toast('Está congelado: no se puede voltear'); return; }
+  if (t.isHuman) { if (t.flipFacing() === false) UI.toast('No se puede voltear'); return; }
+  if (t.def.build) return;
+  const b = t.main, d = Input.drag;
+  if (t.bodies.length !== 1 || Connections.list.some((c) => c.bA === b || c.bB === b)) { t.setFlip(!t.flip); return; }
+  const dragged = d && d.kind === 'drag' && d.body === b;
+  const ax = dragged ? d.joint.getAnchorB().x : b.getWorldCenter().x;
+  const v = b.getLinearVelocity();
+  t.setFlip(!t.flip);
+  mirrorBody(b, ax, v.x);
+  if (dragged) { if (d.holdAngle !== null && d.holdAngle !== undefined) d.holdAngle = -d.holdAngle; Input.remirrorDrag(b); }
+};
+
+/* ---------------- borrar todo, restos o seres vivos ---------------- */
+const Clear = {
+  everything() { World.clearAll(true); Undo.clear(); UI.toast('Todo borrado'); },
+  debris() {
+    let n = 0;
+    for (const t of [...World.things]) {
+      if (t.dead || t.isTerrain || t.isHuman || t.mapObj) continue;
+      if (t.isDebris || !t.def.cat) { t.destroy(true); n++; }
+    }
+    Effects.clear(); Decals.clear();
+    UI.toast(n ? `Restos borrados (${n})` : 'Restos borrados');
+  },
+  living() {
+    let n = 0;
+    for (const t of [...World.things]) if (t.isHuman && !t.dead && !t.mapObj) { t.destroy(true); n++; }
+    UI.toast(`Seres vivos borrados (${n})`);
+  },
+};
+
+/* ---------------- vista detalle: barra de vida por extremidad y radio de los explosivos ---------------- */
+drawDetailMarkers = function (ctx) {
+  const z = Cam.zoom;
+  // radio de explosión (como en el original, un círculo rojo)
+  ctx.lineWidth = 2 / z;
+  for (const t of World.things) {
+    if (t.dead || !t.def || !t.def.explosive || !t.main) continue;
+    const e = t.def.explosive, pw = e.power || (e.special ? 2 : 0); if (!pw) continue;
+    const c = t.main.getWorldCenter(), R = 1.9 * Math.sqrt(pw) * 1.5;
+    ctx.strokeStyle = t.vars.lit ? 'rgba(255,40,40,1)' : 'rgba(235,30,30,0.9)';
+    ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, TAU); ctx.stroke();
+  }
+  // barritas verdes de vida en cada parte del cuerpo
+  const bw = 0.34, bh = 3.5 / z;
+  for (const t of World.things) {
+    if (!t.isHuman || t.dead) continue;
+    for (const L of t.limbList) {
+      if (L.destroyed) continue;
+      const c = L.body.getWorldCenter(), h = clamp(L.health, 0, 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(c.x - bw / 2 - 1 / z, c.y - bh / 2 - 1 / z, bw + 2 / z, bh + 2 / z);
+      ctx.fillStyle = h > 0.5 ? '#3ce65a' : h > 0.25 ? '#e8d23c' : '#e8493c';
+      if (L.broken) ctx.fillStyle = '#c070ff';
+      ctx.fillRect(c.x - bw / 2, c.y - bh / 2, bw * h, bh);
+    }
+  }
+  // centro de masa de lo que señalas o seleccionas
+  const ts = new Set(Input.selection);
+  if (Input.hover && Input.hover.thing) ts.add(Input.hover.thing);
+  if (Input.drag && Input.drag.thing) ts.add(Input.drag.thing);
+  for (const t of ts) {
+    if (!t || t.dead || t.isTerrain) continue;
+    let mx = 0, my = 0, M = 0;
+    for (const b of t.bodies) { const c = b.getWorldCenter(), m = b.getMass() || 1; mx += c.x * m; my += c.y * m; M += m; }
+    if (!M) continue;
+    mx /= M; my /= M;
+    const r = 5 / z;
+    ctx.fillStyle = '#ffd400'; ctx.beginPath(); ctx.arc(mx, my, r, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.moveTo(mx, my); ctx.arc(mx, my, r, 0, Math.PI / 2); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(mx, my); ctx.arc(mx, my, r, Math.PI, Math.PI * 1.5); ctx.closePath(); ctx.fill();
+  }
+};
+
+/* ---------------- pantallas con los controles básicos (la primera vez que se juega) ---------------- */
+def('info_display', {
+  name: 'Pantalla de ayuda', cat: 'map', mat: 'metal', mass: 25, desc: 'Pantalla con los controles básicos.',
+  sprite: () => drawSprite(66, 50, (a) => { a.rect(0, 0, 66, 50, '#3a1414'); a.rect(2, 2, 62, 44, '#1a0606'); a.rect(3, 3, 60, 42, '#260a0a'); a.rect(2, 46, 62, 4, '#2a2d32'); a.rect(56, 47, 4, 2, '#e8d26a'); a.edge(0.8); }),
+  init(it, o) { it.vars.lines = o.lines || ['']; },
+  draw(it, ctx) {
+    const lines = it.vars.lines || [], a = it.main.getAngle(), p = it.worldPt(33, 23);
+    ctx.save(); ctx.translate(p[0], p[1]); ctx.rotate(a); const k = PX * (it.scale || 1); ctx.scale(k, k);
+    ctx.font = 'bold 5px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const h = 6.2, y0 = -((lines.length - 1) * h) / 2;
+    lines.forEach((l, i) => { ctx.fillStyle = l.startsWith('·') ? '#c7e88a' : '#e8d26a'; ctx.fillText(l.replace(/^·/, ''), 0, y0 + i * h, 58); });
+    ctx.restore();
+  },
+  light(it) { const p = it.pos(); return [{ x: p.x, y: p.y, r: 1.2, col: [255, 120, 80], intensity: 0.35 }]; },
+});
+function spawnInfoDisplays() {
+  const K = (a) => keyLabel(keyOf(a));
+  const sets = [
+    [`${K('spawnRight')} o ${K('spawnLeft')} para`, 'hacer aparecer', '', '·mantén el clic izquierdo', '·para agarrar'],
+    [`activa objetos con ${K('activate')}`, '', `·gira objetos con`, `·${K('rotLeft')} o ${K('rotRight')}`],
+    ['mueve la cámara', 'apretando la rueda', '', '·rueda: zoom'],
+    ['clic derecho:', 'borrar y más', 'opciones', '', `·${K('help')}: controles`],
+  ];
+  // en la pared del fondo, por encima de la escena: congeladas y sin chocar con nada
+  const pos = [[1.3, -3.75], [2.92, -3.75], [1.3, -2.6], [2.92, -2.6]];
+  sets.forEach((lines, i) => { const d = new Item(DEFS.info_display, pos[i][0], pos[i][1], { lines }); d.setFrozen(true); d.setCollide(false); d.z = -1000 + i; });
+}
+
+/* ---- 32_ai.js ---- */
+/* =========================================================================
+   IA DE LAS PERSONAS (se activa en el menú contextual): huyen de los zombis
+   o los atacan con sus armas, y se defienden de quien les ataca
+   ========================================================================= */
+
+// quién causa el daño que se está aplicando ahora (para saber quién atacó a quién)
+const Combat = {
+  src: null,
+  with(src, fn) { const o = this.src; this.src = src || null; try { return fn(); } finally { this.src = o; } },
+  attackerOf(t) {
+    if (!t || t.dead) return null;
+    if (t.isHuman) return t;
+    if (t.holder && t.holder.isHuman) return t.holder;
+    if (t._thrower && !t._thrower.dead && Phys.time - (t._thrownT || 0) < 3) return t._thrower;
+    return null;
+  },
+};
+{
+  // cualquier daño recibido mientras hay un atacante identificado lo convierte en enemigo
+  const hurt0 = Human.prototype.hurt;
+  Human.prototype.hurt = function (L, amount, type, ...rest) {
+    const a = Combat.src;
+    if (a && a !== this && a.isHuman && !a.dead && amount > 0.015 && this.alive) this.noteAttacker(a);
+    return hurt0.call(this, L, amount, type, ...rest);
+  };
+  // golpes físicos: el atacante es la persona (o quien sostiene el objeto) que choca con esta
+  const imp0 = Human.prototype.onImpact;
+  Human.prototype.onImpact = function (im, body, fix, obody, ofix, dv, sgn) {
+    const o = ofix && thingOf(ofix);
+    const a = o && o !== this ? Combat.attackerOf(o) : null;
+    return Combat.with(a, () => imp0.call(this, im, body, fix, obody, ofix, dv, sgn));
+  };
+  // disparos: el que sostiene el arma
+  const sg = shootGun;
+  shootGun = function (it, g) { return Combat.with(it && it.holder, () => sg(it, g)); };
+  // puñaladas: el que sostiene el arma blanca (o quien la lanzó)
+  const sc = Stuck.create.bind(Stuck);
+  Stuck.create = function (item, ...rest) { return Combat.with(Combat.attackerOf(item), () => sc(item, ...rest)); };
+  // soltar algo con impulso cuenta como lanzarlo
+  const rel = Holding.release.bind(Holding);
+  Holding.release = function (item) { const r = this.map.get(item); if (r) { item._thrower = r.h; item._thrownT = Phys.time; } return rel(item); };
+}
+Human.prototype.noteAttacker = function (a) {
+  if (a.zombie) return;
+  this.aggressor = a; this.aggrT = Phys.time;
+};
+
+const AI = {
+  isRanged(it) { return !!(it && it.def && (it.def.gun || it.def.cat === 'firearms' || it.def.cat === 'energy' || it.def.cat === 'launchers')); },
+  isMelee(it) { return !!(it && it.def && it.def.cat === 'melee'); },
+  weapon(h) { for (const s of ['F', 'B']) { const it = h.held[s]; if (it && !it.dead && (this.isRanged(it) || this.isMelee(it))) return it; } return null; },
+  pos(t) { return (t.isHuman ? t.root.body : t.main).getPosition(); },
+  canSee(h, t) {
+    const a = h.limbs.head.body.getPosition(), b = t.isHuman ? t.limbs.upperBody.body.getPosition() : t.pos();
+    return !rayFirst(a.x, a.y, b.x, b.y, (f) => { const o = thingOf(f); return !!(o && o.isTerrain); });
+  },
+};
+Human.prototype.aiThink = function () {
+  const p = AI.pos(this);
+  // enemigo: quien le atacó (mientras siga en pie y no haya pasado mucho rato)
+  const ag = this.aggressor;
+  if (ag && (ag.dead || !ag.alive || ag.consc < 0.35 || Phys.time - this.aggrT > 45 || Phys.time - Math.max(this._lastLand || 0, this.aggrT) > 12 || Math.hypot(AI.pos(ag).x - p.x, AI.pos(ag).y - p.y) > 30)) this.aggressor = null;
+  // zombi más cercano
+  let zb = null, zd = 11;
+  for (const t of World.things) {
+    if (!t.isHuman || t === this || t.dead || !t.zombie || !t.alive) continue;
+    const q = AI.pos(t), d = Math.hypot(q.x - p.x, q.y - p.y);
+    if (d < zd && Math.abs(q.y - p.y) < 4) { zd = d; zb = t; }
+  }
+  const wpn = AI.weapon(this);
+  this.aiGoal = null;
+  if (this.aggressor) this.aiGoal = { kind: 'fight', t: this.aggressor };
+  else if (zb && wpn) this.aiGoal = { kind: 'fight', t: zb };
+  else if (zb) {
+    // sin arma: si hay una a mano (más cerca que el zombi), ir a por ella; si no, huir
+    let best = null, bd = Math.min(4, zd * 0.8);
+    for (const t of World.things) {
+      if (t.isHuman || t.dead || t.holder || t.anyFrozen() || !t.def || !t.def.grip || !(AI.isRanged(t) || AI.isMelee(t))) continue;
+      const q = t.pos(), d = Math.hypot(q.x - p.x, q.y - p.y);
+      if (d < bd && Math.abs(q.y - p.y) < 1.5) { bd = d; best = t; }
+    }
+    this.aiGoal = best ? { kind: 'pickup', t: best } : { kind: 'flee', t: zb };
+  }
+};
+// mientras dos personas pelean, sus brazos no chocan entre sí (si no, se quedan trabados con los brazos
+// estirados sin poder acercarse); los puños sí chocan con el cuerpo y la cabeza del otro
+const ARM_IDS = ['upperArmF', 'lowerArmF', 'upperArmB', 'lowerArmB'];
+Human.prototype.fightNoCollide = function (o) {
+  if (this._ncWith === o) return;
+  this.endFightNoCollide();
+  if (!o || !o.isHuman || o.dead) return;
+  const arms = (h) => ARM_IDS.map((k) => h.limbs[k]).filter((L) => L && !L.destroyed).map((L) => L.body);
+  this._ncWith = o; this._ncPairs = [];
+  for (const a of arms(this)) for (const b of arms(o)) { setNoCollide(a, b, true); this._ncPairs.push([a, b]); }
+};
+Human.prototype.endFightNoCollide = function () {
+  if (!this._ncPairs) return;
+  for (const [a, b] of this._ncPairs) if (a.getWorld && b.getWorld) Stuck.pend.push({ a, b, t: 0.3 });
+  this._ncPairs = null; this._ncWith = null;
+};
+Human.prototype.aiAct = function (dt) {
+  const g = this.aiGoal;
+  this.aiAim = null;
+  if (!g || g.kind !== 'fight') this.endFightNoCollide();
+  if (!g || !g.t || g.t.dead) return false;
+  const p = AI.pos(this), q = AI.pos(g.t), dx = q.x - p.x, dist = Math.hypot(dx, q.y - p.y);
+  const standing = this.state === 'stand' && !this.dragged;
+  const face = (dir) => { if (standing && dir && Math.sign(dir) !== this.facing && (!this._flipT || this.t - this._flipT > 0.7)) { this._flipT = this.t; this.flipFacing(); } };
+  if (g.kind === 'flee') {
+    face(-dx);
+    if (standing) { this.walking = true; this.walkDir = -Math.sign(dx) || 1; this.fear = Math.max(this.fear, 0.25); }
+    return true;
+  }
+  if (g.kind === 'pickup') {
+    face(dx);
+    if (dist < 0.8) { const side = this.held.F ? 'B' : 'F'; if (!this.held[side] && !g.t.holder) Holding.attach(g.t, this, side); this.aiGoal = null; return true; }
+    if (standing) { this.walking = true; this.walkDir = Math.sign(dx) || 1; }
+    return true;
+  }
+  // pelear
+  this.fightNoCollide(g.t.isHuman ? g.t : null);
+  const wpn = AI.weapon(this), ranged = AI.isRanged(wpn);
+  face(dx);
+  const want = ranged ? 4.5 : wpn ? 0.95 : 0.6;
+  if (standing) {
+    if (dist > want + (ranged ? 3 : 0.15)) { this.walking = true; this.walkDir = Math.sign(dx) || 1; }
+    else if (ranged && dist < 2.2) { this.walking = true; this.walkDir = -Math.sign(dx) || -1; }
+  }
+  this.aiCool = (this.aiCool || 0) - dt;
+  const tgtL = g.t.isHuman ? (g.t.limbs.upperBody.destroyed ? g.t.root : g.t.limbs.upperBody) : null;
+  const tp = tgtL ? tgtL.body.getPosition() : q;
+  if (ranged) {
+    this.aiAim = [tp.x, tp.y];
+    if (dist < 14 && this.aiCool <= 0 && Math.sign(dx) === this.facing && AI.canSee(this, g.t)) {
+      this.aiCool = rand(0.35, 0.8);
+      Combat.with(this, () => { if (wpn.def.holdUse) { wpn.use(true); setTimeout(() => { if (!wpn.dead) wpn.use(false); }, 350); } else activateThing(wpn); });
+    }
+  } else if (!this.punch && !this.kick && this.aiCool <= 0 && standing && g.t.isHuman && (g.t.state === 'lying' || g.t.state === 'getup') && Math.abs(dx) < 1.15) {
+    // en el suelo no le llegan los puños: una patada
+    this.aiCool = rand(0.8, 1.2);
+    this.kick = { t: 0.3, tgt: g.t, best: 9, L: null };
+  } else if (!this.punch && !this.kick && this.aiCool <= 0 && tgtL && !tgtL.destroyed && (dist < want + 0.35 || (standing && dist < 1.4 && Math.abs(this.root.body.getLinearVelocity().x) < 0.2))) {
+    // golpe (también si están pegados y no pueden acercarse más): con el arma blanca o con el puño;
+    // a veces a la cabeza, que puede dejar inconsciente
+    this.aiCool = wpn ? rand(0.6, 0.9) : rand(0.55, 0.85);
+    const side = this.held.F === wpn ? 'F' : this.held.B === wpn ? 'B' : (Math.random() < 0.5 ? 'F' : 'B');
+    const arm = this.limbs['lowerArm' + side];
+    const head = g.t.isHuman && !g.t.limbs.head.destroyed && Math.random() < 0.35;
+    const aimL = head ? g.t.limbs.head : tgtL;
+    if (!arm.destroyed) {
+      const ab = arm.body, ap = ab.getPosition(), tq = aimL.body.getPosition(), ux = tq.x - ap.x, uy = tq.y - ap.y, ul = Math.hypot(ux, uy) || 1;
+      ab.applyLinearImpulse(V(ux / ul * 5 * HUMAN_MASS_MUL, (uy / ul * 5 - 0.5) * HUMAN_MASS_MUL), ap, true);
+      if (wpn) wpn.main.applyAngularImpulse(this.facing * wpn.main.getInertia() * 30, true);
+      // el brazo se estira hacia el objetivo y, al final del movimiento, se mira si ha llegado
+      this.punch = { side, aimL, t: 0.2, wpn, head, tgt: g.t, best: 9 };
+    }
+  }
+  this.updatePunch(dt);
+  this.updateKick(dt);
+  if (this.kick) this.walking = false;
+  return true;
+};
+Human.prototype.updateKick = function (dt) {
+  const k = this.kick; if (!k) return;
+  const foot = this.limbs.footF;
+  if (k.tgt.dead || foot.destroyed || !this.alive || this.consc < 0.5 || this.state !== 'stand') { this.kick = null; return; }
+  const fp = foot.body.getPosition();
+  for (const L of k.tgt.limbList) { if (L.destroyed) continue; const p = L.body.getPosition(), d = Math.hypot(p.x - fp.x, p.y - fp.y); if (d < k.best) { k.best = d; k.L = L; } }
+  k.t -= dt;
+  if (k.t > 0) return;
+  this.kick = null;
+  if (!k.L || k.best > 0.32) return;
+  const lp = k.L.body.getPosition(), ux = Math.sign(lp.x - this.root.body.getPosition().x) || this.facing;
+  this._lastLand = Phys.time;
+  Combat.with(this, () => k.tgt.hurt(k.L, 0.09, 'blunt', lp.x, lp.y, ux, 0));
+  k.L.body.applyLinearImpulse(V(ux * 10 * HUMAN_MASS_MUL, -3 * HUMAN_MASS_MUL), lp, true);
+  Sound.play('impact_flesh', lp.x, lp.y, 0.8, { key: 'punch' + this.id, gap: 120 });
+};
+Human.prototype.updatePunch = function (dt) {
+  const pu = this.punch; if (!pu) return;
+  const arm = this.limbs['lowerArm' + pu.side];
+  if (pu.tgt.dead || pu.aimL.destroyed || arm.destroyed || !this.alive || this.consc < 0.5) { this.punch = null; return; }
+  const hp = pu.wpn && !pu.wpn.dead ? pu.wpn.main.getWorldCenter() : V(...this.handPoint(pu.side)), lp = pu.aimL.body.getPosition();
+  pu.best = Math.min(pu.best, Math.hypot(hp.x - lp.x, hp.y - lp.y));
+  pu.t -= dt;
+  if (pu.t > 0) return;
+  this.punch = null;
+  if (pu.best > (pu.wpn ? 0.7 : 0.4)) return;
+  this._lastLand = Phys.time;
+  const ux = Math.sign(lp.x - this.root.body.getPosition().x) || this.facing;
+  const dmg = pu.wpn ? 0.14 : pu.head ? rand(0.06, 0.12) : 0.07;
+  Combat.with(this, () => pu.tgt.hurt(pu.aimL, dmg, pu.wpn && pu.wpn.def.edge ? 'cut' : 'blunt', lp.x, lp.y, ux, 0));
+  pu.aimL.body.applyLinearImpulse(V(ux * (pu.wpn ? 14 : 9) * HUMAN_MASS_MUL, -2 * HUMAN_MASS_MUL), lp, true);
+  Sound.play('impact_flesh', lp.x, lp.y, 0.8, { key: 'punch' + this.id, gap: 120 });
+  if (pu.tgt.isHuman && pu.tgt.state === 'stand' && Math.random() < (pu.wpn ? 0.35 : 0.18)) pu.tgt.setState('lying');
+};
+{
+  // la IA se ejecuta en cada actualización de las personas que la tienen activada
+  const up = Human.prototype.update;
+  Human.prototype.update = function (dt) {
+    up.call(this, dt);
+    const ai = this.ai !== undefined ? this.ai : Settings.aiDefault;
+    if (this.dead || !ai || this.zombie || !this.alive || this.consc < 0.5 || this.frozenSolid) {
+      this.aiGoal = null; this.aiAim = null; this.punch = null; this.kick = null; this.endFightNoCollide();
+      if (this.consc < 0.35) this.aggressor = null; // quien queda inconsciente pierde la pelea y no la retoma
+      return;
+    }
+    this.aiT2 = (this.aiT2 || 0) - dt;
+    if (this.aiT2 <= 0) { this.aiT2 = 0.4; this.aiThink(); }
+    if (!this.aiAct(dt) && !this.forcedPose) this.walking = false;
+  };
+  // apuntar el brazo hacia el objetivo
+  const ap = Human.prototype.aimPose;
+  Human.prototype.aimPose = function (P) {
+    ap.call(this, P);
+    if (this.kick) { P.upperLegF = -1.2; P.lowerLegF = 0.25; }
+    const pu = this.punch;
+    if (pu && !pu.aimL.destroyed) {
+      const sh = this.limbs['upperArm' + pu.side].body.getPosition(), q = pu.aimL.body.getPosition();
+      const th = Math.atan2(-(q.y - sh.y), Math.abs(q.x - sh.x));
+      P['upperArm' + pu.side] = clamp(-(1.5 + th), -2.9, -0.2); P['lowerArm' + pu.side] = -0.05;
+    }
+    if (!this.aiAim) return;
+    for (const side of ['F', 'B']) {
+      const it = this.held[side]; if (!it || !AI.isRanged(it)) continue;
+      const sh = this.limbs['upperArm' + side].body.getPosition();
+      const th = Math.atan2(-(this.aiAim[1] - sh.y), Math.abs(this.aiAim[0] - sh.x));
+      P['upperArm' + side] = clamp(-(1.45 + th), -2.7, -0.2); P['lowerArm' + side] = -0.08;
+    }
+  };
+}
+Human.prototype.aiOn = function () { return this.ai !== undefined ? this.ai : Settings.aiDefault; };
+
 /* ---- 99_main.js ---- */
 /* =========================================================================
    BUCLE PRINCIPAL
@@ -11640,7 +12686,7 @@ const Game = {
     loadMap('flat');
     UI.init();
     this.demoScene();
-    if (UI.catalogOpen) Cam.x -= 171 / Cam.zoom;
+    { const [l, r] = UI.sideWidths(); Cam.x -= (l - r) / 2 / Cam.zoom; }
     window.addEventListener('resize', () => Renderer.resize());
     document.addEventListener('visibilitychange', () => { if (document.hidden && Sound.ctx) Sound.ctx.suspend(); else if (!document.hidden && Sound.ctx && !this.paused) Sound.ctx.resume(); });
     this.last = performance.now();
@@ -11663,7 +12709,10 @@ const Game = {
     UI.refreshTop();
     if (!this._welcomed) {
       this._welcomed = true;
-      UI.toast(isTouchDevice ? 'Elige un objeto del catálogo y toca un hueco del escenario (o los botones Q/E) para colocarlo. Mantén pulsado para ver más opciones.' : `Elige un objeto del catálogo y mantén ${keyLabel(keyOf('spawnLeft'))} o ${keyLabel(keyOf('spawnRight'))} sobre el escenario: suelta para colocarlo. ${keyLabel(keyOf('help'))}: controles.`, 5500);
+      // la primera vez, unas pantallas con los controles básicos (como en el original); se pueden borrar
+      let first = false; try { first = !localStorage.getItem('theplayground_ayuda_v6'); localStorage.setItem('theplayground_ayuda_v6', '1'); } catch (e) {}
+      if (first && World.map === 'flat') { try { spawnInfoDisplays(); } catch (e) { console.error(e); } }
+      if (isTouchDevice) UI.toast('Elige un objeto y toca un hueco (o los botones Q/E) para colocarlo', 5000);
       if (Settings._keysReset) { delete Settings._keysReset; saveSettings(); setTimeout(() => UI.toast('Las teclas han vuelto a las del juego original (puedes cambiarlas en Ajustes → Teclas).', 4500), 5800); }
     }
   },

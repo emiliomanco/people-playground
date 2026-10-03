@@ -14,17 +14,20 @@ Son los del juego original y se pueden cambiar en **Ajustes → Teclas**.
 | --- | --- |
 | Elegir un objeto | Clic en el catálogo |
 | Hacerlo aparecer mirando a la izquierda / derecha | Mantén Q / E para ver su silueta en el cursor y suelta para colocarlo |
-| Agarrar y arrastrar | Clic izquierdo (lo que agarras cuelga y gira libremente) |
+| Agarrar y arrastrar | Clic izquierdo (lo que agarras cuelga y gira libremente; la fuerza no depende del peso) |
 | Girar lo que arrastras | A / D (Mayús: más rápido). Al girarlo mantiene ese ángulo hasta que lo sueltes, aunque choque con algo blando; sólo lo rígido (suelo, paredes, objetos congelados o mucho más pesados) puede torcerlo |
 | Ajustar a la cuadrícula y al ángulo | Alt |
 | Seleccionar varios | Arrastrar en un hueco, o Mayús + clic. Arrastrar uno mueve toda la selección |
+| Voltear lo que arrastras o señalas | R (una persona sigue sosteniendo lo que lleva en las manos) |
 | Activar (disparar, encender, detonar) | F (mantener para uso continuo) |
-| Menú contextual (congelar, redimensionar, borrar uniones...) | Clic derecho |
+| Agarrar con la mano de una persona | F mientras la arrastras por el brazo (F otra vez: soltar) |
+| Menú contextual (borrar, copiar, congelar una parte, poses, IA...) | Clic derecho |
 | Borrar lo seleccionado o lo que señalas | Retroceso |
 | Deshacer (también los borrados) | Z |
 | Copiar / pegar con sus uniones | C / mantén V para ver la silueta y suelta para pegar |
 | Detener el tiempo / cámara lenta | Espacio / G |
-| Vista detalle (salud de las extremidades, pulso, sangre, temperatura...) | S |
+| Vista detalle (vida de cada parte, alcance de los explosivos, pulso, sangre...) | S |
+| Visión térmica (temperatura de lo que señalas) | T |
 | Mostrar u ocultar el catálogo y las herramientas | Tab |
 | Herramientas / poderes | Ctrl |
 | Herramientas | 1-9 (el mismo número otra vez pasa a la siguiente de su grupo) |
@@ -32,11 +35,13 @@ Son los del juego original y se pueden cambiar en **Ajustes → Teclas**.
 | Zoom / mover la cámara | Rueda / apretar la rueda y arrastrar (también mientras agarras algo) o flechas |
 | Ayuda con todos los controles | F1 |
 
-Con el tiempo detenido, lo que arrastras se coloca directamente sin física y los objetos congelados se pueden mover (con el tiempo en marcha no se mueven). Congelar, voltear, duplicar, seguir con la cámara y la visión térmica están en el menú contextual o en Ajustes, sin tecla por defecto, como en el original. En pantallas táctiles, con un objeto elegido, toca un hueco o usa los botones Q/E.
+La interfaz es como la del original: los objetos a la izquierda (con buscador y, abajo, Ajustes, Entorno y los botones para borrar todo, los restos o los seres vivos), las herramientas y los poderes a la derecha, y arriba a la derecha la herramienta, el objeto elegido, la velocidad del tiempo, la vista detalle y la visión térmica. Hay tres formas de agarrar: **Arrastrar** (mano blanca), **Arrastre preciso** (mano azul: lo agarrado va justo al cursor y gira libremente) y **Mover** (flechas: sin física).
+
+Con el tiempo detenido, lo que arrastras se coloca directamente sin física y conserva su impulso al reanudar; los objetos congelados sólo se mueven en pausa. Congelar (sólo la parte que señalas), duplicar y seguir con la cámara están en el menú contextual, sin tecla por defecto, como en el original. En pantallas táctiles, con un objeto elegido, toca un hueco o usa los botones Q/E.
 
 ## Qué incluye
 
-- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento, consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua).
+- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento, consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua). Poses (tropezar, caminar, encogerse, sentarse, pose rígida) e IA que se puede activar en cada una: huyen de los zombis, usan armas y se defienden de quien les ataque.
 - 330 objetos: armas blancas y de fuego, accesorios para armas, explosivos, lanzadores, armas de energía, electrónica, biológico, química y líquidos, maquinaria, vehículos, iluminación y objetos.
 - Electricidad con cable de cobre y señales con cables de activación verde, rojo y azul (botones, interruptores, detectores, contadores, compuertas, radios...).
 - Temperatura: fuego, metal al rojo, congelación, calefactores y refrigerantes.
@@ -45,7 +50,7 @@ Con el tiempo detenido, lo que arrastras se coloca directamente sin física y lo
 - Editor de mapas: dibuja bloques, rampas, agua y lava, y guarda tus propios mapas.
 - Entorno: temperatura ambiente, lluvia, nieve, niebla y tormenta eléctrica.
 - Herramientas de unión (soldar, bisagras, resortes, cuerdas, cadenas, vendas, ataduras de acero y madera, correas, conductos...) y poderes (empujar, atraer, levantar, rayo, fuego, frío...).
-- Menú contextual con redimensionar, fijar ángulo y temperatura, hacer indestructible, silenciar y más. Visión térmica.
+- Menú contextual como el del original (congelar por partes, inspeccionar, editar capa, poses, IA...), además de redimensionar, fijar ángulo y temperatura, hacer indestructible, silenciar y más.
 - Guardar escenas y guardar construcciones como artefactos en el catálogo.
 
 ## Notas

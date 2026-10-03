@@ -1,5 +1,21 @@
 # Historial de cambios
 
+## Versión 6 (3 de octubre de 2026)
+
+- **Interfaz como la del original**: los objetos a la izquierda (categorías arriba, buscador «Filtrar», casillas con miniaturas y, abajo, Ajustes, Entorno, Borrar todo, Borrar restos y Borrar seres vivos); las herramientas y los poderes en una barra a la derecha (clic derecho en un botón para elegir entre las variantes de su grupo); arriba a la derecha, la herramienta actual, el objeto elegido, la pausa, el reloj con la velocidad del tiempo (100 %, 25 % en cámara lenta, 0 % en pausa), la vista detalle y la visión térmica; y los avisos abajo a la derecha, en mayúsculas. La primera vez aparecen unas pantallas con los controles básicos (se pueden borrar).
+- **Menú contextual como el del original**: negro, sin título y en el mismo orden (Eliminar, Copiar, Pegar, Guardar · Seguir, Activar, Prender fuego, Congelar, Desactivar colisiones, Hacer ingrávido, Redimensionar, Editar capa · Fijar temperatura, Fijar ángulo, Inspeccionar, Romper hueso y las poses), seguido de las opciones propias de cada objeto o persona. El menú del clic derecho del navegador ya no aparece mientras juegas.
+- **Congelar por partes**: congelar afecta sólo a la parte que señalas (puedes congelar el brazo de una persona y el resto se sigue moviendo). También sirve con objetos.
+- **Poses de las personas** (menú contextual): Tropezar, Caminar, Encogerse, Sentarse y Pose rígida.
+- **IA de las personas** (se activa o desactiva en el menú contextual de cada una, y para todas en Ajustes): huyen de los zombis, o los atacan si tienen un arma (y cogen una si la tienen cerca), y se defienden de quien les ataque. Si haces que una persona golpee a otra, se pelean a puñetazos (y patadas si una cae al suelo) hasta que una queda inconsciente o muere.
+- **Agarrar con la mano**: mientras arrastras a alguien por el brazo, F hace que su mano agarre lo que tenga cerca (un arma, otra persona, el suelo, un coche...). F otra vez lo suelta.
+- **Voltear con R** lo que arrastras o señalas. Una persona sigue sosteniendo sus armas y objetos pequeños (giran con ella) y lo que tenga clavado; si agarra algo pesado, como un coche, sólo se gira ella y sigue agarrando el mismo punto con el brazo al revés.
+- **Agarre que no depende del peso**: la fuerza con la que arrastras se calcula con todo lo que va unido a lo que agarras, así que todo se mueve con la misma soltura (un arma clavada en alguien, una mano, un coche...). El **arrastre preciso** (la mano azul) lleva lo que agarras justo al cursor, como Mover, pero con física y girando libremente; al girarlo con A/D se queda en ese ángulo.
+- **Personas más ligeras** (unos 48 kg en vez de 70), con la misma fuerza relativa. Los vehículos ligeros (monopatín, carrito, bicicleta) llevan ejes rígidos: ya no se hunden con alguien encima.
+- **Vista detalle (S)** como en el original: una barrita de vida en cada parte del cuerpo y el alcance de la explosión de cada explosivo en un círculo rojo. **Visión térmica (T)**: además, muestra la temperatura de lo que señalas.
+- **Tiempo**: lo que mueves con el tiempo detenido conserva su impulso y, al reanudarlo, sigue su trayectoria desde el nuevo sitio. Lo que aparece en pausa se ve al momento.
+- **Entorno** en su propia ventana: gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta y velocidad de la cámara lenta.
+- Inspeccionar muestra la salud, el hueso y la temperatura de cada parte del cuerpo; Editar capa pone algo delante o detrás de lo demás.
+
 ## Versión 5 (3 de octubre de 2026)
 
 - **Controles rehechos uno a uno como en el original**:
