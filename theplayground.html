@@ -2703,7 +2703,7 @@ class Human extends Thing {
     let c = 1;
     if (this.blood < 0.72) c = Math.min(c, (this.blood - 0.38) / 0.34);
     const pain = this.pain * this.painMul * (1 - this.adren * 0.7);
-    if (pain > 0.95) c = Math.min(c, 1.9 - pain);
+    if (pain > 0.95) c = Math.min(c, Math.max(0.55, 1.9 - pain));
     if (this.brain < 0.7) c = Math.min(c, this.brain * 1.4 - 0.15);
     if (this.knock > 0 || this.coma) c = 0;
     if (this.heart < 0.3) c = Math.min(c, this.heart * 2);
@@ -2839,7 +2839,7 @@ class Human extends Thing {
     if (!imm && this.alive) {
       if (L.id === 'head') {
         if (type === 'bullet' || type === 'stab') this.brain -= amount * (type === 'bullet' ? 2.4 : 1.6);
-        else if (type === 'blunt') { if (amount > 0.08) this.knock = Math.max(this.knock, amount * 14); if (amount > 0.2) this.brain -= (amount - 0.18) * 1.5; }
+        else if (type === 'blunt') { if (amount > 0.3) this.knock = Math.max(this.knock, (amount - 0.2) * 14); if (amount > 0.2) this.brain -= (amount - 0.18) * 1.5; }
         else if (type === 'explosion' || type === 'crush') this.brain -= amount * 1.5;
         else if (type === 'shock') this.brain -= amount * 0.3;
       }
@@ -3050,7 +3050,7 @@ class Human extends Thing {
       const amt = Math.pow((dv - 6) / 16, 1.5) * k;
       if (amt > 0.01) {
         this.hurt(L, Math.min(amt, 2), dv > 40 && Settings.gore ? 'crush' : 'blunt', im.x, im.y);
-        if (L.id === 'head' && dv > 10 && this.alive) this.knock = Math.max(this.knock, (dv - 10) * 0.6);
+        if (L.id === 'head' && dv > 16 && this.alive) this.knock = Math.max(this.knock, (dv - 16) * 0.6);
         if (dv > 7 && this.bleedKind && this.alive) Effects.blood(im.x, im.y, -im.nx * sgnN * 1.5, -im.ny * sgnN * 1.5, Math.floor(dv / 4), 1.2, this.bleedKind);
       }
       if (dv > 10 && this.state === 'stand') this.setState('lying');
@@ -3138,7 +3138,7 @@ class Human extends Thing {
     this.hurt(L, amt, 'explosion', L.body.getPosition().x, L.body.getPosition().y, dx, dy);
     if (Settings.gore && amt > 1.6 && Math.random() < 0.5) this.gib(L);
     else if (Settings.gore && amt > 0.9 && L.joint && Math.random() < 0.35) this.sever(L, 'blast');
-    if (this.alive) { this.knock = Math.max(this.knock, amt * 4); this.fear = 1; }
+    if (this.alive) { if (amt > 0.35) this.knock = Math.max(this.knock, (amt - 0.3) * 5); this.fear = 1; }
     if (this.state === 'stand' && amt > 0.1) this.setState('lying');
   }
   // ---- sostener objetos ----
@@ -12720,11 +12720,12 @@ function segDist(px, py, ax, ay, bx, by) {
 Human.prototype.aiSense = function () {
   const p = AI.pos(this), now = Phys.time;
   const S = { zombies: [], danger: null, weapons: [], nearZ: false };
-  // quien le atacó deja de ser su enemigo si cae, se aleja o pasa mucho rato sin pelea
+  // quien le atacó deja de ser su enemigo si cae, se aleja o pasa mucho rato sin pelea. Como ya casi nadie se
+  // desmaya, la pelea también acaba cuando uno de los dos está demasiado aturdido (por el dolor) para seguir
   const ag = this.aggressor;
   if (ag) {
     const q = ag.dead ? null : AI.pos(ag);
-    if (!q || !ag.alive || ag.consc < 0.35 || now - this.aggrT > 45 || now - Math.max(this._lastLand || 0, this.aggrT) > 12 || Math.hypot(q.x - p.x, q.y - p.y) > 30) this.aggressor = null;
+    if (!q || !ag.alive || ag.consc < 0.62 || this.consc < 0.62 || now - this.aggrT > 45 || now - Math.max(this._lastLand || 0, this.aggrT) > 12 || Math.hypot(q.x - p.x, q.y - p.y) > 30) this.aggressor = null;
   }
   const fy = AI.feetY(this), wantW = !this.held.F || !this.held.B;
   for (const t of World.things) {
@@ -13368,8 +13369,8 @@ Human.prototype.meleeHit = function (a, L, x, y) {
   const kq = clamp(((x - hp[0]) * vx + (y - hp[1]) * vy) / l2, 0, 1), hx = lerp(x, hp[0] + vx * kq, 0.5), hy = lerp(y, hp[1] + vy * kq, 0.5);
   this._lastLand = Phys.time;
   Combat.with(this, () => T.hurt(L, amt, type, hx, hy, a.style === 'thrust' ? ux : ux * 0.4, a.style === 'thrust' ? 0 : 1));
-  // un tajo en la cabeza también llega al cerebro (y aturde)
-  if (head && type === 'slice' && T.alive && !T.immortal) { T.brain -= amt * 1.3; T.knock = Math.max(T.knock, amt * 6); }
+  // un tajo en la cabeza también llega al cerebro (y, si es muy fuerte, deja inconsciente)
+  if (head && type === 'slice' && T.alive && !T.immortal) { T.brain -= amt * 1.3; if (amt > 0.3) T.knock = Math.max(T.knock, (amt - 0.2) * 10); }
   const imp = a.style === 'thrust' ? V(ux * 16 * k * mf, -1.5 * k) : V(ux * 7 * k * mf, 11 * k * mf);
   if (!L.destroyed) L.body.applyLinearImpulse(imp, L.body.getPosition(), true);
   // el arma se frena al dar

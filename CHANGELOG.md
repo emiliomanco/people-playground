@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## Versión 8.1 (3 de octubre de 2026)
+
+- **Desmayarse es mucho más difícil**: personas, zombis y androides sólo pierden el conocimiento con un golpe muy fuerte en la cabeza (un batazo o un mazazo, un choque de la cabeza a mucha velocidad, una explosión fuerte o un disparo en la cabeza), y cuanto más fuerte, más tiempo. Los puñetazos, las patadas y los golpes flojos ya no desmayan, y el dolor aturde (se mueven peor) pero no hace perder el conocimiento. Siguen desmayando la pérdida de mucha sangre, el daño cerebral, el ahogo, el frío extremo, los sedantes y las armas aturdidoras.
+- Las peleas a puñetazos terminan cuando uno de los dos está demasiado aturdido para seguir.
+
 ## Versión 8 (3 de octubre de 2026)
 
 - **Cuerpo a cuerpo más fuerte, con estocadas y golpes desde arriba según el arma**:
