@@ -1,5 +1,21 @@
 # Historial de cambios
 
+## Versión 5 (3 de octubre de 2026)
+
+- **Controles rehechos uno a uno como en el original**:
+  - Hacer aparecer un objeto ya no se hace con un clic. Eliges el objeto en el catálogo y mantienes Q o E: verás su silueta en el cursor, y al soltar aparece mirando a la izquierda o a la derecha. Pegar (V) funciona igual. Esc o clic derecho mientras mantienes la tecla cancelan.
+  - Lo que agarras cuelga y gira libremente. Si lo giras con A/D, aunque sea un poco, mantiene ese ángulo mientras no lo sueltes: los choques con cosas blandas o ligeras (una persona, por ejemplo) no lo tuercen, y sólo lo rígido (el suelo, las paredes, los objetos congelados o algo mucho más pesado) puede girarlo; al separarse, vuelve a su ángulo.
+  - Arrastrar un objeto seleccionado mueve toda la selección. Alt ajusta a la cuadrícula también con el tiempo en marcha.
+  - Lo congelado sólo se mueve con el tiempo detenido.
+  - Los números eligen grupos de herramientas, y pulsar el mismo número otra vez pasa a la siguiente herramienta del grupo. Mantener M clava las bisagras en el centro de masa.
+  - Retroceso borra y Z deshace, incluidos los borrados.
+  - La rueda sólo hace zoom.
+  - Se quitaron las teclas que no son del original (R, L, H, Inicio, Supr, Ctrl+Z/C/V/D y congelar con clic derecho). Esas acciones siguen en el menú contextual o se pueden asignar en Ajustes.
+  - Las teclas se detectan por su posición, así que Mayús, Alt o la distribución del teclado no las cambian. Las teclas guardadas de versiones anteriores vuelven a las del original.
+- **Jeringas**: las de suero son infinitas (inyectan sin vaciarse). Si les disparas o les alcanza una explosión, revientan y su contenido afecta a quien esté cerca.
+- **Objetos clavados**: una jeringa, un cuchillo o una espada clavados se pueden sacar arrastrándolos. Además, al hacer clic tiene prioridad el objeto más pequeño (como en el original), así que agarras lo clavado y no a la persona.
+- En táctil: con un objeto elegido, toca un hueco o usa los botones Q/E.
+
 ## Versión 4 (2 de octubre de 2026)
 
 - **Controles como en el original**: Z deshace, C copia y V pega (también con Ctrl), Mayús+clic selecciona varios objetos, Mayús gira más rápido, Alt ajusta a la cuadrícula y al ángulo, y F1 abre la ayuda. Con el juego en pausa, lo que arrastras se coloca directamente, sin física.
