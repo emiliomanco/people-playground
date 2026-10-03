@@ -1,5 +1,23 @@
 # Historial de cambios
 
+## Versión 8 (3 de octubre de 2026)
+
+- **Cuerpo a cuerpo más fuerte, con estocadas y golpes desde arriba según el arma**:
+  - Los cuchillos, las lanzas, los pinchos y la motosierra atacan de **estocada**: el codo atrás y luego el brazo estirado hacia el objetivo, con el cuerpo acompañando. Los bates, martillos, mazos, palancas, sartenes, hachas y machetes **golpean desde arriba**: el arma por encima de la cabeza y abajo con fuerza. Las espadas (también la katana, la legendaria y la de energía) hacen las dos cosas.
+  - Cada persona se pone a la distancia justa para su arma (más lejos con una lanza que con un cuchillo) y espera en guardia con el arma lista. Si un zombi se le echa encima con un arma larga, retrocede.
+  - El daño depende del arma (su peso y si corta, pincha o golpea) y de dónde da: una estocada o un golpe fuerte en la cabeza mata en uno o dos golpes, los tajos pueden decapitar y los golpes fuertes derriban. Un mazo mata a un zombi de un solo golpe en la cabeza.
+  - Las armas pesadas se blanden sin que la persona se caiga, y el golpe no se queda en los brazos del zombi: llega a la cabeza o al cuerpo.
+  - A un zombi caído (pero vivo) que tiene al lado lo **remata**: pasa por encima de él, se agacha y le golpea en la cabeza. Si el arma es demasiado corta para llegar, le da un pisotón.
+  - Las armas largas se llevan levantadas; si una se queda clavada en el suelo o apuntando hacia atrás, la vuelven a coger bien.
+  - Los puñetazos y las patadas también pegan más fuerte. La motosierra se enciende sola al pelear y se apaga al acabar.
+- **Disparos que no hieren a terceros**: cuando una persona dispara a un zombi, sus balas atraviesan sin herir a las demás personas que haya en medio o detrás. Si le dispara a alguien con quien se está peleando, a esa persona sí le da. Con lo que no son balas (lanzallamas, lanzacohetes...) sigue sin disparar si hay alguien en medio.
+- **Zombis variados**: como las personas, cada zombi tiene su propio pelo y su ropa (sucia y desgastada), con distintos tonos de piel verde y de ojos.
+- **Vista detalle**: cuando algo muere, todas las barras de vida de su cuerpo se vacían (antes los brazos, por ejemplo, podían seguir en verde).
+- **Cable rígido** (herramientas, grupo 3): une dos cosas como si fueran una sola pieza, sin que puedan moverse ni girar entre sí, aguanten lo que aguanten. Lo que se une pasa a formar parte del mismo cuerpo, con su peso, su inercia y sus choques, así que tampoco cede con mucho peso (una carga pesada en el brazo de un servomotor, por ejemplo). Se pueden encadenar varios para construir estructuras. El antiguo «Cable rígido» (que mantiene la distancia pero deja girar los extremos) ahora se llama **Cable rígido articulado**.
+- **Fuerza de las máquinas**: los servomotores, rotores, ruedas, pistones, deslizadores, propulsores, hélices, motores, ventiladores, electroimanes, giroscopios, vehículos con motor... tienen una opción **Fuerza** en el menú contextual (de 10 % a 2000 %) que multiplica la fuerza de sus motores y todo lo que empujan o atraen. Con más fuerza mueven y levantan más peso. Funciona con varias seleccionadas a la vez y se conserva al copiar, pegar y guardar.
+- **Borrar restos** también limpia: la sangre (y las demás manchas) desaparece de los objetos, que quedan como nuevos, y de encima de las personas (las heridas siguen).
+- Chocarse sin querer ya no hace que dos personas se peleen (sólo cuenta si la lanzas o la arrastras tú contra la otra, si va a por ella o si le tira algo), y al golpear con un arma blanca sólo se le da a quien se quiere dar.
+
 ## Versión 7 (3 de octubre de 2026)
 
 - **IA de las personas rehecha**:
