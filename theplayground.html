@@ -93,6 +93,7 @@ canvas { image-rendering: pixelated; }
 .ctx .ci.off { color: #6f7277; cursor: default; }
 .ctx .ci.off:hover { background: transparent; }
 .ctx .ci.chk::after { content: '  ✓'; color: #9be59b; }
+.ctx .ci.head { color: #f0d080; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .ctx .csep { height: 10px; }
 /* avisos (abajo a la derecha, en mayúsculas) */
 .notes { position: absolute; right: 74px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; pointer-events: none !important; max-width: min(520px, 60vw); }
@@ -143,6 +144,7 @@ canvas { image-rendering: pixelated; }
 .srow em { font-style: normal; color: var(--muted); font-size: 12px; text-align: right; }
 .srow input[type=range] { width: 100%; accent-color: var(--accent); }
 .srow input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+.srow select { background: #20242a; color: var(--text); border: 1px solid var(--line2); border-radius: 5px; padding: 4px 6px; font: inherit; font-size: 12.5px; max-width: 250px; }
 .help { display: flex; flex-direction: column; gap: 6px; line-height: 1.4; }
 .keybtn { min-width: 132px; padding: 5px 10px; font-size: 13px; }
 .keybtn.cap { border-color: var(--accent); color: var(--accent2); }
@@ -347,7 +349,7 @@ const uid = () => _uid++;
 const Settings = {
   volume: 0.6, gravity: 1, blood: 1, gore: true, getUp: true, variety: true, grid: true, shake: true,
   ambient: 1, particleMul: 1, hiDpi: true, showFps: false, slowmo: 0.25, spawnOnce: false, showInfo: false, keys: {},
-  ambientTemp: 18, rain: false, snow: false, fog: 0, lightningChance: 0, snapGrid: 0.25, snapAngle: 15, thermal: false, sigLimit: 1500, keysV: 7, aiDefault: true,
+  ambientTemp: 18, rain: false, snow: false, fog: 0, lightningChance: 0, snapGrid: 0.25, snapAngle: 15, thermal: false, sigLimit: 1500, keysV: 7, aiDefault: true, collHumans: 'dead', collZombies: 'none', collAndroids: 'dead',
 };
 // Acciones de teclado (reasignables en Ajustes)
 // (por defecto, las mismas teclas que el juego original)
@@ -2503,7 +2505,7 @@ class Human extends Thing {
         P.upperArmF = lerp(-1.0, P.upperArmF, k); P.lowerArmF = lerp(-1.3, P.lowerArmF, k);
         P.upperArmB = lerp(-0.7, P.upperArmB, k); P.lowerArmB = lerp(-1.1, P.lowerArmB, k);
         str = 1.2;
-      } else if (this.fear > 0.35) {
+      } else if (this.fear > 0.35 && !this.walking) {
         Object.assign(P, { upperArmF: -2.3, lowerArmF: -1.9, upperArmB: -2.1, lowerArmB: -2.0, head: 0.45, middleBody: -0.2, lowerBody: -0.1, upperLegF: -0.6, lowerLegF: 1.0, upperLegB: -0.3, lowerLegB: 0.9 });
       }
       else if (this.zombie) {
@@ -2611,7 +2613,8 @@ class Human extends Thing {
         ch.applyForceToCenter(V(fxC * 0.5, fyC * 0.5), true);
       } else if (this.walking) {
         // andar: aceleración repartida por masa (los pies resbalan)
-        const acc = clamp((this.walkDir * 0.75 - vx) * 3, -2.5, 2.5) * Math.min(k, 1);
+        const sp = this.walkSpeed || 0.75, am = sp > 1.3 ? 4.5 : 2.5;
+        const acc = clamp((this.walkDir * sp - vx) * 3, -am, am) * Math.min(k, 1);
         for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; L.body.applyForceToCenter(V(L.body.getMass() * acc, 0), true); }
         const fb = this.limbs.footB.body.getPosition(), ff = this.limbs.footF.body.getPosition();
         const fx = (fb.x + ff.x) / 2;
@@ -7612,54 +7615,107 @@ const UI = {
     }
   },
   // ---------------- menú contextual (el mismo orden que el original) ----------------
-  openContext(sx, sy, wx, wy) {
-    const hit = Input.pickAt(wx, wy, 4 / Cam.zoom);
+  // opciones del menú para una cosa, con su acción ya preparada. Con varias cosas seleccionadas, cada opción se
+  // aplica a todas las que la tienen (las que no son compatibles se quedan igual):
+  //  · normal: a cada cosa con la misma opción (key); · group: una sola vez con todo el grupo; · once: sólo a la señalada
+  ctxItems(t, hit, wx, wy) {
     const items = [];
     const add = (label, fn, o = {}) => items.push(Object.assign({ label, fn }, o));
     const sep = () => { if (items.length && items[items.length - 1] !== '-') items.push('-'); };
-    const pasteHere = () => { const ox = Input.wx, oy = Input.wy; Input.wx = wx; Input.wy = wy; try { Input.paste(); } finally { Input.wx = ox; Input.wy = oy; } };
+    const L = hit && hit.limb, b = hit && hit.body;
     const hasClip = !!(Input.clip && Input.clip.things && Input.clip.things.length);
-    if (hit && !hit.thing.isTerrain) {
-      const t = hit.thing, L = hit.limb, b = hit.body;
-      const group = () => (Input.selection.has(t) ? [...Input.selection] : [t]);
-      add('Eliminar', () => Input.deleteThings(group()));
-      add('Copiar', () => { const bp = Blueprint.capture(group()); if (bp) { Input.clip = bp; this.toast(`Copiado: ${bp.things.length} objeto(s)`); } });
-      add('Pegar', pasteHere, { off: !hasClip });
-      add('Guardar', () => Contraptions.save(Input.selection.has(t) ? [...Input.selection] : Blueprint.group(t)));
-      sep();
-      add(Cam.follow === t ? 'Dejar de seguir' : 'Seguir', () => { Cam.follow = Cam.follow === t ? null : t; });
-      add('Activar', () => activateThing(t));
-      if (t.isFlammable()) add(t.fire > 0 ? 'Apagar fuego' : 'Prender fuego', () => (t.fire > 0 ? t.extinguish() : t.ignite(1)));
-      if (b && t.bodies.includes(b)) add(b._frozen ? 'Descongelar' : 'Congelar', () => t.setBodyFrozen(b, !b._frozen));
-      if (t.bodies.length > 1 && t.anyFrozen() && !(b && b._frozen && t.frozenIdx().length === 1)) add('Descongelar todo', () => t.setFrozen(false));
-      add(t.noCollide ? 'Activar colisiones' : 'Desactivar colisiones', () => t.setCollide(!!t.noCollide));
-      add(t.weightless ? 'Quitar ingravidez' : 'Hacer ingrávido', () => t.setWeightless(!t.weightless));
-      if (!t.isHuman && !t.def.build) add('Redimensionar', () => openResize(group()));
-      add('Editar capa', () => this.openLayer(t));
-      sep();
-      add('Fijar temperatura', () => { const v = askNumber('Temperatura en °C', Math.round(t.isHuman && L && L.temp !== undefined ? L.temp : Heat.tempOf(t))); if (v === null) return; if (t.isHuman) for (const l of t.limbList) l.temp = v; else t.temp = v; });
-      add('Fijar ángulo', () => {
-        const ref = t.isHuman ? t.root.body : t.main;
-        const v = askNumber('Ángulo en grados', Math.round(ref.getAngle() * 180 / Math.PI)); if (v === null) return;
+    const pasteHere = () => { const ox = Input.wx, oy = Input.wy; Input.wx = wx; Input.wy = wy; try { Input.paste(); } finally { Input.wx = ox; Input.wy = oy; } };
+    add('Eliminar', (g) => Input.deleteThings(g), { group: true });
+    add('Copiar', (g) => { const bp = Blueprint.capture(g); if (bp) { Input.clip = bp; this.toast(`Copiado: ${bp.things.length} objeto(s)`); } }, { group: true });
+    add('Pegar', pasteHere, { off: !hasClip, once: true });
+    add('Guardar', (g) => Contraptions.save(g.length > 1 ? g : Blueprint.group(t)), { group: true });
+    sep();
+    add(Cam.follow === t ? 'Dejar de seguir' : 'Seguir', () => { Cam.follow = Cam.follow === t ? null : t; }, { once: true });
+    add('Activar', () => activateThing(t));
+    if (t.isFlammable()) add(t.fire > 0 ? 'Apagar fuego' : 'Prender fuego', () => (t.fire > 0 ? t.extinguish() : t.ignite(1)));
+    // congelar la parte señalada (con varias seleccionadas, la misma parte de cada una o el objeto entero)
+    if (b && t.bodies.includes(b)) add(b._frozen ? 'Descongelar' : 'Congelar', () => t.setBodyFrozen(b, !b._frozen));
+    else add(t.anyFrozen() ? 'Descongelar' : 'Congelar', () => t.setFrozen(!t.anyFrozen()));
+    if (t.bodies.length > 1 && t.anyFrozen() && !(b && b._frozen && t.frozenIdx().length === 1)) add('Descongelar todo', () => t.setFrozen(false));
+    add(t.noCollide ? 'Activar colisiones' : 'Desactivar colisiones', () => t.setCollide(!!t.noCollide));
+    add(t.weightless ? 'Quitar ingravidez' : 'Hacer ingrávido', () => t.setWeightless(!t.weightless));
+    if (!t.isHuman && !t.def.build) add('Redimensionar', (g) => openResize(g.filter((o) => !o.isHuman && !o.def.build)), { group: true });
+    add('Editar capa', (g) => this.openLayer(g), { group: true });
+    sep();
+    add('Fijar temperatura', (g) => {
+      const v = askNumber('Temperatura en °C', Math.round(t.isHuman && L && L.temp !== undefined ? L.temp : Heat.tempOf(t))); if (v === null) return;
+      for (const o of g) { if (o.isHuman) for (const l of o.limbList) l.temp = v; else o.temp = v; }
+    }, { group: true });
+    add('Fijar ángulo', (g) => {
+      const ref0 = t.isHuman ? t.root.body : t.main;
+      const v = askNumber('Ángulo en grados', Math.round(ref0.getAngle() * 180 / Math.PI)); if (v === null) return;
+      for (const o of g) {
+        const ref = o.isHuman ? o.root.body : o.main; if (!ref) continue;
         const c = ref.getPosition(), cx = c.x, cy = c.y, da = v * Math.PI / 180 - ref.getAngle();
-        for (const bb of t.bodies) { const p = bb.getPosition(); const r = rot(p.x - cx, p.y - cy, da); bb.setTransform(V(cx + r[0], cy + r[1]), bb.getAngle() + da); bb.setAwake(true); }
-      });
-      if (t.isHuman) {
-        add('Inspeccionar', () => this.openInspect(t, L));
-        if (L && !L.destroyed && !L.broken && t.kind !== 'android') add('Romper hueso', () => t.breakBone(L));
-        for (const [id, name] of HUMAN_POSES) add(name, () => t.setPose(id), { on: t.forcedPose === id });
-        if (t.forcedPose) add('Pose normal', () => t.setPose(t.forcedPose));
-        if (!t.zombie) add(t.aiOn() ? 'IA: activada' : 'IA: desactivada', () => { t.ai = !t.aiOn(); this.toast(t.ai ? 'IA activada' : 'IA desactivada'); if (!t.ai) { t.aiGoal = null; t.aiAim = null; t.walking = false; } }, { on: t.aiOn() });
-      } else add('Inspeccionar', () => this.openInspect(t, null));
-      // lo propio de cada objeto o persona
-      const spec = (t.isHuman ? t.menu(L) : t.menu()).filter((m) => !/^(Romper hueso|Voltear)/.test(m.label));
-      if (spec.length) { sep(); for (const m of spec) items.push(m); }
-      sep();
-      if (t.grabs && (t.grabs.F || t.grabs.B)) add('Soltar lo agarrado', () => { for (const s of ['F', 'B']) if (t.grabs[s]) t.releaseGrab(s); });
-      add('Voltear', () => flipThing(t));
-      add('Duplicar', () => duplicateThing(t));
-      if (t.links.size || t.conns.size) add('Quitar uniones y cables', () => { Connections.removeThing(t); for (const o of t.links) o.links.delete(t); t.links.clear(); });
-      for (const m of extraContextItems(t, hit)) if (!/^(Redimensionar|Fijar ángulo|Fijar temperatura)/.test(m.label)) items.push(m);
+        for (const bb of o.bodies) { const p = bb.getPosition(); const r = rot(p.x - cx, p.y - cy, da); bb.setTransform(V(cx + r[0], cy + r[1]), bb.getAngle() + da); bb.setAwake(true); }
+      }
+    }, { group: true });
+    add('Inspeccionar', () => this.openInspect(t, L), { once: true });
+    if (t.isHuman) {
+      if (L && !L.destroyed && !L.broken && t.kind !== 'android') add('Romper hueso', () => t.breakBone(L), { key: 'break:' + L.id });
+      // poses: con varias personas, todas a la vez (la misma pose)
+      const setPose = (h, id) => { h.forcedPose = id; h.walking = false; if ((id === 'cower' || id === 'sit') && (h.state === 'stand' || h.state === 'getup')) h.setState('lying'); };
+      for (const [id, name] of HUMAN_POSES) add(name, (g) => { const on = t.forcedPose !== id; for (const h of g) if (h.isHuman && !h.dead) setPose(h, on ? id : null); this.toast(on ? name : 'Pose normal'); }, { group: true, on: t.forcedPose === id, key: 'pose:' + id });
+      if (t.forcedPose) add('Pose normal', (g) => { for (const h of g) if (h.isHuman) setPose(h, null); this.toast('Pose normal'); }, { group: true });
+      if (!t.zombie) add(t.aiOn() ? 'IA: activada' : 'IA: desactivada', () => { t.ai = !t.aiOn(); if (!t.ai && t.aiStop) t.aiStop(); }, { on: t.aiOn() });
+    }
+    // lo propio de cada objeto o persona (curar y revivir son la misma opción)
+    const spec = (t.isHuman ? t.menu(L) : t.menu()).filter((m) => !/^(Romper hueso|Voltear)/.test(m.label));
+    if (spec.length) { sep(); for (const m of spec) add(m.label, m.fn, { key: m.label === 'Revivir' ? 'Curar' : m.label }); }
+    sep();
+    if (t.grabs && (t.grabs.F || t.grabs.B)) add('Soltar lo agarrado', () => { for (const s of ['F', 'B']) if (t.grabs[s]) t.releaseGrab(s); });
+    add('Voltear', () => flipThing(t));
+    add('Duplicar', () => duplicateThing(t));
+    if (t.links.size || t.conns.size) add('Quitar uniones y cables', () => { Connections.removeThing(t); for (const o of t.links) o.links.delete(t); t.links.clear(); });
+    for (const m of extraContextItems(t, hit || { thing: t })) if (!/^(Redimensionar|Fijar ángulo|Fijar temperatura)/.test(m.label)) add(m.label, m.fn);
+    while (items[items.length - 1] === '-') items.pop();
+    return items;
+  },
+  openContext(sx, sy, wx, wy) {
+    const hit = Input.pickAt(wx, wy, 4 / Cam.zoom);
+    let items = [];
+    const add = (label, fn, o = {}) => items.push(Object.assign({ label, fn }, o));
+    const sep = () => { if (items.length && items[items.length - 1] !== '-') items.push('-'); };
+    const hasClip = !!(Input.clip && Input.clip.things && Input.clip.things.length);
+    const pasteHere = () => { const ox = Input.wx, oy = Input.wy; Input.wx = wx; Input.wy = wy; try { Input.paste(); } finally { Input.wx = ox; Input.wy = oy; } };
+    if (hit && !hit.thing.isTerrain) {
+      const t = hit.thing;
+      const multi = Input.selection.has(t) && Input.selection.size > 1;
+      const group = multi ? [...Input.selection].filter((o) => !o.dead && !o.isTerrain) : [t];
+      // en una selección, la misma parte del cuerpo de cada persona (para congelar, romper un hueso...)
+      const hitFor = (o) => {
+        if (o === t) return hit;
+        if (o.isHuman && hit.limb && o.limbs[hit.limb.id] && !o.limbs[hit.limb.id].destroyed) { const l = o.limbs[hit.limb.id]; return { thing: o, body: l.body, limb: l }; }
+        return null;
+      };
+      const lists = group.map((o) => [o, this.ctxItems(o, hitFor(o), wx, wy)]);
+      const keyOf = (m) => m.key || m.label;
+      // las opciones de la señalada primero; después las que sólo tienen otras de la selección
+      const seen = new Set();
+      for (const [o, list] of lists) {
+        let first = true;
+        for (const m of list) {
+          if (m === '-') { if (o === t) items.push('-'); continue; }
+          const k = keyOf(m);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          if (o !== t && first) { sep(); first = false; }
+          items.push(Object.assign({}, m, { owner: o }));
+        }
+      }
+      for (const m of items) {
+        if (m === '-' || m.off) continue;
+        const base = m.fn, k = keyOf(m);
+        if (m.group) m.fn = () => base(group);
+        else if (m.once || !multi) m.fn = () => base();
+        else m.fn = () => { for (const [, list] of lists) { const it = list.find((x) => x !== '-' && !x.off && keyOf(x) === k); if (it) it.fn(); } };
+      }
+      if (multi) items.unshift({ label: `${group.length} seleccionados`, off: true, head: true }, '-');
     } else {
       const c = Connections.near(wx, wy, 8 / Cam.zoom);
       if (c) {
@@ -7684,7 +7740,7 @@ const UI = {
     this.ctx.innerHTML = '';
     for (const m of items) {
       if (m === '-') { this.ctx.appendChild(this.el('div', 'csep')); continue; }
-      const b = this.el('button', 'ci' + (m.off ? ' off' : '') + (m.on ? ' chk' : ''), m.label);
+      const b = this.el('button', 'ci' + (m.off ? ' off' : '') + (m.on ? ' chk' : '') + (m.head ? ' head' : ''), m.label);
       if (!m.off) b.onclick = () => { this.closeContext(); Sound.play('ui'); m.fn(); };
       this.ctx.appendChild(b);
     }
@@ -7696,6 +7752,16 @@ const UI = {
     this.ctxOpen = true;
   },
   closeContext() { if (this.ctx) this.ctx.style.display = 'none'; this.ctxOpen = false; },
+  // editar capa con varias cosas: se mueven juntas (conservan su orden entre ellas)
+  openLayerMany(ts) {
+    const b = this.openModal(`<h2>Editar capa: ${ts.length} seleccionados</h2><div class="col">
+      <button class="btn" id="lTop">Traer al frente</button><button class="btn" id="lBottom">Enviar al fondo</button></div>
+      <div class="row"><button class="btn" id="lBack">Cerrar</button></div>`);
+    const sorted = ts.slice().sort((a, c) => a.z - c.z), set = new Set(ts);
+    b.querySelector('#lTop').onclick = () => { for (const o of sorted) o.z = ++World.zc; this.toast('Al frente'); };
+    b.querySelector('#lBottom').onclick = () => { let mn = 0; for (const o of World.things) if (!o.isTerrain && !set.has(o)) mn = Math.min(mn, o.z); let z = mn - sorted.length - 1; for (const o of sorted) o.z = z++; this.toast('Al fondo'); };
+    b.querySelector('#lBack').onclick = () => this.closeModal();
+  },
   // ---------------- inspeccionar ----------------
   openInspect(t, limb) {
     let html = `<h2>${t.name}</h2><div class="inspect">`;
@@ -7719,7 +7785,10 @@ const UI = {
     b.querySelector('#iBack').onclick = () => this.closeModal();
   },
   // ---------------- editar capa (delante / detrás de los demás) ----------------
-  openLayer(t) {
+  openLayer(arg) {
+    const ts = (Array.isArray(arg) ? arg : [arg]).filter((o) => o && !o.dead), t = ts[0];
+    if (!t) return;
+    if (ts.length > 1) return this.openLayerMany(ts);
     const b = this.openModal(`<h2>Editar capa: ${t.name}</h2><div class="col">
       <button class="btn" id="lTop">Traer al frente</button><button class="btn" id="lUp">Subir una capa</button>
       <button class="btn" id="lDown">Bajar una capa</button><button class="btn" id="lBottom">Enviar al fondo</button></div>
@@ -7817,12 +7886,17 @@ const UI = {
   // filas de ajustes (deslizadores y casillas) que se guardan al cambiarlas
   settingsRows(rows) {
     const S = Settings;
-    return rows.map((r) => (r[0] === 'range'
+    return rows.map((r) => (r[0] === 'select'
+      ? `<label class="srow chk"><span>${r[2]}</span><select data-k="${r[1]}">${r[3].map(([v, l]) => `<option value="${v}" ${S[r[1]] === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`
+      : r[0] === 'range'
       ? `<label class="srow"><span>${r[2]}</span><input type="range" data-k="${r[1]}" data-d="${r[6] !== undefined ? r[6] : 2}" min="${r[3]}" max="${r[4]}" step="${r[5]}" value="${S[r[1]]}"><em data-v="${r[1]}">${(+S[r[1]]).toFixed(r[6] !== undefined ? r[6] : 2)}</em></label>`
       : `<label class="srow chk"><span>${r[2]}</span><input type="checkbox" data-k="${r[1]}" ${S[r[1]] ? 'checked' : ''}></label>`)).join('');
   },
   bindSettings(b) {
     const S = Settings;
+    for (const sel of b.querySelectorAll('select[data-k]')) {
+      sel.onchange = () => { S[sel.dataset.k] = sel.value; saveSettings(); if (/^coll/.test(sel.dataset.k)) refilterBeings(); };
+    }
     for (const inp of b.querySelectorAll('input[data-k]')) {
       inp.oninput = () => {
         const k = inp.dataset.k;
@@ -7877,7 +7951,12 @@ const UI = {
       ['range', 'lightningChance', 'Tormenta eléctrica (rayos)', 0, 1, 0.05],
       ['range', 'slowmo', 'Velocidad de la cámara lenta', 0.05, 0.6, 0.05],
     ];
-    const b = this.openModal(`<h2>Entorno</h2><div class="settings">${this.settingsRows(rows)}</div><div class="row"><button class="btn" id="eDay">Día</button><button class="btn" id="eNight">Noche</button><button class="btn" id="eBack">Hecho</button></div>`);
+    const coll = [
+      ['select', 'collHumans', 'Humanos', [['none', 'Sin colisiones entre humanos'], ['dead', 'Sin colisiones con humanos muertos'], ['all', 'Con colisiones']]],
+      ['select', 'collZombies', 'Zombis', [['none', 'Sin colisiones entre zombis'], ['dead', 'Sin colisiones con zombis muertos'], ['all', 'Con colisiones']]],
+      ['select', 'collAndroids', 'Androides', [['none', 'Sin colisiones entre androides'], ['dead', 'Sin colisiones con androides muertos'], ['all', 'Con colisiones']]],
+    ];
+    const b = this.openModal(`<h2>Entorno</h2><div class="settings">${this.settingsRows(rows)}</div><h2 style="margin-top:16px">Colisiones entre seres</h2><div class="settings">${this.settingsRows(coll)}</div><div class="row"><button class="btn" id="eDay">Día</button><button class="btn" id="eNight">Noche</button><button class="btn" id="eBack">Hecho</button></div>`);
     this.bindSettings(b);
     const setAmb = (v) => { Settings.ambient = v; saveSettings(); const r = b.querySelector('input[data-k="ambient"]'); r.value = v; b.querySelector('em[data-v="ambient"]').textContent = v.toFixed(2); this.refreshTop(); };
     b.querySelector('#eDay').onclick = () => setAmb(1);
@@ -7892,12 +7971,13 @@ const UI = {
       <div><b>Clic izquierdo</b> agarrar y arrastrar · en un hueco: seleccionar con un recuadro · <b>Mayús + clic</b> añadir o quitar de la selección</div>
       <div><b>${K('rotLeft')} / ${K('rotRight')}</b> girar lo que arrastras (<b>Mayús</b>: más rápido); mantiene ese ángulo mientras no lo sueltes · <b>${K('flip')}</b> voltear lo que arrastras o señalas (una persona sigue sosteniendo lo que tenga en las manos)</div>
       <div><b>${K('activate')}</b> activar lo que señalas (mantener: uso continuo) · arrastrando a alguien por el brazo, <b>${K('activate')}</b> hace que su mano agarre lo que tenga cerca (otra vez: soltar)</div>
-      <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA...) · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
+      <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA...); con varias cosas seleccionadas, cada opción se aplica a todas las que la admiten · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
       <div><b>${K('delete')}</b> borrar · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar · <b>Alt</b> ajustar a la cuadrícula</div>
       <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas)</div>
       <div><b>${K('toggleUI')}</b> ocultar la interfaz · <b>${K('pinSnap')}</b> con la bisagra: al centro de masa · <b>Esc</b> menú</div>
       <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
-      <div class="sub">IA: las personas huyen de los zombis (o los atacan si tienen un arma) y se defienden de quien les ataque. Se activa o desactiva en cada una con clic derecho.</div>
+      <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan apuntando sin herir a otros, pelean cuerpo a cuerpo, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
+      <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable de cobre a lámparas, motores, máquinas... o a una persona. Señales: botones, detectores, contadores y retardadores se unen con el cable de activación.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
@@ -12088,7 +12168,7 @@ Human.prototype.posing = function () { return this.forcedPose && this.alive && t
     const fp = this.forcedPose;
     if (!this.zombie) {
       if ((fp === 'walk' || fp === 'stumble') && this.posing() && this.state === 'stand' && !this.dragged) {
-        this.walking = true;
+        this.walking = true; this.walkSpeed = fp === 'stumble' ? 0.6 : 0.8;
         if (fp === 'stumble') { this._stT = (this._stT || 0) - dt; if (this._stT <= 0) { this._stT = rand(0.5, 1.4); this.walkDir = Math.random() < 0.7 ? this.facing : -this.facing; } }
         else this.walkDir = this.facing;
         // si se queda atascado contra algo, se da la vuelta
@@ -12437,8 +12517,14 @@ function spawnInfoDisplays() {
 
 /* ---- 32_ai.js ---- */
 /* =========================================================================
-   IA DE LAS PERSONAS (se activa en el menú contextual): huyen de los zombis
-   o los atacan con sus armas, y se defienden de quien les ataca
+   IA DE LAS PERSONAS (se activa en el menú contextual de cada una)
+   Perciben lo que es hostil de verdad (zombis vivos y conscientes, quien les
+   ha atacado, explosivos encendidos, fuego), deciden con compromiso (no
+   cambian de idea a cada momento) y actúan: huir corriendo, recoger un arma
+   agachándose, disparar apuntando y manteniendo la distancia sin herir a
+   otros, pelear cuerpo a cuerpo, lanzar cócteles, apartarse de explosivos,
+   saltar obstáculos bajos y no tirarse por los bordes.
+   Los zombis sólo contagian al morder o arañar (de pie y conscientes).
    ========================================================================= */
 
 // quién causa el daño que se está aplicando ahora (para saber quién atacó a quién)
@@ -12484,42 +12570,474 @@ Human.prototype.noteAttacker = function (a) {
 };
 
 const AI = {
-  isRanged(it) { return !!(it && it.def && (it.def.gun || it.def.cat === 'firearms' || it.def.cat === 'energy' || it.def.cat === 'launchers')); },
-  isMelee(it) { return !!(it && it.def && it.def.cat === 'melee'); },
-  weapon(h) { for (const s of ['F', 'B']) { const it = h.held[s]; if (it && !it.dead && (this.isRanged(it) || this.isMelee(it))) return it; } return null; },
+  // armas que la IA sabe usar
+  RANGED_EXTRA: new Set(['laser_rifle', 'heat_ray', 'freeze_ray', 'flamethrower', 'storm_gun', 'auto_spike_gun', 'shard_launcher']),
+  NOT_WEAPON: new Set(['heal_gun', 'reconstructor', 'rigidifier', 'defibrillator', 'flare_gun', 'taser', 'stunner']),
+  EXPLOSIVE_SHOT: new Set(['rocket_launcher', 'grenade_launcher', 'bazooka', 'missile_launcher']),
+  isRanged(it) { const d = it && it.def; if (!d || this.NOT_WEAPON.has(d.id)) return false; return !!d.gun || this.RANGED_EXTRA.has(d.id); },
+  isMelee(it) { const d = it && it.def; return !!(d && d.grip && (d.cat === 'melee' || d.id === 'energy_sword')); },
+  isThrowable(it) { const d = it && it.def; return !!(d && d.id === 'molotov'); },
+  usable(it) { return this.isRanged(it) || this.isMelee(it) || this.isThrowable(it); },
+  weapon(h) { for (const s of ['F', 'B']) { const it = h.held[s]; if (it && !it.dead && this.usable(it)) return it; } return null; },
+  // cuánto vale un arma (mejor un arma de fuego que un palo)
+  score(it) {
+    const d = it.def;
+    if (this.isRanged(it)) return 60 + Math.min(30, (d.gun ? d.gun.power || 2 : 2) * 6);
+    if (this.isMelee(it)) return 25 + (d.edge || d.sharp ? 10 : 0);
+    if (this.isThrowable(it)) return 15;
+    return 0;
+  },
+  // distancia a la que se dispara cómodo: [mínima, máxima]
+  band(it) {
+    const id = it.def.id;
+    if (id === 'flamethrower') return [1.6, 4];
+    if (this.EXPLOSIVE_SHOT.has(id)) return [6, 14];
+    if (id === 'shotgun') return [2, 7];
+    if (id === 'heat_ray' || id === 'freeze_ray') return [2.5, 7];
+    return [3.2, 10];
+  },
+  // pausa entre disparos de un arma semiautomática
+  fireDelay(it) {
+    if (this.EXPLOSIVE_SHOT.has(it.def.id)) return rand(1.4, 2);
+    const p = it.def.gun ? it.def.gun.power || 1 : 1;
+    return clamp(0.28 + p * 0.1, 0.3, 1.5) * rand(0.9, 1.35);
+  },
   pos(t) { return (t.isHuman ? t.root.body : t.main).getPosition(); },
+  feetY(h) {
+    let y = -1e9;
+    for (const id of ['footF', 'footB', 'lowerLegF', 'lowerLegB']) { const L = h.limbs[id]; if (L && !L.destroyed && L.connected) y = Math.max(y, L.body.getPosition().y + (L.def.foot ? 0.08 : 0.3)); }
+    return y > -1e8 ? y : h.root.body.getPosition().y + 1.3;
+  },
+  // ¿le ve? (sólo tapa el escenario)
   canSee(h, t) {
-    const a = h.limbs.head.body.getPosition(), b = t.isHuman ? t.limbs.upperBody.body.getPosition() : t.pos();
+    const head = h.limbs.head.destroyed ? h.root : h.limbs.head;
+    const a = head.body.getPosition(), b = t.isHuman ? (t.limbs.upperBody.destroyed ? t.root : t.limbs.upperBody).body.getPosition() : t.pos();
     return !rayFirst(a.x, a.y, b.x, b.y, (f) => { const o = thingOf(f); return !!(o && o.isTerrain); });
   },
-};
-Human.prototype.aiThink = function () {
-  const p = AI.pos(this);
-  // enemigo: quien le atacó (mientras siga en pie y no haya pasado mucho rato)
-  const ag = this.aggressor;
-  if (ag && (ag.dead || !ag.alive || ag.consc < 0.35 || Phys.time - this.aggrT > 45 || Phys.time - Math.max(this._lastLand || 0, this.aggrT) > 12 || Math.hypot(AI.pos(ag).x - p.x, AI.pos(ag).y - p.y) > 30)) this.aggressor = null;
-  // zombi más cercano
-  let zb = null, zd = 11;
-  for (const t of World.things) {
-    if (!t.isHuman || t === this || t.dead || !t.zombie || !t.alive) continue;
-    const q = AI.pos(t), d = Math.hypot(q.x - p.x, q.y - p.y);
-    if (d < zd && Math.abs(q.y - p.y) < 4) { zd = d; zb = t; }
-  }
-  const wpn = AI.weapon(this);
-  this.aiGoal = null;
-  if (this.aggressor) this.aiGoal = { kind: 'fight', t: this.aggressor };
-  else if (zb && wpn) this.aiGoal = { kind: 'fight', t: zb };
-  else if (zb) {
-    // sin arma: si hay una a mano (más cerca que el zombi), ir a por ella; si no, huir
-    let best = null, bd = Math.min(4, zd * 0.8);
-    for (const t of World.things) {
-      if (t.isHuman || t.dead || t.holder || t.anyFrozen() || !t.def || !t.def.grip || !(AI.isRanged(t) || AI.isMelee(t))) continue;
-      const q = t.pos(), d = Math.hypot(q.x - p.x, q.y - p.y);
-      if (d < bd && Math.abs(q.y - p.y) < 1.5) { bd = d; best = t; }
+  // lo que hay delante al andar: pared, obstáculo bajo (se puede saltar) o borde (caída o lava)
+  ahead(h, dir, look = 0.65) {
+    const hip = h.limbs.lowerBody.body.getPosition(), fy = this.feetY(h);
+    const solid = (min) => (f) => {
+      if (f.isSensor()) return false;
+      const o = thingOf(f); if (!o || o === h) return false;
+      if (o.isTerrain || f.getBody().getType() !== 'dynamic') return true;
+      return !o.isHuman && o.mass && o.mass() > min;
+    };
+    const wall = !!rayFirst(hip.x, fy - 1.15, hip.x + dir * look, fy - 1.15, solid(25));
+    const low = !wall && !!rayFirst(hip.x, fy - 0.25, hip.x + dir * 0.6, fy - 0.25, solid(25));
+    const ax = hip.x + dir * 0.9;
+    const ground = rayFirst(ax, fy - 0.5, ax, fy + 1.7, solid(15));
+    const liq = ground && Water.at(ax, ground.y + 0.05);
+    return { wall, low, edge: !ground || !!(liq && liq.kind === 'lava') };
+  },
+  // camino andando hasta x2 siguiendo el suelo: escalones que se pueden subir de un salto, bajadas
+  // moderadas, sin paredes, sin obstáculos altos, sin lava ni vacío. Devuelve null si no se puede
+  path(h, x2, maxLen = 10.5) {
+    const x1 = h.limbs.lowerBody.body.getPosition().x, len = Math.abs(x2 - x1);
+    if (len > maxLen) return null;
+    const solid = (f) => {
+      if (f.isSensor()) return false;
+      const o = thingOf(f); if (!o || o === h || o.isHuman) return false;
+      return o.isTerrain || f.getBody().getType() !== 'dynamic' || (o.mass && o.mass() > 25);
+    };
+    const dir = Math.sign(x2 - x1) || 1, n = Math.max(1, Math.ceil(len / 0.4));
+    let x = x1, y = this.feetY(h), cost = 0, hops = 0;
+    for (let i = 1; i <= n; i++) {
+      const nx = i === n ? x2 : x1 + dir * i * 0.4;
+      // pared u obstáculo más alto de lo que se puede saltar
+      if (rayFirst(x, y - 1.15, nx, y - 1.15, solid) || rayFirst(x, y - 0.72, nx, y - 0.72, solid)) return null;
+      // suelo en el siguiente punto
+      const g = rayFirst(nx, y - 0.7, nx, y + 1.8, solid);
+      if (!g) return null;
+      const rise = y - g.y;
+      if (rise > 0.66) return null;
+      const liq = Water.at(nx, g.y - 0.05); if (liq && liq.kind === 'lava') return null;
+      if (rise > 0.18) { hops++; cost += 1.2; } else if (rise < -0.5) cost += 0.6;
+      cost += Math.hypot(nx - x, g.y - y);
+      x = nx; y = g.y;
     }
-    this.aiGoal = best ? { kind: 'pickup', t: best } : { kind: 'flee', t: zb };
-  }
+    return { cost, hops, floorY: y, x1 };
+  },
+  // punto al que apuntar
+  aimPoint(t, head) {
+    if (!t.isHuman) { const c = t.main.getWorldCenter(); return [c.x, c.y]; }
+    const L = head && !t.limbs.head.destroyed ? t.limbs.head : (t.limbs.upperBody.destroyed ? t.root : t.limbs.upperBody);
+    const p = L.body.getPosition(); return [p.x, p.y];
+  },
+  hostileTo(h, o) { return !!(o && o.isHuman && !o.dead && ((o.zombie && o.alive) || o === h.aggressor)); },
 };
+
+/* ---------------- percepción ---------------- */
+Human.prototype.aiSense = function () {
+  const p = AI.pos(this), now = Phys.time;
+  const S = { zombies: [], danger: null, weapons: [], nearZ: false };
+  // quien le atacó deja de ser su enemigo si cae, se aleja o pasa mucho rato sin pelea
+  const ag = this.aggressor;
+  if (ag) {
+    const q = ag.dead ? null : AI.pos(ag);
+    if (!q || !ag.alive || ag.consc < 0.35 || now - this.aggrT > 45 || now - Math.max(this._lastLand || 0, this.aggrT) > 12 || Math.hypot(q.x - p.x, q.y - p.y) > 30) this.aggressor = null;
+  }
+  const fy = AI.feetY(this), wantW = !this.held.F || !this.held.B;
+  for (const t of World.things) {
+    if (t === this || t.dead) continue;
+    if (t.isHuman) {
+      // sólo los zombis vivos son hostiles: los muertos ya no pueden hacer nada
+      if (!t.zombie || !t.alive || !t.root || t.root.destroyed) continue;
+      const q = AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+      if (d < 20 && t.consc >= 0.35) S.nearZ = true;
+      if (d > 18 || (d > 2.5 && !AI.canSee(this, t))) continue;
+      S.zombies.push({ t, d, dx, active: t.consc >= 0.35 });
+      continue;
+    }
+    if (!t.def || !t.main || t.isTerrain) continue;
+    const q = t.main.getWorldCenter(), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+    // explosivo encendido o fuego cerca: apartarse
+    const e = t.def.explosive;
+    if (e && t.vars.lit && (e.power || 0) > 0.3) {
+      const r = Math.min(10, 1.9 * Math.sqrt(e.power) * 1.6 + 1.2);
+      if (d < r && (!S.danger || d / r < S.danger.k)) S.danger = { x: q.x, y: q.y, r, k: d / r, t };
+    } else if (t.fire > 0.3 && d < 1.8 && !t.holder && (!S.danger || S.danger.k > 0.9)) S.danger = { x: q.x, y: q.y, r: 2.4, k: 0.9, t };
+    // armas en un radio de 10 m (luego se mira si se puede llegar)
+    if (wantW && AI.usable(t) && !t.holder && d < 10 && q.y > fy - 3 && t.mass() < 15 && !t.anyFrozen() && !Stuck.isStuck(t) && !(this._badW && this._badW.get(t) > now)) S.weapons.push({ t, d: Math.abs(dx), dx, sc: AI.score(t) });
+  }
+  S.zombies.sort((a, b) => a.d - b.d);
+  return (this.sense = S);
+};
+// el arma que le conviene ir a buscar: la más fácil de alcanzar andando (sin paredes, saltos imposibles
+// ni lava), sin zombis ni peligros por el camino y a la que llegue antes que el enemigo
+Human.prototype.aiPickWeapon = function (enemy) {
+  const S = this.sense, p = AI.pos(this);
+  let best = null, bs = -1e9;
+  const cands = S.weapons.slice().sort((a, b) => a.d - b.d).slice(0, 5);
+  for (const w of cands) {
+    const q = w.t.main.getWorldCenter(), x1 = this.limbs.lowerBody.body.getPosition().x, dirTo = Math.sign(q.x - x1) || 1;
+    // desde dónde cogerla: justo debajo o a un lado (por ejemplo junto a la mesa en la que está), con sitio libre
+    // por encima de la cabeza hasta el arma; según la altura: agacharse, alcanzarla de pie o saltar
+    let path = null, mode = null, sx = 0;
+    for (const off of [0, 0.45, 0.85]) {
+      const x = q.x - dirTo * off, pa = AI.path(this, x);
+      if (!pa) continue;
+      const hh = pa.floorY - q.y;
+      if (hh > 2.45 || hh < -0.4) continue;
+      const m = hh < 0.6 ? 'crouch' : hh < 1.85 ? 'reach' : 'jump';
+      if (off > (m === 'crouch' ? 0.5 : 0.95)) continue;
+      if (m !== 'crouch' && rayFirst(x, pa.floorY - 0.3, x, Math.max(q.y + 0.3, pa.floorY - 2.2), (f) => { if (f.isSensor()) return false; const o = thingOf(f); return !!(o && o !== this && o !== w.t && !o.isHuman && (o.isTerrain || f.getBody().getType() !== 'dynamic' || (o.mass && o.mass() > 10))); })) continue;
+      path = pa; mode = m; sx = x; break;
+    }
+    if (!path) continue;
+    // nada hostil en el camino (ni justo detrás del arma)
+    const lo = Math.min(path.x1, q.x) - 0.6, hi = Math.max(path.x1, q.x) + 0.6;
+    const onPath = (x, y, m) => x > lo - m && x < hi + m && Math.abs(y - path.floorY) < 2.5;
+    if (S.zombies.some((z) => z.active && onPath(AI.pos(z.t).x, AI.pos(z.t).y, 1.2))) continue;
+    if (this.aggressor && !this.aggressor.dead && onPath(AI.pos(this.aggressor).x, AI.pos(this.aggressor).y, 1.2)) continue;
+    if (S.danger && onPath(S.danger.x, S.danger.y, S.danger.r)) continue;
+    // tiene que llegar (y cogerla) antes de que el enemigo le alcance
+    if (enemy && enemy.active) {
+      const tEnemy = Math.max(0, enemy.d - 1) / (enemy.t.zombie ? 1.1 : 2), tMe = path.cost / 2.1 + (mode === 'jump' ? 1.2 : 0.6);
+      if (tMe > tEnemy && w.d > 0.6) continue;
+    }
+    const sc = w.sc - path.cost * 4 - path.hops * 2 - (mode === 'jump' ? 6 : 0);
+    if (sc > bs) { bs = sc; best = { w: w.t, mode, sx }; }
+  }
+  return best;
+};
+// ¿sigue siendo seguro ir a por el arma? (ningún zombi activo, enemigo ni peligro entre él y el arma)
+Human.prototype.aiFetchSafe = function (g) {
+  const S = this.sense, x1 = this.limbs.lowerBody.body.getPosition().x, q = g.w.main.getWorldCenter(), fy = AI.feetY(this);
+  const lo = Math.min(x1, q.x) - 0.6, hi = Math.max(x1, q.x) + 0.6;
+  const on = (x, y, m) => x > lo - m && x < hi + m && Math.abs(y - fy) < 2.5;
+  if (S.zombies.some((z) => z.active && on(AI.pos(z.t).x, AI.pos(z.t).y, 1.0))) return false;
+  if (this.aggressor && !this.aggressor.dead && on(AI.pos(this.aggressor).x, AI.pos(this.aggressor).y, 1.0)) return false;
+  return !(S.danger && on(S.danger.x, S.danger.y, S.danger.r));
+};
+Human.prototype.aiBan = function (w, secs = 10) { (this._badW || (this._badW = new Map())).set(w, Phys.time + secs); };
+
+/* ---------------- decisión (con compromiso: no cambia de idea a cada momento) ---------------- */
+Human.prototype.aiDecide = function () {
+  const S = this.sense, now = Phys.time, wpn = AI.weapon(this), p = AI.pos(this);
+  let want = { kind: 'idle' };
+  if (this.fire > 0.25) want = { kind: 'panic' };
+  else if (S.danger) want = { kind: 'avoid', d: S.danger };
+  else {
+    let enemy = null;
+    if (this.aggressor) { const q = AI.pos(this.aggressor), dx = q.x - p.x; enemy = { t: this.aggressor, active: true, d: Math.hypot(dx, q.y - p.y), dx }; }
+    else {
+      const za = S.zombies.find((z) => z.active);
+      // sólo los zombis activos: a uno caído o muerto ni se le teme ni se le dispara
+      if (za) enemy = za;
+    }
+    if (enemy) {
+      if (wpn && AI.isRanged(wpn)) want = { kind: 'shoot', t: enemy.t };
+      else if (wpn && AI.isThrowable(wpn) && enemy.d > 3 && enemy.d < 10 && enemy.active) want = { kind: 'throw', t: enemy.t };
+      else if (wpn && AI.isMelee(wpn)) want = { kind: 'melee', t: enemy.t };
+      else {
+        const w = this.aiPickWeapon(enemy);
+        if (w) want = { kind: 'fetch', w: w.w, mode: w.mode, sx: w.sx };
+        else if (enemy.t.zombie) want = { kind: 'flee', t: enemy.t };
+        else want = { kind: 'brawl', t: enemy.t };
+      }
+    } else if (!wpn && S.nearZ && S.weapons.length) {
+      // hay un zombi cerca aunque no lo vea: si tiene un arma fácil de coger, va a por ella
+      const w = this.aiPickWeapon(null);
+      if (w) want = { kind: 'fetch', w: w.w, mode: w.mode, sx: w.sx };
+    }
+  }
+  const cur = this.aiGoal;
+  const same = cur && cur.kind === want.kind && cur.t === want.t && cur.w === want.w;
+  if (same) return;
+  const urgent = want.kind === 'panic' || want.kind === 'avoid';
+  if (cur && !urgent && this.aiValid(cur)) {
+    // compromiso mínimo
+    if (now - cur.t0 < 0.9) return;
+    // recoger un arma: hasta tenerla, salvo que el enemigo ya esté encima o el camino deje de ser seguro
+    if (cur.kind === 'fetch' && want.kind !== 'shoot' && want.kind !== 'melee' && !(want.t && Math.hypot(AI.pos(want.t).x - p.x, AI.pos(want.t).y - p.y) < 1.4)) {
+      if (cur.pick !== undefined || cur.jumps || this.aiFetchSafe(cur)) return;
+      this.aiBan(cur.w, 3);
+    }
+    // huir: mientras el zombi siga activo y cerca
+    if (cur.kind === 'flee' && (want.kind === 'idle' || want.kind === 'flee') && cur.t.alive && cur.t.consc >= 0.35 && Math.hypot(AI.pos(cur.t).x - p.x, AI.pos(cur.t).y - p.y) < 13) return;
+    // apartarse: hasta que acabe el peligro
+    if (cur.kind === 'avoid' && cur.until > now) return;
+  }
+  this.aiStopUse();
+  this.punch = null; this.kick = null;
+  want.t0 = now;
+  this.aiSetGoal(want.kind === 'idle' ? null : want);
+};
+// cambiar de objetivo (deshaciendo lo que dejara a medias el anterior)
+Human.prototype.aiSetGoal = function (g) {
+  const o = this.aiGoal;
+  if (o && o !== g && o.kind === 'fetch' && o.nc && o.w.holder !== this) for (const [a, b] of o.nc) if (a.getWorld && b.getWorld) Stuck.pend.push({ a, b, t: 0.3 });
+  this.aiGoal = g || null;
+};
+Human.prototype.aiValid = function (g) {
+  if (!g) return false;
+  if (g.t && (g.t.dead || !g.t.alive)) return false;
+  if (g.w && (g.w.dead || g.w.holder)) return false;
+  if (g.kind === 'avoid') return !!(g.d.t && !g.d.t.dead);
+  return true;
+};
+Human.prototype.aiStopUse = function () { const u = this._aiUsing; if (u) { this._aiUsing = null; if (!u.dead) u.use(false); } };
+Human.prototype.aiStop = function () {
+  this.aiStopUse();
+  this.aiSetGoal(null); this.aiAim = null; this.punch = null; this.kick = null; this.walking = false;
+  this.endFightNoCollide();
+};
+
+/* ---------------- moverse ---------------- */
+Human.prototype.aiFace = function (dir) {
+  if (!dir || Math.sign(dir) === this.facing || this.state !== 'stand' || this.dragged) return;
+  if (this._flipT && this.t - this._flipT < 0.45) return;
+  this._flipT = this.t; this.flipFacing();
+};
+// andar o correr en una dirección; devuelve false si no puede (pared o borde)
+Human.prototype.aiMove = function (dir, speed, backward) {
+  // con las piernas dañadas no puede andar: se arrastra con los brazos
+  if (this.state === 'lying' && !this.dragged && this.legsOut() && this.canCrawl()) {
+    this.walking = false; this.crawling = true; this.crawlDir = dir; this.crawlSpeed = 0.5;
+    this.crawlLead(dir);
+    return true;
+  }
+  if (this.state !== 'stand' || this.dragged) { this.walking = false; return this.state !== 'stand'; }
+  const ah = AI.ahead(this, dir, 0.55 + speed * 0.3);
+  if (ah.wall || ah.edge) { this.walking = false; return false; }
+  if (!backward) this.aiFace(dir);
+  this.walking = true; this.walkDir = dir; this.walkSpeed = speed;
+  // atascado contra algo bajo: saltar
+  const vx = this.root.body.getLinearVelocity().x;
+  if (ah.low || Math.abs(vx) < 0.12) this._stuckT = (this._stuckT || 0) + (this._aiDt || 1 / 60); else this._stuckT = 0;
+  if ((ah.low && this._stuckT > 0.15) || this._stuckT > 0.7) { this.aiHop(dir); this._stuckT = 0; }
+  return true;
+};
+Human.prototype.aiJumpFor = function (g) {
+  if (!this.grounded()) return;
+  g.jumps = (g.jumps || 0) + 1;
+  this._hopT = this.t;
+  const q = g.w.main.getWorldCenter(), hip = this.limbs.lowerBody.body.getPosition(), dx = q.x - hip.x;
+  for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const b = L.body, m = b.getMass(); b.applyLinearImpulse(V(clamp(dx * 2, -1, 1) * m, -4.3 * m), b.getWorldCenter(), true); }
+};
+Human.prototype.aiHop = function (dir) {
+  if ((this._hopT && this.t - this._hopT < 1.1) || !this.grounded()) return;
+  this._hopT = this.t;
+  for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const b = L.body, m = b.getMass(); b.applyLinearImpulse(V(dir * 1.2 * m, -3.7 * m), b.getWorldCenter(), true); }
+};
+
+/* ---------------- acciones ---------------- */
+Human.prototype.aiAct = function (dt) {
+  const g = this.aiGoal;
+  this.aiAim = null;
+  if (!g || g.kind !== 'brawl') this.endFightNoCollide();
+  if (!g) return false;
+  if (!this.aiValid(g)) { this.aiStopUse(); this.aiSetGoal(null); return false; }
+  const p = AI.pos(this), now = Phys.time;
+  const standing = this.state === 'stand' && !this.dragged;
+  // si está en el suelo y hay peligro, se levanta cuanto antes
+  if (this.state === 'lying' && this.getupWait > 0.5) this.getupWait = 0.5;
+  switch (g.kind) {
+    case 'panic': {
+      // ardiendo: corre de un lado a otro
+      g.flip = (g.flip || 0) - dt;
+      if (g.flip <= 0 || !g.dir) { g.dir = g.dir ? -g.dir : (Math.random() < 0.5 ? -1 : 1); g.flip = rand(1.2, 2.4); }
+      if (!this.aiMove(g.dir, 1.9)) g.flip = 0;
+      if (this.fire <= 0.1) this.aiSetGoal(null);
+      return true;
+    }
+    case 'avoid': {
+      const D = g.d, dx = D.x - p.x, d = Math.hypot(dx, D.y - p.y);
+      if (!g.until) g.until = now + 1.2;
+      if (d > D.r + 1.5 && now > g.until) { this.aiSetGoal(null); return false; }
+      if (!this.aiMove(-Math.sign(dx) || -this.facing, 2.1)) { this.walking = false; this.fear = Math.max(this.fear, 0.6); }
+      return true;
+    }
+    case 'flee': {
+      const t = g.t, q = AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+      if (t.consc < 0.35) { this.aiSetGoal(null); return false; }
+      if (g.cornered) {
+        // acorralado: le planta cara (y le golpea si se acerca); al rato vuelve a intentar escapar
+        this.aiFace(Math.sign(dx));
+        this.walking = false;
+        if (d < 1.4) this.aiStrike(t, dt, d, dx, standing, null);
+        if (now - g.cornerT > 3 && !AI.ahead(this, -Math.sign(dx)).wall) g.cornered = false;
+        return true;
+      }
+      // de lejos sólo vigila; si se acerca, corre
+      if (d < 9.5) g.running = true; else if (d > 13) g.running = false;
+      if (!g.running) { this.walking = false; this.aiFace(Math.sign(dx)); return true; }
+      if (!this.aiMove(-Math.sign(dx) || -this.facing, 2.1)) {
+        g.blockedT = (g.blockedT || 0) + dt;
+        if (g.blockedT > 0.4) { g.cornered = true; g.cornerT = now; }
+      } else g.blockedT = 0;
+      return true;
+    }
+    case 'fetch': {
+      const w = g.w, q = w.main.getWorldCenter(), hip = this.limbs.lowerBody.body.getPosition();
+      // el sitio desde el que cogerla se mueve con el arma (si alguien la empuja)
+      if (g.sx0 === undefined) { g.sx0 = g.sx; g.wx0 = q.x; }
+      const dx = (g.sx0 + (q.x - g.wx0)) - hip.x;
+      const side = !this.held.F && !this.limbs.lowerArmF.destroyed ? 'F' : !this.held.B && !this.limbs.lowerArmB.destroyed ? 'B' : null;
+      if (!side) { this.aiSetGoal(null); return false; }
+      const grab = (reach) => {
+        const hp = this.handPoint(side);
+        if (!w.holder && Math.hypot(q.x - hp[0], q.y - hp[1]) < reach) { Holding.attach(w, this, side); this.aiSetGoal(null); return true; }
+        return false;
+      };
+      // mientras va a por ella no la patea (sus piernas la atraviesan)
+      if (!g.nc) { g.nc = []; for (const wb of w.bodies) for (const lb of this.bodies) { setNoCollide(wb, lb, true); g.nc.push([wb, lb]); } }
+      if (g.jumps && !(this.t - this._hopT > 0.6 && this.grounded())) {
+        // saltando hacia el arma con la mano estirada: la coge al pasar cerca
+        this.walking = false;
+        grab(0.55);
+        return true;
+      }
+      if (g.jumps >= 3) { this.aiBan(w); this.aiSetGoal(null); return false; }
+      if (g.pick !== undefined) {
+        // agachado (o estirando el brazo) para cogerla
+        this.walking = false;
+        g.pick -= dt;
+        if (g.pick <= 0 && !grab(g.mode === 'reach' ? 1.0 : 1.4)) { this.aiBan(w); this.aiSetGoal(null); }
+        return true;
+      }
+      if (Math.abs(dx) < 0.4 && (standing || this.crawling || (this.state === 'lying' && this.legsOut()))) {
+        if (g.mode === 'jump' && standing) this.aiJumpFor(g);
+        else g.pick = g.mode === 'reach' ? 0.35 : 0.45;
+        this.walking = false;
+        return true;
+      }
+      const threat = this.sense && this.sense.zombies.some((z) => z.active && z.d < 8);
+      if (!this.aiMove(Math.sign(dx), Math.abs(dx) < 1.2 ? 0.8 : threat || this.aggressor ? 2.1 : 1.2)) { g.fail = (g.fail || 0) + dt; if (g.fail > 1.2) { this.aiBan(w); this.aiSetGoal(null); } }
+      if (now - g.t0 > 10) { this.aiBan(w); this.aiSetGoal(null); }
+      return true;
+    }
+    case 'shoot': {
+      const t = g.t, wpn = AI.weapon(this);
+      if (!wpn || !AI.isRanged(wpn) || (t.zombie && t.consc < 0.35)) { this.aiStopUse(); this.aiSetGoal(null); return false; }
+      const q = AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+      if (g.head === undefined) g.head = Math.random() < 0.25;
+      const tq = AI.aimPoint(t, g.head);
+      const [lo, hi] = AI.band(wpn);
+      this.aiAim = tq;
+      // el arma pesa y el brazo cede: se corrige con la dirección real del cañón
+      if (this.aimBiasW !== wpn) { this.aimBiasW = wpn; this.aimBias = 0; }
+      { const mz = wpn.muzzle(), want = Math.atan2(-(tq[1] - mz.y), Math.abs(tq[0] - mz.x)), have = Math.atan2(-mz.dy, Math.abs(mz.dx));
+        if (Math.sign(mz.dx) === this.facing) this.aimBias = clamp(this.aimBias + angWrap(want - have) * 3 * dt, -1.0, 1.0); }
+      this.aiFace(Math.sign(dx));
+      // mantener la distancia
+      if (standing) {
+        if (d > hi + 1) this.aiMove(Math.sign(dx), d > hi + 6 ? 1.9 : 1.1);
+        else if (d < lo && t.consc >= 0.35) { if (!this.aiMove(-Math.sign(dx), 0.9, true)) this.walking = false; }
+        else this.walking = false;
+      }
+      // disparar si apunta bien y no hay nadie inocente en medio
+      g.cool = (g.cool || 0) - dt;
+      const ok = Math.sign(dx) === this.facing && d < hi + 5 && this.aiAimed(wpn, tq) && this.aiClearShot(wpn, t, tq);
+      if (this._aiUsing) {
+        g.burst -= dt;
+        if (g.burst <= 0 || !ok) { this.aiStopUse(); g.cool = rand(0.25, 0.5); }
+      } else if (g.cool <= 0 && ok) {
+        if (wpn.def.holdUse) { wpn.use(true); this._aiUsing = wpn; g.burst = rand(0.35, 0.8); }
+        else { activateThing(wpn); g.cool = AI.fireDelay(wpn); }
+      }
+      return true;
+    }
+    case 'melee': {
+      const t = g.t, wpn = AI.weapon(this);
+      if (!wpn || !AI.isMelee(wpn) || (t.zombie && t.consc < 0.35)) { this.aiSetGoal(null); return false; }
+      const q = AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+      this.aiFace(Math.sign(dx));
+      if (standing && Math.abs(dx) > 1.05 && !this.punch) this.aiMove(Math.sign(dx), d > 4 ? 1.9 : 1.1); else this.walking = false;
+      this.aiStrike(t, dt, d, dx, standing, wpn);
+      return true;
+    }
+    case 'throw': {
+      const t = g.t, it = AI.weapon(this);
+      if (!it || !AI.isThrowable(it)) { this.aiSetGoal(null); return false; }
+      const q = AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+      this.aiFace(Math.sign(dx)); this.walking = false;
+      if (Math.sign(dx) !== this.facing || !standing) return true;
+      if (g.wind === undefined) g.wind = 0.4;
+      g.wind -= dt;
+      if (g.wind > 0) return true;
+      // lanzarlo con la parábola justa para que caiga a sus pies
+      const mp = it.main.getWorldCenter(), T = clamp(d / 7, 0.45, 1.05), G = GRAVITY * Settings.gravity;
+      Holding.release(it);
+      it.main.setLinearVelocity(V((q.x - mp.x) / T, (q.y + 0.6 - mp.y) / T - 0.5 * G * T));
+      it.main.setAngularVelocity(this.facing * 9);
+      this.aiSetGoal({ kind: 'avoid', d: { x: q.x, y: q.y, r: 2.5, t: it }, t0: now, until: now + 1.5 });
+      return true;
+    }
+    case 'brawl': {
+      const t = g.t, q = AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+      this.fightNoCollide(t.isHuman ? t : null);
+      this.aiFace(Math.sign(dx));
+      if (standing && !this.punch && !this.kick) {
+        if (d > 0.75) this.aiMove(Math.sign(dx), d > 3 ? 1.9 : 1.0); else this.walking = false;
+      }
+      this.aiStrike(t, dt, d, dx, standing, null);
+      return true;
+    }
+  }
+  return false;
+};
+// ¿el arma apunta al objetivo?
+Human.prototype.aiAimed = function (wpn, tq) {
+  const mz = wpn.muzzle();
+  const a1 = Math.atan2(mz.dy, mz.dx), a2 = Math.atan2(tq[1] - mz.y, tq[0] - mz.x);
+  return Math.abs(angWrap(a1 - a2)) < 0.16;
+};
+// ¿hay vía libre? (ni una pared ni alguien que no sea un enemigo en la línea de tiro)
+Human.prototype.aiClearShot = function (wpn, t, tq) {
+  const mz = wpn.muzzle();
+  for (const h of rayAll(mz.x, mz.y, tq[0], tq[1])) {
+    const o = h.d.thing;
+    if (!o || o === this || o === wpn || h.f.isSensor()) continue;
+    if (o.isTerrain) return false;
+    if (o.isHuman) return o === t || AI.hostileTo(this, o);
+    if (h.b.getType() !== 'dynamic' || (o.mass && o.mass() > 60)) return false;
+  }
+  return true;
+};
+
+/* ---------------- cuerpo a cuerpo: puñetazos, golpes con armas y patadas ---------------- */
 // mientras dos personas pelean, sus brazos no chocan entre sí (si no, se quedan trabados con los brazos
 // estirados sin poder acercarse); los puños sí chocan con el cuerpo y la cabeza del otro
 const ARM_IDS = ['upperArmF', 'lowerArmF', 'upperArmB', 'lowerArmB'];
@@ -12536,83 +13054,31 @@ Human.prototype.endFightNoCollide = function () {
   for (const [a, b] of this._ncPairs) if (a.getWorld && b.getWorld) Stuck.pend.push({ a, b, t: 0.3 });
   this._ncPairs = null; this._ncWith = null;
 };
-Human.prototype.aiAct = function (dt) {
-  const g = this.aiGoal;
-  this.aiAim = null;
-  if (!g || g.kind !== 'fight') this.endFightNoCollide();
-  if (!g || !g.t || g.t.dead) return false;
-  const p = AI.pos(this), q = AI.pos(g.t), dx = q.x - p.x, dist = Math.hypot(dx, q.y - p.y);
-  const standing = this.state === 'stand' && !this.dragged;
-  const face = (dir) => { if (standing && dir && Math.sign(dir) !== this.facing && (!this._flipT || this.t - this._flipT > 0.7)) { this._flipT = this.t; this.flipFacing(); } };
-  if (g.kind === 'flee') {
-    face(-dx);
-    if (standing) { this.walking = true; this.walkDir = -Math.sign(dx) || 1; this.fear = Math.max(this.fear, 0.25); }
-    return true;
-  }
-  if (g.kind === 'pickup') {
-    face(dx);
-    if (dist < 0.8) { const side = this.held.F ? 'B' : 'F'; if (!this.held[side] && !g.t.holder) Holding.attach(g.t, this, side); this.aiGoal = null; return true; }
-    if (standing) { this.walking = true; this.walkDir = Math.sign(dx) || 1; }
-    return true;
-  }
-  // pelear
-  this.fightNoCollide(g.t.isHuman ? g.t : null);
-  const wpn = AI.weapon(this), ranged = AI.isRanged(wpn);
-  face(dx);
-  const want = ranged ? 4.5 : wpn ? 0.95 : 0.6;
-  if (standing) {
-    if (dist > want + (ranged ? 3 : 0.15)) { this.walking = true; this.walkDir = Math.sign(dx) || 1; }
-    else if (ranged && dist < 2.2) { this.walking = true; this.walkDir = -Math.sign(dx) || -1; }
-  }
+Human.prototype.aiStrike = function (t, dt, d, dx, standing, wpn) {
   this.aiCool = (this.aiCool || 0) - dt;
-  const tgtL = g.t.isHuman ? (g.t.limbs.upperBody.destroyed ? g.t.root : g.t.limbs.upperBody) : null;
-  const tp = tgtL ? tgtL.body.getPosition() : q;
-  if (ranged) {
-    this.aiAim = [tp.x, tp.y];
-    if (dist < 14 && this.aiCool <= 0 && Math.sign(dx) === this.facing && AI.canSee(this, g.t)) {
-      this.aiCool = rand(0.35, 0.8);
-      Combat.with(this, () => { if (wpn.def.holdUse) { wpn.use(true); setTimeout(() => { if (!wpn.dead) wpn.use(false); }, 350); } else activateThing(wpn); });
-    }
-  } else if (!this.punch && !this.kick && this.aiCool <= 0 && standing && g.t.isHuman && (g.t.state === 'lying' || g.t.state === 'getup') && Math.abs(dx) < 1.15) {
+  if (!t.isHuman) return;
+  const tgtL = t.limbs.upperBody.destroyed ? t.root : t.limbs.upperBody;
+  if (!this.punch && !this.kick && this.aiCool <= 0 && standing && (t.state === 'lying' || t.state === 'getup') && Math.abs(dx) < 1.15) {
     // en el suelo no le llegan los puños: una patada
     this.aiCool = rand(0.8, 1.2);
-    this.kick = { t: 0.3, tgt: g.t, best: 9, L: null };
-  } else if (!this.punch && !this.kick && this.aiCool <= 0 && tgtL && !tgtL.destroyed && (dist < want + 0.35 || (standing && dist < 1.4 && Math.abs(this.root.body.getLinearVelocity().x) < 0.2))) {
-    // golpe (también si están pegados y no pueden acercarse más): con el arma blanca o con el puño;
-    // a veces a la cabeza, que puede dejar inconsciente
+    this.kick = { t: 0.3, tgt: t, best: 9, L: null };
+  } else if (!this.punch && !this.kick && this.aiCool <= 0 && tgtL && !tgtL.destroyed && (d < (wpn ? 1.35 : 0.95) || (standing && d < 1.4 && Math.abs(this.root.body.getLinearVelocity().x) < 0.2))) {
+    // golpe con el arma o con el puño; a veces a la cabeza, que puede dejar inconsciente
     this.aiCool = wpn ? rand(0.6, 0.9) : rand(0.55, 0.85);
-    const side = this.held.F === wpn ? 'F' : this.held.B === wpn ? 'B' : (Math.random() < 0.5 ? 'F' : 'B');
+    const side = this.held.F === wpn && wpn ? 'F' : this.held.B === wpn && wpn ? 'B' : (Math.random() < 0.5 ? 'F' : 'B');
     const arm = this.limbs['lowerArm' + side];
-    const head = g.t.isHuman && !g.t.limbs.head.destroyed && Math.random() < 0.35;
-    const aimL = head ? g.t.limbs.head : tgtL;
+    const head = !t.limbs.head.destroyed && Math.random() < 0.35;
+    const aimL = head ? t.limbs.head : tgtL;
     if (!arm.destroyed) {
       const ab = arm.body, ap = ab.getPosition(), tq = aimL.body.getPosition(), ux = tq.x - ap.x, uy = tq.y - ap.y, ul = Math.hypot(ux, uy) || 1;
       ab.applyLinearImpulse(V(ux / ul * 5 * HUMAN_MASS_MUL, (uy / ul * 5 - 0.5) * HUMAN_MASS_MUL), ap, true);
       if (wpn) wpn.main.applyAngularImpulse(this.facing * wpn.main.getInertia() * 30, true);
-      // el brazo se estira hacia el objetivo y, al final del movimiento, se mira si ha llegado
-      this.punch = { side, aimL, t: 0.2, wpn, head, tgt: g.t, best: 9 };
+      this.punch = { side, aimL, t: 0.2, wpn, head, tgt: t, best: 9 };
     }
   }
   this.updatePunch(dt);
   this.updateKick(dt);
   if (this.kick) this.walking = false;
-  return true;
-};
-Human.prototype.updateKick = function (dt) {
-  const k = this.kick; if (!k) return;
-  const foot = this.limbs.footF;
-  if (k.tgt.dead || foot.destroyed || !this.alive || this.consc < 0.5 || this.state !== 'stand') { this.kick = null; return; }
-  const fp = foot.body.getPosition();
-  for (const L of k.tgt.limbList) { if (L.destroyed) continue; const p = L.body.getPosition(), d = Math.hypot(p.x - fp.x, p.y - fp.y); if (d < k.best) { k.best = d; k.L = L; } }
-  k.t -= dt;
-  if (k.t > 0) return;
-  this.kick = null;
-  if (!k.L || k.best > 0.32) return;
-  const lp = k.L.body.getPosition(), ux = Math.sign(lp.x - this.root.body.getPosition().x) || this.facing;
-  this._lastLand = Phys.time;
-  Combat.with(this, () => k.tgt.hurt(k.L, 0.09, 'blunt', lp.x, lp.y, ux, 0));
-  k.L.body.applyLinearImpulse(V(ux * 10 * HUMAN_MASS_MUL, -3 * HUMAN_MASS_MUL), lp, true);
-  Sound.play('impact_flesh', lp.x, lp.y, 0.8, { key: 'punch' + this.id, gap: 120 });
 };
 Human.prototype.updatePunch = function (dt) {
   const pu = this.punch; if (!pu) return;
@@ -12632,22 +13098,169 @@ Human.prototype.updatePunch = function (dt) {
   Sound.play('impact_flesh', lp.x, lp.y, 0.8, { key: 'punch' + this.id, gap: 120 });
   if (pu.tgt.isHuman && pu.tgt.state === 'stand' && Math.random() < (pu.wpn ? 0.35 : 0.18)) pu.tgt.setState('lying');
 };
-{
-  // la IA se ejecuta en cada actualización de las personas que la tienen activada
-  const up = Human.prototype.update;
-  Human.prototype.update = function (dt) {
-    up.call(this, dt);
-    const ai = this.ai !== undefined ? this.ai : Settings.aiDefault;
-    if (this.dead || !ai || this.zombie || !this.alive || this.consc < 0.5 || this.frozenSolid) {
-      this.aiGoal = null; this.aiAim = null; this.punch = null; this.kick = null; this.endFightNoCollide();
-      if (this.consc < 0.35) this.aggressor = null; // quien queda inconsciente pierde la pelea y no la retoma
-      return;
+Human.prototype.updateKick = function (dt) {
+  const k = this.kick; if (!k) return;
+  const foot = this.limbs.footF;
+  if (k.tgt.dead || foot.destroyed || !this.alive || this.consc < 0.5 || this.state !== 'stand') { this.kick = null; return; }
+  const fp = foot.body.getPosition();
+  for (const L of k.tgt.limbList) { if (L.destroyed) continue; const p = L.body.getPosition(), d = Math.hypot(p.x - fp.x, p.y - fp.y); if (d < k.best) { k.best = d; k.L = L; } }
+  k.t -= dt;
+  if (k.t > 0) return;
+  this.kick = null;
+  if (!k.L || k.best > 0.32) return;
+  const lp = k.L.body.getPosition(), ux = Math.sign(lp.x - this.root.body.getPosition().x) || this.facing;
+  this._lastLand = Phys.time;
+  Combat.with(this, () => k.tgt.hurt(k.L, 0.09, 'blunt', lp.x, lp.y, ux, 0));
+  k.L.body.applyLinearImpulse(V(ux * 10 * HUMAN_MASS_MUL, -3 * HUMAN_MASS_MUL), lp, true);
+  Sound.play('impact_flesh', lp.x, lp.y, 0.8, { key: 'punch' + this.id, gap: 120 });
+};
+
+/* ---------------- zombis: sólo contagian al morder o arañar ---------------- */
+// rasgos de cada zombi (al azar): el 15 % corre y el 15 % salta (alguno hace las dos cosas); todos se arrastran
+Human.prototype.zTraits = function () {
+  if (!this._zt) this._zt = { run: Math.random() < 0.15, jump: Math.random() < 0.15 };
+  return this._zt;
+};
+Human.prototype.zombieAI = function (dt) {
+  this.walking = false; this.crawling = false;
+  this.aiT = (this.aiT || 0) - dt;
+  if (this.aiT <= 0) {
+    this.aiT = 0.6;
+    let best = null, bd = 30;
+    const p = this.root.body.getPosition();
+    for (const t of World.things) {
+      if (!t.isHuman || t === this || t.zombie || !t.alive || t.dead || t.kind === 'skeleton' || t.kind === 'dummy') continue;
+      const q = t.root.body.getPosition(), d = Math.hypot(q.x - p.x, q.y - p.y);
+      if (d < bd) { bd = d; best = t; }
     }
-    this.aiT2 = (this.aiT2 || 0) - dt;
-    if (this.aiT2 <= 0) { this.aiT2 = 0.4; this.aiThink(); }
-    if (!this.aiAct(dt) && !this.forcedPose) this.walking = false;
+    this.target = best;
+  }
+  const T = this.target;
+  // un zombi inconsciente o muerto no ataca (ni contagia); tirado sólo se mueve si se arrastra (piernas dañadas)
+  if (!T || T.dead || !T.alive || this.consc < 0.5 || this.dragged) { this.zAtk = null; return; }
+  const tr = this.zTraits();
+  const crawl = this.state === 'lying' && this.legsOut() && this.canCrawl();
+  if (this.state !== 'stand' && !crawl) { this.zAtk = null; return; }
+  const p = this.root.body.getPosition(), q = T.root.body.getPosition(), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
+  if (!crawl && Math.sign(dx) !== this.facing && Math.abs(dx) > 0.4 && !this.zAtk && (!this._flipT || this.t - this._flipT > 1.2)) { this._flipT = this.t; this.flipFacing(); return; }
+  // ¿le llegan la cabeza o una mano?
+  const head = this.limbs.head;
+  const near = (pt) => { let m = 9; for (const L of T.limbList) { if (L.destroyed) continue; const lp = L.body.getPosition(); m = Math.min(m, Math.hypot(lp.x - pt.x, lp.y - pt.y)); } return m; };
+  const hd = head.destroyed ? 9 : near(head.body.getPosition());
+  const sides = ['F', 'B'].filter((s) => !this.limbs['lowerArm' + s].destroyed && this.limbs['lowerArm' + s].connected);
+  let nd = 9, nside = 'F';
+  for (const sd of sides) { const v = near(V(...this.handPoint(sd))); if (v < nd) { nd = v; nside = sd; } }
+  if (!this.zAtk && (crawl ? Math.min(hd, nd) > 0.45 : Math.abs(dx) > 0.5)) {
+    if (crawl) { this.crawling = true; this.crawlDir = Math.sign(dx); this.crawlSpeed = 0.35; this.crawlLead(this.crawlDir); }
+    else {
+      const dir = Math.sign(dx);
+      this.walking = true; this.walkDir = dir;
+      // persiguiendo: los corredores corren; el resto avanza despacio y acelera al final
+      this.walkSpeed = tr.run ? (d < 1.2 ? 1.2 : 2.0) : (d < 2.5 ? 1.15 : 0.8);
+      // los saltadores saltan los obstáculos del camino
+      if (tr.jump) {
+        const ah = AI.ahead(this, dir, 0.6 + this.walkSpeed * 0.2);
+        const vx = this.root.body.getLinearVelocity().x;
+        if (ah.low || Math.abs(vx) < 0.1) this._zStuckT = (this._zStuckT || 0) + dt; else this._zStuckT = 0;
+        if ((ah.low && this._zStuckT > 0.15) || this._zStuckT > 0.8) { this.aiHop(dir); this._zStuckT = 0; }
+      }
+    }
+  }
+  this.biteT -= dt;
+  if (this.zAtk) { this.updateZombieAttack(dt); return; }
+  // sólo ataca si de verdad le llega: muerde si la cabeza está cerca y si no, araña con la mano
+  if (this.biteT > 0) return;
+  const kind = hd < 0.6 ? 'bite' : nd < 0.7 ? 'scratch' : null;
+  if (!kind) return;
+  this.biteT = rand(1.0, 1.5);
+  const side = nside;
+  this.zAtk = { kind, side, t: kind === 'bite' ? 0.28 : 0.22, best: 9, L: null, tgt: T };
+  const src = kind === 'bite' ? head : this.limbs['lowerArm' + side];
+  const sp = src.body.getPosition(), tp = (T.limbs.upperBody.destroyed ? T.root : T.limbs.upperBody).body.getPosition();
+  const ux = tp.x - sp.x, uy = tp.y - sp.y, ul = Math.hypot(ux, uy) || 1;
+  src.body.applyLinearImpulse(V(ux / ul * (kind === 'bite' ? 6 : 4) * HUMAN_MASS_MUL, uy / ul * 3 * HUMAN_MASS_MUL), sp, true);
+};
+Human.prototype.updateZombieAttack = function (dt) {
+  const a = this.zAtk, T = a.tgt;
+  const src = a.kind === 'bite' ? this.limbs.head : this.limbs['lowerArm' + a.side];
+  if (T.dead || !T.alive || src.destroyed) { this.zAtk = null; return; }
+  const sp = a.kind === 'bite' ? src.body.getPosition() : V(...this.handPoint(a.side));
+  for (const L of T.limbList) { if (L.destroyed) continue; const lp = L.body.getPosition(), dd = Math.hypot(lp.x - sp.x, lp.y - sp.y); if (dd < a.best) { a.best = dd; a.L = L; } }
+  a.t -= dt;
+  if (a.t > 0) return;
+  this.zAtk = null;
+  if (!a.L || a.best > (a.kind === 'bite' ? 0.34 : 0.38)) return; // falló
+  const lp = a.L.body.getPosition();
+  if (a.kind === 'bite') { T.hurt(a.L, 0.12, 'bite', lp.x + rand(-0.03, 0.03), lp.y + rand(-0.05, 0.05)); Sound.play('bite', lp.x, lp.y, 0.9); }
+  else { T.hurt(a.L, 0.06, 'cut', lp.x, lp.y, this.facing, 0); Sound.play('impact_flesh', lp.x, lp.y, 0.6, { key: 'scr' + this.id, gap: 120 }); }
+  a.L.body.applyLinearImpulse(V(this.facing * 4 * HUMAN_MASS_MUL, -1.5 * HUMAN_MASS_MUL), lp, true);
+  // contagio: siempre al morder y a veces al arañar
+  if (T.kind === 'human' && !T.zombie && T.zombieT <= 0 && (a.kind === 'bite' || Math.random() < 0.5)) T.zombieT = rand(12, 20);
+};
+
+/* ---------------- animación: caminar y correr, agacharse, lanzar, morder ---------------- */
+{
+  const cp = Human.prototype.computePose;
+  Human.prototype.computePose = function (dt) {
+    const r = cp.call(this, dt), P = r.P;
+    if (this.dragged || this.shock > 0 || this.forcedPose) return r;
+    if (this.crawling && this.state === 'lying') {
+      // arrastrarse: los brazos se estiran por encima de la cabeza y tiran; las piernas se arrastran
+      this.crawlT = (this.crawlT || 0) + dt * 5;
+      const c = Math.sin(this.crawlT), c2 = Math.cos(this.crawlT);
+      Object.assign(P, { head: 0.35, middleBody: -0.1, lowerBody: 0, upperLegF: -0.15, lowerLegF: 0.25, upperLegB: -0.1, lowerLegB: 0.2,
+        upperArmF: -2.45 + c * 0.85, lowerArmF: -0.35 - Math.max(0, c2) * 0.9, upperArmB: -2.45 - c * 0.85, lowerArmB: -0.35 - Math.max(0, -c2) * 0.9 });
+      r.str = Math.max(r.str, 0.5);
+      return r;
+    }
+    if (this.zombie) {
+      const a = this.zAtk;
+      if (a && this.state === 'stand') {
+        if (a.kind === 'bite') { P.head = 0.55; P.middleBody = -0.3; }
+        else { P['upperArm' + a.side] = -1.65; P['lowerArm' + a.side] = -0.05; }
+      }
+      // los zombis corredores corren de verdad (los demás arrastran los pies)
+      if (!(this.walking && this.state === 'stand' && (this.walkSpeed || 0) > 1.3)) return r;
+    }
+    if (this.state === 'stand' && this.walking) {
+      // paso de caminar o de correr (las piernas se mueven de verdad; si anda hacia atrás, al revés)
+      const spd = this.walkSpeed || 0.75, run = spd > 1.3;
+      const vx = Math.abs(this.root.body.getLinearVelocity().x);
+      this.gait = (this.gait || 0) + dt * (run ? 11 : 6.5) * clamp(vx / spd, 0.6, 1.3);
+      const w = Math.sin(this.gait), s = Math.sign(this.walkDir) !== this.facing ? -1 : 1;
+      const A = run ? 0.8 : 0.5, B = run ? 1.25 : 0.75;
+      P.upperLegF = -0.12 - s * w * A; P.lowerLegF = 0.1 + Math.max(0, s * w) * B;
+      P.upperLegB = -0.12 + s * w * A; P.lowerLegB = 0.1 + Math.max(0, -s * w) * B;
+      if (run) { P.middleBody = -0.14; P.lowerBody = -0.06; P.head = 0.1; }
+      if (!this.aiAim && !this.zombie) {
+        const free = (side) => !this.held[side] && !(this.punch && this.punch.side === side);
+        if (free('F')) { P.upperArmF = (run ? -0.25 : 0) + w * (run ? 0.9 : 0.45); P.lowerArmF = run ? -1.4 : -0.4; }
+        if (free('B')) { P.upperArmB = (run ? -0.25 : 0) - w * (run ? 0.9 : 0.45); P.lowerArmB = run ? -1.4 : -0.4; }
+      }
+    }
+    const g = this.aiGoal;
+    // estirar el brazo hacia el arma (de pie o saltando)
+    if (g && g.kind === 'fetch' && (g.jumps || (g.pick !== undefined && g.mode === 'reach')) && !g.w.dead) {
+      const side = !this.held.F ? 'F' : 'B';
+      const sh = this.limbs['upperArm' + side].body.getPosition(), q = g.w.main.getWorldCenter();
+      const th = Math.atan2(-(q.y - sh.y), Math.abs(q.x - sh.x) + 0.05);
+      P['upperArm' + side] = clamp(-(1.5 + th), -3.0, -0.2); P['lowerArm' + side] = -0.05;
+    }
+    if (g && this.state === 'stand') {
+      if (g.kind === 'fetch' && g.pick !== undefined && g.mode !== 'reach') {
+        // agacharse a por el arma
+        Object.assign(P, { upperLegF: -1.3, lowerLegF: 1.65, upperLegB: -1.15, lowerLegB: 1.75, middleBody: -0.45, lowerBody: -0.3, head: 0.25 });
+        const side = !this.held.F ? 'F' : 'B';
+        P['upperArm' + side] = -0.55; P['lowerArm' + side] = -0.1;
+      } else if (g.kind === 'throw' && g.wind !== undefined) {
+        // brazo atrás para lanzar
+        const side = this.held.F ? 'F' : 'B';
+        P['upperArm' + side] = g.wind > 0.2 ? 0.9 : -2.4; P['lowerArm' + side] = -0.6;
+      }
+    }
+    return r;
   };
-  // apuntar el brazo hacia el objetivo
+  // golpe: el brazo se estira hacia el objetivo; patada: la pierna; apuntar: el brazo del arma
   const ap = Human.prototype.aimPose;
   Human.prototype.aimPose = function (P) {
     ap.call(this, P);
@@ -12663,11 +13276,210 @@ Human.prototype.updatePunch = function (dt) {
       const it = this.held[side]; if (!it || !AI.isRanged(it)) continue;
       const sh = this.limbs['upperArm' + side].body.getPosition();
       const th = Math.atan2(-(this.aiAim[1] - sh.y), Math.abs(this.aiAim[0] - sh.x));
-      P['upperArm' + side] = clamp(-(1.45 + th), -2.7, -0.2); P['lowerArm' + side] = -0.08;
+      P['upperArm' + side] = clamp(-(1.45 + th + (this.aimBias || 0)), -3.0, -0.1); P['lowerArm' + side] = -0.08;
+    }
+  };
+  // el brazo que apunta con un arma pesada hace más fuerza (si no, el cañón se inclina hacia abajo)
+  const fo = Human.prototype.forces;
+  Human.prototype.forces = function (dt) {
+    fo.call(this, dt);
+    if (!this.aiAim || this.dead || this.frozenSolid) return;
+    for (const side of ['F', 'B']) {
+      const it = this.held[side]; if (!it || !AI.isRanged(it)) continue;
+      const mul = clamp(1 + it.mass() * 0.6, 1, 6);
+      for (const id of ['upperArm' + side, 'lowerArm' + side]) { const j = this.limbs[id].joint; if (j && !this.limbs[id].destroyed) j.setMaxMotorTorque(j.getMaxMotorTorque() * mul); }
     }
   };
 }
+
+/* ---------------- la IA se ejecuta en cada actualización de las personas que la tienen activada ---------------- */
+{
+  const up = Human.prototype.update;
+  Human.prototype.update = function (dt) {
+    up.call(this, dt);
+    if (this.dead) return;
+    const on = this.aiOn();
+    if (!on || this.zombie || !this.alive || this.consc < 0.5 || this.frozenSolid || this.kind === 'dummy' || this.kind === 'skeleton') {
+      if (!this.zombie) this.crawling = false;
+      if (this.aiGoal || this._aiUsing || this._ncPairs) this.aiStop();
+      if (this.consc < 0.35) this.aggressor = null; // quien queda inconsciente pierde la pelea y no la retoma
+      return;
+    }
+    this.crawling = false;
+    // mientras la arrastras o tiene una pose elegida por ti, no hace nada por su cuenta
+    if (this.dragged || this.posing()) { this.aiStopUse(); this.punch = null; this.kick = null; return; }
+    this._aiDt = dt;
+    this.aiT2 = (this.aiT2 === undefined ? rand(0, 0.25) : this.aiT2) - dt;
+    if (this.aiT2 <= 0) { this.aiT2 = 0.25; this.aiSense(); this.aiDecide(); }
+    if (!this.aiAct(dt)) this.walking = false;
+  };
+}
 Human.prototype.aiOn = function () { return this.ai !== undefined ? this.ai : Settings.aiDefault; };
+
+/* ---------------- arrastrarse, cadáveres que no estorban y rasgos visibles ---------------- */
+// arrastrarse siempre con la cabeza por delante (si no, se da la vuelta)
+Human.prototype.crawlLead = function (dir) {
+  const h = this.limbs.head, m = this.limbs.middleBody;
+  if (h.destroyed || m.destroyed || !dir) return;
+  if (Math.sign(h.body.getPosition().x - m.body.getPosition().x) !== dir && (!this._flipT || this.t - this._flipT > 1.5)) { this._flipT = this.t; this.flipFacing(); }
+};
+Human.prototype.legsOut = function () {
+  for (const id of ['upperLegB', 'lowerLegB', 'upperLegF', 'lowerLegF']) { const l = this.limbs[id]; if (l.destroyed || l.severed || l.broken || !l.connected || l.health < 0.15) return true; }
+  return false;
+};
+Human.prototype.canCrawl = function () {
+  if (!this.alive || this.consc < 0.5 || this.frozenSolid || this.shock > 0) return false;
+  if (this.limbs.head.destroyed || !this.limbs.head.connected || this.limbs.upperBody.destroyed) return false;
+  return ['F', 'B'].some((s) => { const u = this.limbs['upperArm' + s], l = this.limbs['lowerArm' + s]; return !u.destroyed && u.connected && !u.broken && !l.destroyed && l.connected; });
+};
+{
+  // al arrastrarse, el cuerpo apenas roza el suelo (los brazos sí agarran) y avanza a tirones
+  const ARMS = new Set(ARM_IDS);
+  const fo = Human.prototype.forces;
+  Human.prototype.forces = function (dt) {
+    fo.call(this, dt);
+    if (this.dead) return;
+    const crawl = !!(this.crawling && this.state === 'lying');
+    if (crawl !== !!this._crawlFr) {
+      this._crawlFr = crawl;
+      for (const L of this.limbList) {
+        if (L.destroyed) continue;
+        for (let f = L.body.getFixtureList(); f; f = f.getNext()) { if (f._f0 === undefined) f._f0 = f.getFriction(); f.setFriction(crawl ? (ARMS.has(L.id) ? 0.3 : 0.1) : f._f0); }
+        for (let ce = L.body.getContactList(); ce; ce = ce.next) ce.contact.resetFriction();
+      }
+    }
+    if (!crawl) return;
+    let M = 0, vx = 0;
+    for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const m = L.body.getMass(); M += m; vx += L.body.getLinearVelocity().x * m; }
+    vx /= M || 1;
+    // avanza a tirones (cuando los brazos tiran): se lleva la velocidad del cuerpo hacia la de arrastrarse
+    const pulse = 0.45 + 0.55 * Math.max(0, Math.sin((this.crawlT || 0) + 1));
+    const dv = clamp(this.crawlDir * (this.crawlSpeed || 0.45) * pulse * 1.4 - vx, -0.5, 0.5) * 0.35;
+    for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const b = L.body, v = b.getLinearVelocity(); b.setLinearVelocity(V(v.x + dv, v.y)); }
+  };
+}
+// colisiones entre seres (configurables en Entorno para humanos, zombis y androides):
+//  'none': no chocan entre los de su especie · 'dead': los vivos atraviesan a los muertos · 'all': todos chocan.
+// Entre especies distintas, un cuerpo sin vida tampoco estorba a los vivos salvo con 'all' (las hordas pasan por encima)
+function beingCat(t) {
+  if (!t.isHuman || t.kind === 'dummy' || (t.kind === 'skeleton' && !t.charred)) return null;
+  return t.zombie || t.kind === 'zombie' ? 'z' : t.kind === 'android' ? 'a' : 'h';
+}
+const COLL_SET = { h: 'collHumans', z: 'collZombies', a: 'collAndroids' };
+function refilterBeings() { for (const t of World.things) if (t.isHuman && !t.dead) for (const L of t.limbList) if (!L.destroyed && L.body) for (let f = L.body.getFixtureList(); f; f = f.getNext()) f.refilter(); }
+{
+  const sc = pl.Body.prototype.shouldCollide;
+  pl.Body.prototype.shouldCollide = function (that) {
+    if (!sc.call(this, that)) return false;
+    const a = this.getUserData(), b = that.getUserData();
+    const ta = a && a.thing, tb = b && b.thing;
+    if (!ta || !tb || ta === tb || !ta.isHuman || !tb.isHuman || ta.dead || tb.dead) return true;
+    const ca = beingCat(ta), cb = beingCat(tb);
+    if (!ca || !cb) return true;
+    if (ca === cb) {
+      const s = Settings[COLL_SET[ca]];
+      if (s === 'none') return false;
+      if (s === 'dead' && ta.alive !== tb.alive) return false;
+      return true;
+    }
+    if (ta.alive !== tb.alive && Settings[COLL_SET[ta.alive ? cb : ca]] !== 'all') return false;
+    return true;
+  };
+  const up = Human.prototype.update;
+  Human.prototype.update = function (dt) {
+    up.call(this, dt);
+    // al morir, revivir o convertirse en zombi se vuelven a mirar sus contactos
+    const key = (this.alive ? 1 : 0) + (beingCat(this) || '-');
+    if (!this.dead && this._collF !== key) {
+      this._collF = key;
+      for (const L of this.limbList) if (!L.destroyed && L.body) for (let f = L.body.getFixtureList(); f; f = f.getNext()) f.refilter();
+    }
+  };
+  const inf = Human.prototype.info;
+  Human.prototype.info = function () {
+    const lines = inf.call(this);
+    if (this.zombie && this.alive) { const t = this.zTraits(); if (t.run) lines.push(['Zombi corredor', '#9fd36b']); if (t.jump) lines.push(['Zombi saltador', '#9fd36b']); }
+    if (this.crawling) lines.push(['Arrastrándose', '#e0b34f']);
+    return lines;
+  };
+}
+
+/* ---- 33_burn.js ---- */
+/* =========================================================================
+   EL FUEGO CONSUME: lo inflamable que arde acaba hecho ceniza y las personas
+   que se queman hasta el final quedan como esqueletos carbonizados.
+   Lo quemado se acumula aunque el fuego se apague y se vuelva a prender.
+   ========================================================================= */
+// segundos ardiendo a tope hasta consumirse
+function burnLife(t) {
+  if (t.isHuman) return 40;
+  const base = t.def && t.def.fuel ? t.def.fuel : 12;
+  return clamp(base * (0.7 + Math.sqrt(Math.max(0.05, t.mass ? t.mass() : 1)) * 0.08), 6, 45);
+}
+// deshacerse en ceniza
+function burnToAsh(t) {
+  if (t.dead || t._ashed || t.isTerrain) return;
+  t._ashed = true;
+  let cx = 0, cy = 0, n = 0;
+  for (const b of t.bodies) {
+    if (!b.getWorld) continue;
+    const bb = bodyAABB(b), w = bb[2] - bb[0], h = bb[3] - bb[1];
+    const k = clamp(Math.round(w * h * 70), 6, 70);
+    for (let i = 0; i < k; i++) Effects.add(PT.DUST, rand(bb[0], bb[2]), rand(bb[1], bb[3]), gauss() * 0.5, rand(-0.8, 0.4), rand(1.5, 4), rand(2, 4.5), shadeRgb([62, 58, 54], rand(0.6, 1.3)));
+    const c = b.getWorldCenter();
+    Effects.smoke(c.x, c.y, Math.min(30, 6 + k / 3), [60, 58, 56], Math.max(w, h) * 0.5, 1.1);
+    Effects.sparks(c.x, c.y, 0, -1, Math.min(14, 3 + k / 6), 1.2);
+    cx += c.x; cy += c.y; n++;
+  }
+  if (n) { const g = rayFirst(cx / n, cy / n, cx / n, cy / n + 3, (f) => { const o = thingOf(f); return !!(o && o.isTerrain); }); if (g) Decals.scorch(g.x, g.y, 0.5); }
+  Sound.play('crackle', n ? cx / n : 0, n ? cy / n : 0, 0.5);
+  t.destroy(true);
+}
+{
+  // objetos: arden hasta consumirse (ennegreciéndose) y luego se deshacen en ceniza
+  const uf = Thing.prototype.updateFire;
+  Thing.prototype.updateFire = function (dt) {
+    if (this.isHuman || this.fire <= 0) return uf.call(this, dt);
+    this.burnt = (this.burnt || 0) + dt * this.fire / burnLife(this);
+    if (this.fuel < 1 && this.burnt < 1) this.fuel = 1;
+    this.char = Math.max(this.char, Math.min(1, this.burnt * 1.4));
+    uf.call(this, dt);
+    if (this.burnt >= 1 && !this.dead && !this._ashed) Phys.later(() => burnToAsh(this));
+  };
+  // personas: siguen ardiendo hasta quedar carbonizadas (salvo que las apaguen)
+  const uh = Human.prototype.updateHumanFire;
+  Human.prototype.updateHumanFire = function (dt) {
+    this.burnt = (this.burnt || 0) + dt * this.fire / burnLife(this);
+    if (this.fuel < 2 && this.burnt < 1) this.fuel = 2;
+    uh.call(this, dt);
+    if (this.burnt >= 1 && !this.charred) this.carbonize();
+  };
+  const fl = Human.prototype.isFlammable;
+  Human.prototype.isFlammable = function () { return !this.charred && this.kind !== 'skeleton' && fl.call(this); };
+}
+// quemado del todo: sólo quedan los huesos, negros
+Human.prototype.carbonize = function () {
+  if (this.charred || this.dead) return;
+  this.charred = true;
+  if (this.alive) { this.immortal = false; this.die('Carbonizado'); }
+  this.zombieT = 0; this.zombie = false; this.ai = false;
+  this.kind = 'skeleton'; this.name = 'Esqueleto carbonizado'; this.bleedKind = null; this.mat = 'bone';
+  this.fire = 0; this.fuel = 0;
+  this.dropHeld(true);
+  for (const L of this.limbList) {
+    if (L.destroyed) continue;
+    const nt = buildLimbTemplate(L.def.tpl, this.pal, 'skeleton');
+    for (let i = 0; i < nt.base.length; i += 4) { nt.base[i] *= 0.24; nt.base[i + 1] *= 0.21; nt.base[i + 2] *= 0.19; }
+    L.tpl = nt; L.dirty = true;
+    for (let f = L.body.getFixtureList(); f; f = f.getNext()) { f.setDensity(f.getDensity() * 0.35); const ud = f.getUserData(); if (ud) ud.mat = 'bone'; }
+    L.body.resetMassData();
+    const p = L.body.getPosition();
+    for (let i = 0; i < 6; i++) Effects.add(PT.DUST, p.x + gauss() * 0.08, p.y + gauss() * 0.08, gauss() * 0.4, rand(-0.6, 0.2), rand(1.5, 3.5), rand(2, 4), shadeRgb([60, 56, 52], rand(0.7, 1.2)));
+  }
+  const c = this.root.body.getPosition();
+  Effects.smoke(c.x, c.y, 24, [55, 52, 50], 0.6, 1.2);
+  this.markDirty();
+};
 
 /* ---- 99_main.js ---- */
 /* =========================================================================
