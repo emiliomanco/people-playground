@@ -8,33 +8,31 @@ Descarga `theplayground.html` y ábrelo con Chrome, Edge o Firefox. Funciona sin
 
 ## Controles por defecto
 
-Son los mismos que los del juego original y se pueden cambiar en **Ajustes → Teclas**.
+Son los del juego original y se pueden cambiar en **Ajustes → Teclas**.
 
 | Acción | Control |
 | --- | --- |
-| Agarrar y arrastrar | Clic izquierdo |
-| Menú contextual | Clic derecho |
-| Congelar en el aire lo que arrastras | Clic derecho mientras arrastras |
-| Mover la cámara | Botón central, arrastrar con clic derecho o flechas |
-| Zoom | Rueda |
-| Girar | A / D (o rueda mientras arrastras) |
-| Colocar mirando a la izquierda / derecha | Q / E |
-| Activar (disparar, encender, detonar) | F (mantener para uso continuo) |
-| Vista detalle (estado, pulso, sangre, temperatura, líquidos) | S |
-| Borrar | Retroceso o Supr |
-| Copiar / pegar (con sus uniones) | C / V (o Ctrl+C / Ctrl+V) |
-| Deshacer / duplicar | Z (o Ctrl+Z) / Ctrl+D |
-| Seleccionar varios | Mayús + clic, o arrastrar en vacío |
-| Girar más rápido | Mayús mientras giras |
+| Elegir un objeto | Clic en el catálogo |
+| Hacerlo aparecer mirando a la izquierda / derecha | Mantén Q / E para ver su silueta en el cursor y suelta para colocarlo |
+| Agarrar y arrastrar | Clic izquierdo (lo que agarras cuelga y gira libremente) |
+| Girar lo que arrastras | A / D (Mayús: más rápido). Al girarlo mantiene ese ángulo hasta que lo sueltes, aunque choque con algo blando; sólo lo rígido (suelo, paredes, objetos congelados o mucho más pesados) puede torcerlo |
 | Ajustar a la cuadrícula y al ángulo | Alt |
-| Voltear | R |
-| Pausa / cámara lenta | Espacio / G |
-| Mostrar u ocultar la interfaz | Tab |
+| Seleccionar varios | Arrastrar en un hueco, o Mayús + clic. Arrastrar uno mueve toda la selección |
+| Activar (disparar, encender, detonar) | F (mantener para uso continuo) |
+| Menú contextual (congelar, redimensionar, borrar uniones...) | Clic derecho |
+| Borrar lo seleccionado o lo que señalas | Retroceso |
+| Deshacer (también los borrados) | Z |
+| Copiar / pegar con sus uniones | C / mantén V para ver la silueta y suelta para pegar |
+| Detener el tiempo / cámara lenta | Espacio / G |
+| Vista detalle (salud de las extremidades, pulso, sangre, temperatura...) | S |
+| Mostrar u ocultar el catálogo y las herramientas | Tab |
 | Herramientas / poderes | Ctrl |
-| Vista de extremidades | L |
-| Seguir con la cámara / centrar | H / Inicio |
-| Herramientas | 1-0 |
+| Herramientas | 1-9 (el mismo número otra vez pasa a la siguiente de su grupo) |
+| Bisagra en el centro de masa | Mantén M al clavarla |
+| Zoom / mover la cámara | Rueda / apretar la rueda y arrastrar (también mientras agarras algo) o flechas |
 | Ayuda con todos los controles | F1 |
+
+Con el tiempo detenido, lo que arrastras se coloca directamente sin física y los objetos congelados se pueden mover (con el tiempo en marcha no se mueven). Congelar, voltear, duplicar, seguir con la cámara y la visión térmica están en el menú contextual o en Ajustes, sin tecla por defecto, como en el original. En pantallas táctiles, con un objeto elegido, toca un hueco o usa los botones Q/E.
 
 ## Qué incluye
 

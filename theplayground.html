@@ -68,6 +68,7 @@ canvas { image-rendering: pixelated; }
 .toasts { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none !important; }
 .toast { background: rgba(16, 18, 22, 0.9); border: 1px solid var(--line2); padding: 6px 13px; border-radius: 16px; font-size: 12.5px; transition: opacity .35s, transform .35s; text-align: center; max-width: 86vw; }
 .toast.out { opacity: 0; transform: translateY(6px); }
+.hint .kk { display: inline-block; min-width: 14px; padding: 0 4px; border: 1px solid var(--line2); border-radius: 4px; color: #e3e6ea; text-align: center; font-size: 11px; }
 .hint { position: absolute; right: 8px; bottom: 8px; max-width: min(640px, 70vw); background: rgba(16, 18, 22, 0.75); border: 1px solid var(--line); padding: 5px 10px; border-radius: 6px; font-size: 12px; color: var(--muted); pointer-events: none !important; }
 .hint b { color: var(--accent2); }
 .fps { position: absolute; right: 8px; top: 52px; font: 11px ui-monospace, Menlo, Consolas, monospace; color: #9fe39f; background: #0008; padding: 3px 6px; border-radius: 4px; display: none; pointer-events: none !important; }
@@ -282,38 +283,40 @@ const uid = () => _uid++;
 const Settings = {
   volume: 0.6, gravity: 1, blood: 1, gore: true, getUp: true, variety: true, grid: true, shake: true,
   ambient: 1, particleMul: 1, hiDpi: true, showFps: false, slowmo: 0.25, spawnOnce: false, showInfo: false, keys: {},
-  ambientTemp: 18, rain: false, snow: false, fog: 0, lightningChance: 0, snapGrid: 0.25, snapAngle: 15, thermal: false, sigLimit: 1500,
+  ambientTemp: 18, rain: false, snow: false, fog: 0, lightningChance: 0, snapGrid: 0.25, snapAngle: 15, thermal: false, sigLimit: 1500, keysV: 5,
 };
 // Acciones de teclado (reasignables en Ajustes)
 // (por defecto, las mismas teclas que el juego original)
 const KEY_ACTIONS = [
-  ['activate', 'Activar / usar (mantener: continuo)', 'f'],
-  ['rotLeft', 'Girar a la izquierda', 'a'],
-  ['rotRight', 'Girar a la derecha', 'd'],
-  ['spawnLeft', 'Colocar mirando a la izquierda', 'q'],
-  ['spawnRight', 'Colocar mirando a la derecha', 'e'],
-  ['delete', 'Borrar', 'backspace'],
-  ['delete2', 'Borrar (alternativa)', 'delete'],
+  ['activate', 'Activar lo que señalas (mantener: uso continuo)', 'f'],
+  ['spawnLeft', 'Aparecer mirando a la izquierda (mantén para ver la silueta y suelta para colocar)', 'q'],
+  ['spawnRight', 'Aparecer mirando a la derecha (mantén para ver la silueta y suelta para colocar)', 'e'],
+  ['rotLeft', 'Girar a la izquierda lo que arrastras', 'a'],
+  ['rotRight', 'Girar a la derecha lo que arrastras', 'd'],
+  ['delete', 'Borrar lo seleccionado o lo que señalas', 'backspace'],
+  ['undo', 'Deshacer', 'z'],
+  ['copy', 'Copiar lo seleccionado o lo que señalas', 'c'],
+  ['paste', 'Pegar (mantén para ver la silueta y suelta para colocar)', 'v'],
   ['pause', 'Detener / reanudar el tiempo', ' '],
   ['slowmo', 'Cámara lenta', 'g'],
-  ['info', 'Vista detalle (datos)', 's'],
-  ['toggleUI', 'Mostrar / ocultar catálogo y barra', 'tab'],
+  ['info', 'Vista detalle', 's'],
+  ['toggleUI', 'Mostrar / ocultar el catálogo y las herramientas', 'tab'],
   ['toolsPowers', 'Cambiar entre herramientas y poderes', 'control'],
-  ['undo', 'Deshacer', 'z'],
-  ['copy', 'Copiar', 'c'],
-  ['paste', 'Pegar', 'v'],
-  ['undo2', 'Deshacer (alternativa)', 'ctrl+z'],
-  ['copy2', 'Copiar (alternativa)', 'ctrl+c'],
-  ['paste2', 'Pegar (alternativa)', 'ctrl+v'],
-  ['duplicate', 'Duplicar', 'ctrl+d'],
-  ['flip', 'Voltear', 'r'],
-  ['freeze', 'Congelar / descongelar', 'none'],
-  ['limbView', 'Vista de extremidades', 'l'],
-  ['thermal', 'Visión térmica', 'none'],
-  ['pick', 'Elegir el objeto que señalas (para colocar más)', 'none'],
-  ['follow', 'Seguir con la cámara', 'h'],
-  ['camReset', 'Centrar cámara', 'home'],
+  ['pinSnap', 'Ajustar las bisagras al centro de masa (mantener)', 'm'],
   ['help', 'Ver los controles', 'f1'],
+  // sin tecla por defecto, como en el original (se pueden asignar)
+  ['freeze', 'Congelar / descongelar', 'none'],
+  ['pick', 'Elegir el objeto que señalas', 'none'],
+  ['flip', 'Voltear', 'none'],
+  ['duplicate', 'Duplicar', 'none'],
+  ['limbView', 'Vista de extremidades', 'none'],
+  ['thermal', 'Visión térmica', 'none'],
+  ['follow', 'Seguir con la cámara', 'none'],
+  ['camReset', 'Centrar la cámara', 'none'],
+  ['delete2', 'Borrar (otra tecla)', 'none'],
+  ['undo2', 'Deshacer (otra tecla)', 'none'],
+  ['copy2', 'Copiar (otra tecla)', 'none'],
+  ['paste2', 'Pegar (otra tecla)', 'none'],
 ];
 // ajuste a la cuadrícula (Alt)
 const snapPos = (v) => Math.round(v / Settings.snapGrid) * Settings.snapGrid;
@@ -324,9 +327,18 @@ function keyLabel(k) {
   const names = { ' ': 'Espacio', delete: 'Supr', backspace: 'Retroceso', escape: 'Esc', home: 'Inicio', end: 'Fin', tab: 'Tab', enter: 'Intro', arrowleft: '←', arrowright: '→', arrowup: '↑', arrowdown: '↓', control: 'Ctrl', shift: 'Mayús', alt: 'Alt', pageup: 'RePág', pagedown: 'AvPág', insert: 'Insert' };
   return k.split('+').map((p) => (p === 'ctrl' ? 'Ctrl' : p === 'alt' ? 'Alt' : names[p] || (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1)))).join(' + ');
 }
-function comboOf(e) {
-  let k = e.key.toLowerCase();
+// tecla base por posición física para letras y números (así Mayús, Alt o la distribución del teclado no la cambian)
+function baseKey(e) {
+  const c = e.code || '';
+  if (/^Key[A-Z]$/.test(c)) return c.slice(3).toLowerCase();
+  if (/^Digit[0-9]$/.test(c)) return c.slice(5);
+  let k = (e.key || '').toLowerCase();
   if (k === 'spacebar') k = ' ';
+  if (k === 'os') k = 'meta';
+  return k;
+}
+function comboOf(e) {
+  const k = baseKey(e);
   if (k === 'control' || k === 'meta' || k === 'alt' || k === 'shift') return k === 'meta' ? 'control' : k;
   return (e.ctrlKey || e.metaKey ? 'ctrl+' : '') + (e.altKey ? 'alt+' : '') + k;
 }
@@ -337,6 +349,8 @@ function loadSettings() {
     if (!raw) { raw = localStorage.getItem('pp_clon_ajustes_v1'); migrated = !!raw; }
     const s = JSON.parse(raw || '{}');
     if (migrated) { delete s.keys; delete s.showInfo; }
+    // la versión 5 rehace los controles: las teclas guardadas antes vuelven a las del original
+    if (raw && !(s.keysV >= 5)) { delete s.keys; s.keysV = 5; Settings._keysReset = true; }
     for (const k in Settings) if (k in s) Settings[k] = s[k];
   } catch (e) {}
 }
@@ -3293,6 +3307,10 @@ const Stuck = {
       if (r.item.dead || r.target.dead || !r.joint || (r.limb && r.limb.destroyed) || r.bodyGone) { this.drop(r, i); continue; }
       let tr;
       try { tr = r.joint.getJointTranslation(); } catch (e) { this.drop(r, i); continue; }
+      // si lo arrastras con el ratón, apenas ofrece resistencia: así se puede sacar (o hundir) tirando de él
+      const dg = Input.drag && Input.drag.kind === 'drag' && (Input.drag.body === r.bS || (Input.drag.multi || []).some((m) => m.body === r.bS));
+      const fr = dg ? Math.min(r.sh.friction || 60, 4 + r.item.mass() * 25) : (r.sh.friction || 60);
+      if (r._fr !== fr) { r._fr = fr; r.joint.setMaxMotorForce(fr); }
       if (tr > r.maxT + PX * 2) {
         const d = tr - r.maxT; r.maxT = tr;
         if (r.target.isHuman && r.limb) { r.target.hurt(r.limb, d * 2.5 * (r.sh.dmg || 1), 'stab'); }
@@ -4216,14 +4234,20 @@ function syringeBehavior(liqId, color) {
         const h = r.target; if (h.dead) return;
         if (it.vars.mode === 'in') {
           const tot = Liquids.total(it); if (tot <= 1e-4) return;
-          const part = Liquids.take(it, Math.min(tot, dt * 0.5));
-          for (const id in part) Liquids.inject(h, id, part[id]);
-          if (Liquids.total(it) <= 1e-4) { const p = it.pos(); Sound.play('syringe', p.x, p.y, 0.8); }
+          if (liqId && !it.vars.drawn) {
+            // las jeringas de un suero son infinitas (como en el original): inyectan sin vaciarse
+            const k = Math.min(1, dt * 0.12 / tot);
+            for (const id in it.liq.c) { const have = (h.chem && h.chem[id]) || 0, a = Math.min(it.liq.c[id] * k, Math.max(0, 0.3 - have)); if (a > 1e-6) Liquids.inject(h, id, a); }
+          } else {
+            const part = Liquids.take(it, Math.min(tot, dt * 0.5));
+            for (const id in part) Liquids.inject(h, id, part[id]);
+            if (Liquids.total(it) <= 1e-4) { const p = it.pos(); Sound.play('syringe', p.x, p.y, 0.8); }
+          }
         } else if (h.bleedKind === 'blood') {
           const a = Math.min(Liquids.free(it), dt * 0.25, h.blood * 5); if (a <= 1e-5) return;
           const f = a / Math.max(0.1, h.blood * 5);
           h.blood = Math.max(0, h.blood - a / 5);
-          Liquids.add(it, 'blood', a);
+          Liquids.add(it, 'blood', a); it.vars.drawn = true;
           if (h.chem) for (const id in h.chem) { const v = h.chem[id] * f; h.chem[id] -= v; it.liq.c[id] = (it.liq.c[id] || 0) + v; }
         }
         return;
@@ -4232,20 +4256,48 @@ function syringeBehavior(liqId, color) {
       const tp = it.worldPt(18, 2.5);
       for (const c of Liquids.open) {
         if (c.it === it || Math.hypot(tp[0] - c.x, tp[1] - c.y) > 0.16) continue;
-        if (it.vars.mode === 'out') { const a = Math.min(Liquids.free(it), dt * 0.3); if (a > 0) Liquids.addMix(it, Liquids.take(c.it, a)); }
+        if (it.vars.mode === 'out') { const a = Math.min(Liquids.free(it), dt * 0.3); if (a > 0) { Liquids.addMix(it, Liquids.take(c.it, a)); it.vars.drawn = true; } }
+        else if (liqId && !it.vars.drawn) { const a = Math.min(Liquids.free(c.it), dt * 0.3); if (a > 0) { const tot = Liquids.total(it); if (tot > 1e-4) { const mix = {}; for (const id in it.liq.c) mix[id] = it.liq.c[id] / tot * a; Liquids.addMix(c.it, mix); } } }
         else { const a = Math.min(Liquids.free(c.it), Liquids.total(it), dt * 0.3); if (a > 0) Liquids.addMix(c.it, Liquids.take(it, a)); }
         break;
       }
     },
     draw(it, ctx) { Liquids.drawFill(it, ctx); },
+    // si le disparas (o le alcanza una explosión), revienta y su contenido alcanza a quien esté cerca
+    bulletHit(it, f, x, y, dx, dy, e) { Phys.later(() => syringeBurst(it)); return e * 0.85; },
+    onBlast(it) { Phys.later(() => syringeBurst(it)); },
     activate(it) { it.vars.mode = it.vars.mode === 'in' ? 'out' : 'in'; const p = it.pos(); Sound.play('click', p.x, p.y, 0.5); UI.toast(it.vars.mode === 'in' ? 'Jeringa: inyectar' : 'Jeringa: extraer'); },
     info(it) { return [[it.vars.mode === 'in' ? 'Modo: inyectar' : 'Modo: extraer', '#cfd5dc'], ...Liquids.describe(it.liq.c, it.liq.cap)]; },
     menu(it) {
-      const m = [{ label: it.vars.mode === 'in' ? 'Cambiar a extraer' : 'Cambiar a inyectar', fn: () => it.activate() }, { label: 'Vaciar', fn: () => { it.liq.c = {}; } }];
-      if (liqId) m.push({ label: 'Rellenar', fn: () => Liquids.fill(it, liqId) });
+      const m = [{ label: it.vars.mode === 'in' ? 'Cambiar a extraer' : 'Cambiar a inyectar', fn: () => it.activate() }, { label: 'Vaciar', fn: () => { it.liq.c = {}; it.vars.drawn = true; } }];
+      if (liqId) m.push({ label: 'Rellenar', fn: () => { Liquids.fill(it, liqId); it.vars.drawn = false; } });
       return m;
     },
   };
+}
+
+function syringeBurst(it) {
+  if (it.dead || it._burst) return;
+  it._burst = true;
+  const p = it.pos(), mix = Object.assign({}, it.liq.c), tot = Liquids.total(it);
+  const R = 1.8;
+  if (tot > 1e-4) {
+    for (const t of World.things) {
+      if (!t.isHuman || t.dead) continue;
+      let dmin = 1e9;
+      for (const L of t.limbList) { if (L.destroyed) continue; const q = L.body.getPosition(); dmin = Math.min(dmin, Math.hypot(q.x - p.x, q.y - p.y)); }
+      if (dmin > R) continue;
+      const k = 0.35 + 0.65 * (1 - dmin / R);
+      for (const id in mix) Liquids.inject(t, id, mix[id] * k);
+    }
+    const col = Liquids.color(mix);
+    for (let i = 0; i < 46; i++) { const a = rand(TAU), sp = rand(1, 7); Effects.add(PT.LIQ, p.x, p.y, Math.cos(a) * sp, Math.sin(a) * sp - 1, rand(0.5, 1.3), rand(1, 2.2), col); }
+    for (let i = 0; i < 14; i++) { const a = rand(TAU), sp = rand(0.4, 1.6); Effects.add(PT.SMOKE, p.x, p.y, Math.cos(a) * sp, Math.sin(a) * sp, rand(1, 2), rand(4, 8), [col[0], col[1], col[2]]); }
+    Effects.wave(p.x, p.y, R, 0.3);
+  }
+  Effects.glass(p.x, p.y, 8, 2);
+  Sound.play('glass_break', p.x, p.y, 0.7); Sound.play('pop', p.x, p.y, 0.7);
+  it.destroy(true);
 }
 
 // interruptores genéricos (máquinas)
@@ -6261,40 +6313,55 @@ function fillBody(ctx, b, color) {
 /* =========================================================================
    ENTRADA Y HERRAMIENTAS
    ========================================================================= */
+// grupos de herramientas: cada número elige su grupo y pulsarlo otra vez pasa a la siguiente (como en el original)
 const TOOLS = [
-  { id: 'drag', name: 'Arrastrar', key: '1', hint: 'Arrastra objetos. Rueda o {rot}: girar lo que sostienes · Clic derecho mientras arrastras: congelar · Arrastrar en vacío: seleccionar' },
-  { id: 'move', name: 'Mover', key: '2', hint: 'Coloca objetos con precisión, sin física. {rot} o rueda: girar.' },
-  { id: 'weld', name: 'Soldar', key: '3', hint: 'Clic donde se tocan dos objetos para soldarlos. Sobre uno solo, lo fija al fondo.' },
-  { id: 'hinge', name: 'Bisagra', key: '4', hint: 'Clic donde se tocan dos objetos para unirlos con un eje que gira.' },
-  { id: 'motor', name: 'Bisagra motorizada', key: '', hint: 'Como la bisagra, pero gira sola. Clic derecho sobre ella para invertirla.' },
-  { id: 'fixed', name: 'Cable fijo', key: '', hint: 'Arrastra de un objeto a otro: quedan unidos sin poder moverse ni girar entre sí.' },
-  { id: 'spring', name: 'Resorte', key: '5', hint: 'Arrastra de un objeto a otro (o al vacío) para unirlos con un resorte.' },
-  { id: 'springStrong', name: 'Resorte fuerte', key: '', hint: 'Como el resorte, pero mucho más duro.' },
-  { id: 'bandage', name: 'Venda', key: '', hint: 'Une dos puntos con una venda elástica. Si toca una extremidad, detiene su sangrado.' },
-  { id: 'strut', name: 'Puntal de madera', key: '', hint: 'Barra rígida de madera que se rompe si soporta demasiada fuerza.' },
-  { id: 'heatpipe', name: 'Tubo de calor', key: '', hint: 'Barra rígida que transmite el calor entre los dos objetos.' },
-  { id: 'cable', name: 'Cable de acero', key: '', hint: 'Cuerda muy resistente.' },
-  { id: 'chain', name: 'Cadena', key: '', hint: 'Une dos puntos con una cadena.' },
-  { id: 'copper', name: 'Cable de cobre', key: '', hint: 'Conduce la electricidad entre dos objetos (baterías, generadores, lámparas...).' },
-  { id: 'wireR', name: 'Cable de activación rojo', key: '', hint: 'Igual que el cable de activación, en rojo.' },
-  { id: 'wireB', name: 'Cable de activación azul', key: '', hint: 'Igual que el cable de activación, en azul.' },
-  { id: 'nocollide', name: 'Sin colisión', key: '', hint: 'Clic en un objeto para que atraviese a los demás (o vuelva a chocar).' },
-  { id: 'rope', name: 'Cuerda', key: '6', hint: 'Arrastra de un objeto a otro (o al vacío) para atarlos con una cuerda.' },
-  { id: 'rod', name: 'Barra rígida', key: '7', hint: 'Une dos puntos con una barra de longitud fija.' },
-  { id: 'elastic', name: 'Elástico', key: '8', hint: 'Une dos puntos con una goma que sólo tira cuando se estira.' },
-  { id: 'wire', name: 'Cable de activación', key: '9', hint: 'Conecta dos objetos: al activar uno (F) se activa el otro.' },
-  { id: 'freeze', name: 'Congelar', key: '0', hint: 'Clic para congelar o descongelar un objeto en el aire.' },
-  { id: 'delete', name: 'Borrar', key: '', hint: 'Clic para borrar objetos o uniones.' },
-  { id: 'fire', name: 'Fuego', key: '', hint: 'Clic para prender fuego. Clic derecho en un objeto para apagarlo.' },
-  { id: 'lightning', name: 'Rayo del cielo', key: '', hint: 'Clic para invocar un rayo desde el cielo.' },
-  { id: 'gentle', name: 'Arrastre suave', key: '', hint: 'Como arrastrar, pero con poca fuerza: para mover cosas con cuidado sin lanzarlas.' },
-  { id: 'steel', name: 'Atadura de acero', key: '', hint: 'Arrastra de un objeto a otro: quedan unidos rígidamente. Aguanta muchísimo.' },
-  { id: 'woodbind', name: 'Atadura de madera', key: '', hint: 'Une rígidamente dos objetos. Se parte con mucha fuerza o si se quema.' },
-  { id: 'phase', name: 'Enlace sin colisión', key: '', hint: 'Arrastra de un objeto a otro: dejan de chocar entre ellos (sin unirlos).' },
-  { id: 'conduit', name: 'Conducto de líquido', key: '', hint: 'Une recipientes (o personas) para que el líquido pase de uno a otro. Úsalo con presurizadores y válvulas.' },
-  { id: 'belt', name: 'Correa mecánica', key: '', hint: 'Une dos ruedas, rotores o engranajes para que giren a la vez.' },
-  { id: 'link', name: 'Enlace de propagación', key: '', hint: 'Como el cable de activación, pero invisible.' },
+  { id: 'drag', grp: 1, name: 'Arrastrar', hint: 'Arrastra objetos. {rot}: girar lo que arrastras (mantiene el ángulo hasta que lo sueltes) · Mayús: girar más rápido · Alt: ajustar · Mayús+clic: seleccionar · Arrastrar en vacío: seleccionar varios' },
+  { id: 'gentle', grp: 1, name: 'Arrastre suave', hint: 'Como arrastrar, pero con poca fuerza: para mover cosas con cuidado sin lanzarlas. {rot}: girar.' },
+  { id: 'move', grp: 1, name: 'Mover', hint: 'Coloca objetos con precisión, sin física. {rot}: girar · Alt: ajustar a la cuadrícula.' },
+  { id: 'wire', grp: 2, name: 'Cable de activación', hint: 'Conecta dos objetos: al activar uno (F) se activa el otro.' },
+  { id: 'wireR', grp: 2, name: 'Cable de activación rojo', hint: 'Igual que el cable de activación, por el canal rojo.' },
+  { id: 'wireB', grp: 2, name: 'Cable de activación azul', hint: 'Igual que el cable de activación, por el canal azul.' },
+  { id: 'link', grp: 2, name: 'Enlace de propagación', hint: 'Como el cable de activación, pero invisible.' },
+  { id: 'rod', grp: 3, name: 'Cable rígido', hint: 'Une dos puntos con una barra de longitud fija.' },
+  { id: 'strut', grp: 3, name: 'Puntal de madera', hint: 'Barra rígida de madera que se rompe si soporta demasiada fuerza.' },
+  { id: 'heatpipe', grp: 3, name: 'Tubo de calor', hint: 'Barra rígida que transmite el calor entre los dos objetos.' },
+  { id: 'copper', grp: 4, name: 'Cable de cobre', hint: 'Conduce la electricidad entre dos objetos (baterías, generadores, lámparas...).' },
+  { id: 'conduit', grp: 4, name: 'Conducto de líquido', hint: 'Une recipientes (o personas) para que el líquido pase de uno a otro. Úsalo con presurizadores y válvulas.' },
+  { id: 'fixed', grp: 5, name: 'Cable fijo', hint: 'Arrastra de un objeto a otro: quedan unidos sin poder moverse ni girar entre sí.' },
+  { id: 'steel', grp: 5, name: 'Atadura de acero', hint: 'Arrastra de un objeto a otro: quedan unidos rígidamente. Aguanta muchísimo.' },
+  { id: 'woodbind', grp: 5, name: 'Atadura de madera', hint: 'Une rígidamente dos objetos. Se parte con mucha fuerza o si se quema.' },
+  { id: 'weld', grp: 5, name: 'Soldar', hint: 'Clic donde se tocan dos objetos para soldarlos. Sobre uno solo, lo fija al fondo.' },
+  { id: 'spring', grp: 6, name: 'Resorte', hint: 'Arrastra de un objeto a otro (o al vacío) para unirlos con un resorte.' },
+  { id: 'springStrong', grp: 6, name: 'Resorte fuerte', hint: 'Como el resorte, pero mucho más duro.' },
+  { id: 'elastic', grp: 6, name: 'Elástico', hint: 'Une dos puntos con una goma que sólo tira cuando se estira.' },
+  { id: 'bandage', grp: 6, name: 'Venda', hint: 'Une dos puntos con una venda elástica. Si toca una extremidad, detiene su sangrado.' },
+  { id: 'rope', grp: 7, name: 'Cuerda', hint: 'Arrastra de un objeto a otro (o al vacío) para atarlos con una cuerda.' },
+  { id: 'cable', grp: 7, name: 'Cable de acero', hint: 'Cuerda muy resistente que no conduce la electricidad.' },
+  { id: 'chain', grp: 7, name: 'Cadena', hint: 'Une dos puntos con una cadena.' },
+  { id: 'belt', grp: 7, name: 'Correa mecánica', hint: 'Une dos ruedas, rotores o engranajes para que giren a la vez.' },
+  { id: 'hinge', grp: 8, name: 'Bisagra', hint: 'Clic sobre un objeto para clavarlo al fondo (o a lo que tenga detrás) con un eje que gira. Mantén {pin}: al centro de masa.' },
+  { id: 'motor', grp: 8, name: 'Bisagra motorizada', hint: 'Como la bisagra, pero gira sola. Clic derecho sobre ella para invertirla. Mantén {pin}: al centro de masa.' },
+  { id: 'nocollide', grp: 8, name: 'Sin colisión', hint: 'Clic en un objeto para que atraviese a los demás (o vuelva a chocar).' },
+  { id: 'phase', grp: 8, name: 'Enlace sin colisión', hint: 'Arrastra de un objeto a otro: dejan de chocar entre ellos (sin unirlos).' },
+  { id: 'freeze', grp: 9, name: 'Congelar', hint: 'Clic para congelar o descongelar un objeto en el aire.' },
+  { id: 'delete', grp: 9, name: 'Borrar', hint: 'Clic para borrar objetos o uniones.' },
+  { id: 'fire', grp: 9, name: 'Fuego', hint: 'Clic para prender fuego. Clic derecho en un objeto para apagarlo.' },
+  { id: 'lightning', grp: 9, name: 'Rayo del cielo', hint: 'Clic para invocar un rayo desde el cielo.' },
 ];
+for (const t of TOOLS) t.key = String(t.grp);
+// ¿lo que toca este cuerpo es rígido? (el suelo, las paredes, lo congelado o algo mucho más pesado)
+function touchingRigid(b, self) {
+  const m = self.mass();
+  for (let ce = b.getContactList(); ce; ce = ce.next) {
+    const c = ce.contact;
+    if (!c.isTouching() || c.getFixtureA().isSensor() || c.getFixtureB().isSensor()) continue;
+    const o = ce.other, ot = bodyData(o).thing;
+    if (ot === self) continue;
+    if (o.getType() !== 'dynamic') return true;
+    if (ot && !ot.isHuman && ot.mass() > m * 4) return true;
+  }
+  return false;
+}
 const Undo = {
   stack: [],
   push(a) { this.stack.push(a); if (this.stack.length > 200) this.stack.shift(); },
@@ -6303,6 +6370,7 @@ const Undo = {
       const a = this.stack.pop();
       if (a.type === 'spawn' && !a.thing.dead) { a.thing.destroy(); return true; }
       if (a.type === 'conn' && Connections.list.includes(a.conn)) { Connections.remove(a.conn); Sound.play('delete'); return true; }
+      if (a.type === 'del') { const made = Blueprint.spawn(a.bp, a.x, a.y); if (made.length) { Sound.play('spawn', a.x, a.y); return true; } }
     }
     return false;
   },
@@ -6310,11 +6378,14 @@ const Undo = {
 };
 
 const Input = {
-  sx: 0, sy: 0, wx: 0, wy: 0, tool: 'drag', mode: 'tools', spawnDef: null, spawnAngle: 0, spawnFlip: false,
+  sx: 0, sy: 0, wx: 0, wy: 0, tool: 'drag', mode: 'tools', spawnDef: null, spawnAngle: 0, spawnFlip: false, spawnHold: null, pasteHold: null, lastPointerType: 'mouse',
   drag: null, pending: null, sel: null, selection: new Set(), hover: null, hoverConn: null,
   keys: {}, pan: null, right: null, fHeld: [], limbView: false, pointers: new Map(), pinch: null, longT: null,
   init(canvas) {
     canvas.addEventListener('pointerdown', (e) => this.onDown(e));
+    // apretar la rueda no debe activar el desplazamiento automático del navegador
+    canvas.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+    canvas.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
     window.addEventListener('pointermove', (e) => this.onMove(e));
     window.addEventListener('pointerup', (e) => this.onUp(e));
     window.addEventListener('pointercancel', (e) => this.onUp(e));
@@ -6322,18 +6393,21 @@ const Input = {
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('keydown', (e) => this.onKey(e, true));
     window.addEventListener('keyup', (e) => this.onKey(e, false));
-    window.addEventListener('blur', () => { this.keys = {}; this.releaseF(); });
+    window.addEventListener('blur', () => { this.keys = {}; this.releaseF(); this.spawnHold = null; this.pasteHold = null; });
   },
   updateWorld() { const w = Cam.toWorld(this.sx, this.sy); this.wx = w[0]; this.wy = w[1]; },
   // ---------------- selección de objetos ----------------
+  // lo que hay bajo el cursor: como en el original, tiene prioridad el objeto más pequeño
+  // (así se puede agarrar una jeringa o un cuchillo clavados en alguien, o lo que sostiene una mano)
   pickAt(x, y, rad) {
     const p = V(x, y);
-    let best = null, bz = -Infinity;
     const r = rad !== undefined ? rad : 0;
+    const cands = [];
     queryAABB(x - r - 0.01, y - r - 0.01, x + r + 0.01, y + r + 0.01, (f) => {
       const d = f.getUserData(); if (!d || !d.thing || d.thing.isTerrain || d.thing.dead) return true;
       if (f.isSensor() && !d.thing.def.static) return true;
-      let inside = f.testPoint(p);
+      const exact = f.testPoint(p);
+      let inside = exact;
       if (!inside && r > 0) { for (let k = 0; k < 8 && !inside; k++) { const a = (k / 8) * TAU; inside = f.testPoint(V(x + Math.cos(a) * r, y + Math.sin(a) * r)); } }
       if (!inside) return true;
       const t = d.thing;
@@ -6341,10 +6415,15 @@ const Input = {
       if (t.isHuman && d.part) z += d.part.def.z;
       else if (t.parts[d.part]) z += t.parts[d.part].zOff || 0;
       if (t.holder) z = t.holder.z + 0.5;
-      if (z > bz) { bz = z; best = { thing: t, body: f.getBody(), fixture: f, part: d.part, limb: t.isHuman ? d.part : null }; }
+      cands.push({ thing: t, body: f.getBody(), fixture: f, part: d.part, limb: t.isHuman ? d.part : null, z, exact });
       return true;
     });
-    return best;
+    if (!cands.length) return null;
+    const size = new Map();
+    const sizeOf = (t) => { if (size.has(t)) return size.get(t); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const b of t.bodies) { if (!b.getWorld) continue; const bb = bodyAABB(b); x0 = Math.min(x0, bb[0]); y0 = Math.min(y0, bb[1]); x1 = Math.max(x1, bb[2]); y1 = Math.max(y1, bb[3]); } const v = Math.max(0, x1 - x0) * Math.max(0, y1 - y0); size.set(t, v); return v; };
+    cands.sort((a, b) => (a.exact === b.exact ? 0 : a.exact ? -1 : 1) || (a.thing === b.thing ? 0 : sizeOf(a.thing) - sizeOf(b.thing)) || b.z - a.z);
+    const c = cands[0];
+    return { thing: c.thing, body: c.body, fixture: c.fixture, part: c.part, limb: c.limb };
   },
   bodiesAt(x, y) {
     const p = V(x, y), arr = [];
@@ -6365,19 +6444,29 @@ const Input = {
     UI.closeContext();
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     this.sx = e.clientX; this.sy = e.clientY; this.updateWorld();
+    this.lastPointerType = e.pointerType || 'mouse';
     if (e.pointerType === 'touch') return this.touchDown(e);
     e.preventDefault();
     try { e.target.setPointerCapture(e.pointerId); } catch (er) {}
-    if (e.button === 1) { this.pan = { sx: e.clientX, sy: e.clientY, cx: Cam.x, cy: Cam.y }; return; }
+    if (e.button === 1) { this.pan = { lx: e.clientX, ly: e.clientY }; return; }
     if (e.button === 2) { this.right = { sx: e.clientX, sy: e.clientY, moved: false, cx: Cam.x, cy: Cam.y }; return; }
-    if (e.button === 0) this.leftDown(e.shiftKey, e.ctrlKey || e.metaKey);
+    if (e.button === 0) { this.leftHeld = true; this.leftDown(e.shiftKey, e.ctrlKey || e.metaKey); }
   },
   onMove(e) {
     // si el puntero está sobre el lienzo, no está sobre la interfaz (al cerrar una ventana no llega «pointerout»)
     if (e.target === Renderer.canvas) UI.pointerOverUI = false;
     if (e.pointerType === 'touch') return this.touchMove(e);
+    // con un botón ya pulsado, el navegador avisa de los demás sólo con este evento: así se puede apretar
+    // la rueda para mover la cámara mientras arrastras algo (y soltar el clic izquierdo con la rueda apretada)
+    const bt = e.buttons || 0;
+    if (this.leftHeld && !(bt & 1)) { this.leftHeld = false; this.leftUp(); }
+    if ((bt & 4) && !this.pan) this.pan = { lx: e.clientX, ly: e.clientY };
+    else if (!(bt & 4) && this.pan) this.pan = null;
+    if (this.pan) {
+      Cam.x -= (e.clientX - this.pan.lx) / Cam.zoom; Cam.y -= (e.clientY - this.pan.ly) / Cam.zoom;
+      this.pan.lx = e.clientX; this.pan.ly = e.clientY; Cam.follow = null;
+    }
     this.sx = e.clientX; this.sy = e.clientY; this.updateWorld();
-    if (this.pan) { Cam.x = this.pan.cx - (e.clientX - this.pan.sx) / Cam.zoom; Cam.y = this.pan.cy - (e.clientY - this.pan.sy) / Cam.zoom; Cam.follow = null; }
     if (this.right) {
       const d = Math.hypot(e.clientX - this.right.sx, e.clientY - this.right.sy);
       if (d > 6) this.right.moved = true;
@@ -6391,37 +6480,41 @@ const Input = {
     if (e.button === 2 && this.right) {
       const r = this.right; this.right = null;
       if (!r.moved) {
-        if (this.spawnDef) { this.cancelSpawn(); return; }
+        if (this.spawnHold || this.pasteHold) { this.spawnHold = null; this.pasteHold = null; UI.toast('Aparición cancelada'); return; }
         if (this.pending) { this.pending = null; UI.toast('Unión cancelada'); return; }
-        if (this.drag && this.drag.kind === 'drag' && this.drag.thing && !this.drag.thing.isHuman) { const t = this.drag.thing; this.endDrag(); if (!t.frozen) { t.setFrozen(true); UI.toast('Congelado en el aire'); } return; }
+        if (this.drag) return;
         if (this.tool === 'fire') { const h = this.pickAt(this.wx, this.wy); if (h) { h.thing.extinguish(); return; } }
         UI.openContext(e.clientX, e.clientY, this.wx, this.wy);
       }
       return;
     }
-    if (e.button === 0) this.leftUp();
+    if (e.button === 0) { this.leftHeld = false; this.leftUp(); }
   },
   leftDown(shift, ctrl) {
     const wx = this.wx, wy = this.wy;
-    if (this.spawnDef) { this.spawnAt(wx, wy); this.spawnDrag = true; this.lastSpawnPt = [wx, wy]; return; }
     if (this.mode === 'powers') { Powers.down(wx, wy); return; }
     const hit = this.pickAt(wx, wy, 3 / Cam.zoom);
+    // en pantallas táctiles no hay Q/E: tocar un hueco coloca el objeto elegido
+    if (this.spawnDef && this.lastPointerType === 'touch' && !hit) { this.spawnAt(wx, wy); return; }
     switch (this.tool) {
       case 'drag': case 'gentle':
         if (hit && shift) { this.toggleSelect(hit.thing); break; }
-        // con el tiempo detenido los objetos se colocan directamente (como en el original)
-        if (hit) { if (hit.thing.frozen || Game.paused) this.startMove(hit, wx, wy); else this.startDrag(hit, wx, wy, this.tool === 'gentle'); }
-        else this.startSel(wx, wy, ctrl || shift);
+        // con el tiempo detenido los objetos se colocan directamente; lo congelado sólo se mueve en pausa (como en el original)
+        if (hit) {
+          if (Game.paused) this.startMove(hit, wx, wy);
+          else if (hit.thing.frozen) UI.toast('Está congelado: detén el tiempo para moverlo');
+          else this.startDrag(hit, wx, wy, this.tool === 'gentle');
+        } else this.startSel(wx, wy, ctrl || shift);
         break;
       case 'move': if (hit && shift) { this.toggleSelect(hit.thing); break; } if (hit) this.startMove(hit, wx, wy); else this.startSel(wx, wy, ctrl || shift); break;
-      case 'weld': case 'hinge': case 'motor': this.pointJoint(this.tool, wx, wy); break;
+      case 'weld': case 'hinge': case 'motor': { const pt = this.pinPoint(wx, wy); this.pointJoint(this.tool, pt[0], pt[1]); break; }
       case 'spring': case 'rope': case 'rod': case 'elastic': case 'wire': case 'fixed': case 'springStrong': case 'bandage': case 'strut': case 'heatpipe': case 'cable': case 'chain': case 'copper': case 'wireR': case 'wireB': case 'steel': case 'woodbind': case 'phase': case 'conduit': case 'belt': case 'link':
         if (!this.pending) { const b = hit ? hit.body : null; if (CONN_TYPES[this.tool].signal && !b) { UI.toast('Haz clic sobre un objeto'); return; } this.pending = { type: this.tool, body: b, pt: [wx, wy], sx: this.sx, sy: this.sy, fresh: true }; }
         else this.finishPending(wx, wy);
         break;
       case 'freeze': if (hit) { const t = hit.thing; t.setFrozen(!t.frozen); Sound.play('click'); UI.toast(t.frozen ? 'Congelado' : 'Descongelado'); } break;
       case 'nocollide': if (hit) { const t = hit.thing; t.setCollide(!!t.noCollide); Sound.play('click'); UI.toast(t.noCollide ? 'Sin colisión' : 'Con colisión'); } break;
-      case 'delete': if (hit) { this.deleteThing(hit.thing); } else { const c = Connections.near(wx, wy, 8 / Cam.zoom); if (c) { Connections.remove(c); Sound.play('delete'); } } break;
+      case 'delete': if (hit) { this.deleteThings([hit.thing]); } else { const c = Connections.near(wx, wy, 8 / Cam.zoom); if (c) { Connections.remove(c); Sound.play('delete'); } } break;
       case 'fire': if (hit) { if (hit.thing.igniteAt) hit.thing.igniteAt(hit.fixture, 1); else if (!hit.thing.ignite(1)) UI.toast('No es inflamable'); } else for (let i = 0; i < 12; i++) Effects.flame(wx, wy, gauss() * 1.5, -rand(0, 2), null); break;
       case 'explode': explode(wx, wy, 2.4, {}); break;
       case 'lightning': lightningStrike(wx, wy); break;
@@ -6429,7 +6522,6 @@ const Input = {
     }
   },
   leftUp() {
-    this.spawnDrag = false;
     Powers.up();
     if (this.drag) { if (this.drag.kind === 'drag') this.endDrag(); else this.endMove(); }
     if (this.sel) this.endSel();
@@ -6441,16 +6533,14 @@ const Input = {
   onWheel(e) {
     e.preventDefault();
     const d = e.deltaY > 0 ? 1 : -1;
-    if (this.drag) { this.drag.rotTarget = (this.drag.rotTarget || 0) + d * 0.2; if (this.drag.holdAngle !== null && this.drag.holdAngle !== undefined) this.drag.holdAngle += d * 0.2; return; }
-    if (this.spawnDef && (e.shiftKey || this.keys.shift)) { this.spawnAngle += d * Math.PI / 12; return; }
     Cam.zoomAt(e.clientX, e.clientY, d > 0 ? 1 / 1.15 : 1.15);
   },
   held(action) { const k = keyOf(action); return !!(k && !k.includes('+') && this.keys[k]); },
   onKey(e, down) {
     const tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    const k = e.key.toLowerCase() === 'spacebar' ? ' ' : e.key.toLowerCase();
-    if (k === 'alt' || k === 'f1') e.preventDefault();
+    const k = baseKey(e);
+    if (k === 'alt' || k === 'f1' || k === 'tab') e.preventDefault();
     // asignar una tecla nueva desde Ajustes
     if (down && UI.capture) { e.preventDefault(); UI.finishCapture(k === 'escape' ? null : comboOf(e)); return; }
     if (k === 'shift') this.keys.shift = down;
@@ -6460,33 +6550,52 @@ const Input = {
     if (down) this.modAlone = null;
     if (!down) {
       if (k === keyOf('activate')) this.releaseF();
-      if (mod && this.modAlone === comboOf(e) && !UI.modalOpen()) { const a = KEY_ACTIONS.find((x) => keyOf(x[0]) === this.modAlone); this.modAlone = null; if (a) this.doAction(a[0]); }
+      // al soltar la tecla de aparición (o de pegar) se coloca lo que se veía como silueta
+      if (this.spawnHold && this.spawnHold.key === k) this.finishSpawnHold();
+      if (this.pasteHold && this.pasteHold.key === k) this.finishPasteHold();
+      if (mod && this.modAlone === comboOf(e) && !UI.modalOpen()) { const a = KEY_ACTIONS.find((x) => keyOf(x[0]) === this.modAlone); this.modAlone = null; if (a) this.doAction(a[0], k); }
       return;
     }
     if (UI.modalOpen()) { if (k === 'escape') UI.escape(); return; }
     const combo = comboOf(e);
-    const act = KEY_ACTIONS.find((a) => keyOf(a[0]) === combo);
+    let act = KEY_ACTIONS.find((a) => keyOf(a[0]) === combo);
+    // con Alt pulsado (ajuste a la cuadrícula) las teclas siguen funcionando
+    if (!act && e.altKey) { const c2 = combo.replace('alt+', ''); act = KEY_ACTIONS.find((a) => keyOf(a[0]) === c2); }
     if (act) {
-      const id = act[0];
-      if (e.repeat && id !== 'rotLeft' && id !== 'rotRight') { e.preventDefault(); return; }
       e.preventDefault();
-      this.doAction(id);
+      if (e.repeat) return; // girar se hace mientras se mantiene la tecla (ver update)
+      this.doAction(act[0], k);
       return;
     }
     if (e.repeat) return;
-    if (k === 'escape') { if (this.spawnDef) this.cancelSpawn(); else if (this.pending) this.pending = null; else if (this.selection.size) this.selection.clear(); else if (UI.ctxOpen) UI.closeContext(); else UI.escape(); return; }
-    if (k === 'tab') e.preventDefault();
-    if (!e.ctrlKey && !e.metaKey && !e.altKey) { const tl = TOOLS.find((t) => t.key && t.key === k); if (tl) UI.setTool(tl.id); }
+    if (k === 'escape') {
+      if (this.spawnHold || this.pasteHold) { this.spawnHold = null; this.pasteHold = null; }
+      else if (this.pending) this.pending = null;
+      else if (this.spawnDef) this.cancelSpawn();
+      else if (this.selection.size) this.selection.clear();
+      else if (UI.ctxOpen) UI.closeContext();
+      else UI.escape();
+      return;
+    }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-9]$/.test(k)) this.toolKey(+k);
   },
-  doAction(id) {
+  // números: elegir grupo de herramientas; pulsar otra vez el mismo pasa a la siguiente del grupo
+  toolKey(n) {
+    const grp = TOOLS.filter((t) => t.grp === n); if (!grp.length) return;
+    const i = this.mode === 'tools' ? grp.findIndex((t) => t.id === this.tool) : -1;
+    const next = i >= 0 ? grp[(i + 1) % grp.length] : grp[0];
+    UI.setTool(next.id); Sound.play('ui');
+    if (grp.length > 1) UI.toast(`${next.name} (${grp.indexOf(next) + 1}/${grp.length})`, 1100);
+  },
+  doAction(id, key) {
     const target = () => (this.drag ? this.drag.thing || (this.drag.things && this.drag.things[0]) : this.hover && this.hover.thing);
     switch (id) {
       case 'activate': this.pressF(); break;
       case 'pause': Game.togglePause(); break;
       case 'slowmo': Game.toggleSlow(); break;
       case 'delete': case 'delete2': {
-        if (this.selection.size && (!this.hover || this.selection.has(this.hover.thing))) { for (const t of [...this.selection]) this.deleteThing(t, true); this.selection.clear(); Sound.play('delete'); }
-        else { const t = target(); if (t) this.deleteThing(t); else if (this.hoverConn) { Connections.remove(this.hoverConn); Sound.play('delete'); } }
+        if (this.selection.size && (!this.hover || this.selection.has(this.hover.thing))) { this.deleteThings([...this.selection]); this.selection.clear(); }
+        else { const t = target(); if (t) this.deleteThings([t]); else if (this.hoverConn) { Connections.remove(this.hoverConn); Sound.play('delete'); } }
         break;
       }
       case 'flip': if (this.spawnDef) this.spawnFlip = !this.spawnFlip; else { const t = target(); if (t) flipThing(t); } break;
@@ -6496,12 +6605,11 @@ const Input = {
       case 'catalog': UI.toggleCatalog(); break;
       case 'toggleUI': UI.toggleUI(); break;
       case 'toolsPowers': UI.setMode(this.mode === 'powers' ? 'tools' : 'powers'); break;
-      case 'spawnLeft': if (this.spawnDef) { this.spawnFlip = true; } else { const t = target(); if (t && !t.isHuman && !t.flip) flipThing(t); else if (t && t.isHuman && t.facing > 0) flipThing(t); } break;
-      case 'spawnRight': if (this.spawnDef) { this.spawnFlip = false; } else { const t = target(); if (t && !t.isHuman && t.flip) flipThing(t); else if (t && t.isHuman && t.facing < 0) flipThing(t); } break;
+      case 'spawnLeft': case 'spawnRight': this.beginSpawnHold(id === 'spawnLeft', key); break;
       case 'follow': { const t = target(); if (t) { Cam.follow = Cam.follow === t ? null : t; UI.toast(Cam.follow ? 'Siguiendo con la cámara' : 'Cámara libre'); } else if (Cam.follow) { Cam.follow = null; UI.toast('Cámara libre'); } break; }
       case 'undo': case 'undo2': if (!Undo.pop()) UI.toast('Nada que deshacer'); break;
       case 'copy': case 'copy2': this.copy(); break;
-      case 'paste': case 'paste2': this.paste(); break;
+      case 'paste': case 'paste2': this.beginPasteHold(key); break;
       case 'help': UI.openHelp(); break;
       case 'thermal': Settings.thermal = !Settings.thermal; saveSettings(); UI.toast(Settings.thermal ? 'Visión térmica: activada' : 'Visión térmica: desactivada'); break;
       case 'pick': { const t = target(); if (t && !t.isTerrain) { const d = t.isHuman ? DEFS[t.kind] : t.def; if (d && DEFS[d.id]) { Input.setSpawn(d); UI.refreshCatalogSel(); } } break; }
@@ -6521,7 +6629,8 @@ const Input = {
   paste() {
     if (!this.clip || !this.clip.things.length) { UI.toast('El portapapeles está vacío'); return; }
     this.selection.clear();
-    const made = Blueprint.spawn(this.clip, this.wx, this.wy);
+    const px = this.keys.alt ? snapPos(this.wx) : this.wx, py = this.keys.alt ? snapPos(this.wy) : this.wy;
+    const made = Blueprint.spawn(this.clip, px, py);
     for (const t of made) { Undo.push({ type: 'spawn', thing: t }); if (made.length > 1) this.selection.add(t); }
     Sound.play('spawn', this.wx, this.wy);
   },
@@ -6546,19 +6655,38 @@ const Input = {
     return [];
   },
   // ---------------- aparición ----------------
-  setSpawn(def) { this.spawnDef = def; this.pending = null; UI.refreshHint(); },
+  setSpawn(def) { this.spawnDef = def; this.lastDef = def; this.pending = null; UI.refreshHint(); },
+  beginSpawnHold(left, key) {
+    if (!this.spawnDef) { UI.toast('Elige primero un objeto del catálogo'); return; }
+    this.spawnHold = { key: key || keyOf(left ? 'spawnLeft' : 'spawnRight'), flip: left };
+    this.spawnFlip = left;
+  },
+  finishSpawnHold() {
+    const h = this.spawnHold; this.spawnHold = null;
+    if (!h || !this.spawnDef || UI.pointerOverUI || UI.modalOpen()) return;
+    this.spawnFlip = h.flip;
+    this.spawnAt(this.wx, this.wy);
+  },
+  beginPasteHold(key) {
+    if (!this.clip || !this.clip.things.length) { UI.toast('El portapapeles está vacío'); return; }
+    this.pasteHold = { key: key || keyOf('paste') };
+  },
+  finishPasteHold() {
+    const h = this.pasteHold; this.pasteHold = null;
+    if (!h || UI.pointerOverUI || UI.modalOpen()) return;
+    this.paste();
+  },
   cancelSpawn() { this.spawnDef = null; UI.refreshCatalogSel(); UI.refreshHint(); },
   spawnAt(wx, wy) {
     const d = this.spawnDef;
     if (this.keys.alt) { wx = snapPos(wx); wy = snapPos(wy); }
-    const ang0 = this.spawnAngle; if (this.keys.alt) this.spawnAngle = snapAng(ang0);
-    try { return this._spawnAt(d, wx, wy); } finally { this.spawnAngle = ang0; }
+    return this._spawnAt(d, wx, wy);
   },
   _spawnAt(d, wx, wy) {
     if (d.blueprint) { const made = Blueprint.spawn(d.blueprint, wx, wy); for (const t of made) Undo.push({ type: 'spawn', thing: t }); Sound.play('spawn', wx, wy); return made[0]; }
     let t;
-    if (d.entity) t = new Human(wx, wy, { kind: d.entity, flip: this.spawnFlip, angle: this.spawnAngle, def: d });
-    else t = new Item(d, wx, wy, { flip: this.spawnFlip, angle: this.spawnAngle });
+    if (d.entity) t = new Human(wx, wy, { kind: d.entity, flip: this.spawnFlip, def: d });
+    else t = new Item(d, wx, wy, { flip: this.spawnFlip });
     Undo.push({ type: 'spawn', thing: t });
     Sound.play('spawn', wx, wy);
     return t;
@@ -6576,9 +6704,21 @@ const Input = {
     if (gentle) { hz *= 0.35; damp = Math.max(damp, 1.2); }
     const j = Phys.world.createJoint(pl.MouseJoint({ maxForce: maxF, frequencyHz: hz, dampingRatio: damp }, Phys.ground, b, V(wx, wy)));
     if (t.isHuman) { t.dragged = true; if (t.state === 'stand' || t.state === 'getup') t.setState('air'); }
-    this.drag = { kind: 'drag', body: b, thing: t, joint: j, holdAngle: t.isHuman || t.def.noHold ? null : b.getAngle(), angDamp: b.getAngularDamping(), local: b.getLocalPoint(V(wx, wy)) };
-    b.setAngularDamping(t.isHuman ? 1.5 : 3);
+    // sin girar, lo que arrastras cuelga y gira libremente; al girarlo con A/D se bloquea ese ángulo hasta soltarlo
+    this.drag = { kind: 'drag', body: b, thing: t, joint: j, holdAngle: null, angDamp: b.getAngularDamping(), local: b.getLocalPoint(V(wx, wy)), multi: [] };
+    b.setAngularDamping(t.isHuman ? 1.5 : 1.2);
     b.setAwake(true);
+    // si lo agarrado forma parte de una selección, se arrastra toda la selección
+    if (this.selection.has(t) && this.selection.size > 1) {
+      for (const o of this.selection) {
+        if (o === t || o.dead || o.frozen || o.isTerrain) continue;
+        const ob = o.isHuman ? o.root.body : o.main; if (!ob || ob.getType() !== 'dynamic') continue;
+        const c = ob.getWorldCenter(), om = o.mass();
+        const jj = Phys.world.createJoint(pl.MouseJoint({ maxForce: o.isHuman ? om * 380 : om * 420 + 60, frequencyHz: gentle ? 2 : 5, dampingRatio: 0.9 }, Phys.ground, ob, V(c.x, c.y)));
+        if (o.isHuman) o.dragged = true;
+        this.drag.multi.push({ thing: o, body: ob, joint: jj, off: [c.x - wx, c.y - wy] });
+      }
+    }
     if (t.isHuman && t.alive && t.consc > 0.5) t.fear = Math.max(t.fear, 0.3);
   },
   endDrag() {
@@ -6586,6 +6726,8 @@ const Input = {
     this.drag = null;
     if (d.thing) d.thing.dragged = false;
     try { Phys.world.destroyJoint(d.joint); } catch (e) {}
+    for (const m of d.multi || []) { try { Phys.world.destroyJoint(m.joint); } catch (e) {} if (m.thing) m.thing.dragged = false; }
+    if (d.rotJoint) { try { Phys.world.destroyJoint(d.rotJoint); } catch (e) {} }
     if (d.body && d.body.getWorld && !d.thing.dead) d.body.setAngularDamping(d.angDamp);
     if (!d.thing.dead && d.thing.def && d.thing.def.grip && !d.thing.holder) Holding.tryGrab(d.thing);
   },
@@ -6666,44 +6808,36 @@ const Input = {
     if (!d) return;
     if (d.kind === 'move') { this.applyMove(); return; }
     if (!d.body.getWorld || d.thing.dead) { this.drag = null; return; }
-    d.joint.setTarget(V(this.wx, this.wy));
-    if (d.holdAngle !== null && d.holdAngle !== undefined) {
-      const b = d.body, I = b.getInertia();
-      const err = angWrap((this.keys.alt ? snapAng(d.holdAngle) : d.holdAngle) - b.getAngle());
-      const tq = clamp(I * (err * 220 - b.getAngularVelocity() * 24), -I * 3000 - 1, I * 3000 + 1);
-      b.applyTorque(tq, true);
+    // Alt: ajustar a la cuadrícula también con el tiempo en marcha
+    const tx = this.keys.alt ? snapPos(this.wx) : this.wx, ty = this.keys.alt ? snapPos(this.wy) : this.wy;
+    d.joint.setTarget(V(tx, ty));
+    for (const m of d.multi) if (m.body.getWorld && !m.thing.dead) m.joint.setTarget(V(tx + m.off[0], ty + m.off[1]));
+    if (d.rotJoint) {
+      // el ángulo elegido se mantiene al chocar con cosas blandas o ligeras; sólo lo rígido (suelo, paredes,
+      // objetos congelados o mucho más pesados) puede torcerlo, y al separarse vuelve a su ángulo
+      const b = d.body, target = this.keys.alt ? snapAng(d.holdAngle) : d.holdAngle;
+      // el motor de la unión trabaja con el ángulo acumulado: se busca el equivalente más cercano
+      const cur = b.getAngle();
+      d.rotJoint.setAngularOffset(cur + angWrap(target - cur));
+      d.rotJoint.setMaxTorque(touchingRigid(b, d.thing) ? d.rotWeak : d.rotStrong);
     }
   },
   update(dt) {
     Powers.update(dt);
     // rotación con teclas
+    // A/D: girar lo que arrastras (Mayús: más rápido). Al girarlo, su ángulo queda fijado hasta que lo sueltes
     const rq = ((this.held('rotLeft') ? -1 : 0) + (this.held('rotRight') ? 1 : 0)) * (this.keys.shift ? 3 : 1);
     if (this.drag && this.drag.kind === 'move' && Game.paused) this.applyMove();
-    if (rq) {
-      if (this.drag) {
-        if (this.drag.kind === 'move') this.drag.rot += rq * dt * 2.5;
-        else if (this.drag.holdAngle !== null && this.drag.holdAngle !== undefined) this.drag.holdAngle += rq * dt * 3;
-        else this.drag.body.applyAngularImpulse(rq * this.drag.body.getInertia() * 0.6, true);
-      } else if (this.spawnDef) this.spawnAngle += rq * dt * 2.5;
-    }
-    if (this.drag && this.drag.kind === 'move' && this.drag.rotTarget) { this.drag.rot += this.drag.rotTarget; this.drag.rotTarget = 0; }
-    // cámara con teclado
+    if (rq && this.drag) this.rotateHeld(rq * dt * 2.6);
+    // cámara con las flechas
     const pv = 14 / Cam.zoom * 60 * dt;
-    if (!this.drag) {
-      if (this.keys.arrowleft) { Cam.x -= pv; Cam.follow = null; }
-      if (this.keys.arrowright) { Cam.x += pv; Cam.follow = null; }
-      if (this.keys.arrowup) { Cam.y -= pv; Cam.follow = null; }
-      if (this.keys.arrowdown) { Cam.y += pv; Cam.follow = null; }
-    }
+    if (this.keys.arrowleft) { Cam.x -= pv; Cam.follow = null; }
+    if (this.keys.arrowright) { Cam.x += pv; Cam.follow = null; }
+    if (this.keys.arrowup) { Cam.y -= pv; Cam.follow = null; }
+    if (this.keys.arrowdown) { Cam.y += pv; Cam.follow = null; }
     if (this.keys['+'] || this.keys['=']) Cam.zoomAt(Cam.w / 2, Cam.h / 2, 1 + dt * 1.5);
     if (this.keys['-']) Cam.zoomAt(Cam.w / 2, Cam.h / 2, 1 - dt * 1.5);
     this.updateWorld();
-    // aparecer en serie arrastrando con Mayús
-    if (this.spawnDrag && this.spawnDef && this.keys.shift) {
-      const d = Math.hypot(this.wx - this.lastSpawnPt[0], this.wy - this.lastSpawnPt[1]);
-      const sz = (defSprite(this.spawnDef).w * PX) * 1.05;
-      if (d > Math.max(0.15, sz)) { this.spawnAt(this.wx, this.wy); this.lastSpawnPt = [this.wx, this.wy]; }
-    }
     // hover
     if (!this.drag && !UI.pointerOverUI) this.hover = this.pickAt(this.wx, this.wy, 3 / Cam.zoom);
     else if (this.drag && this.drag.kind === 'drag') this.hover = { thing: this.drag.thing, body: this.drag.body, limb: this.drag.thing.isHuman ? bodyData(this.drag.body).part : null };
@@ -6712,6 +6846,36 @@ const Input = {
       this.longT.t += dt;
       if (this.longT.t > 0.55 && !this.longT.moved) { const lt = this.longT; this.longT = null; if (this.drag) { if (this.drag.kind === 'drag') this.endDrag(); else this.endMove(); } this.sel = null; this.pending = null; UI.openContext(lt.sx, lt.sy, lt.wx, lt.wy); }
     }
+  },
+  rotateHeld(da) {
+    const d = this.drag; if (!d) return;
+    if (d.kind === 'move') { d.rot += da; return; }
+    const t = d.thing;
+    if (t && !t.isHuman && !t.def.noHold) {
+      if (d.holdAngle === null || d.holdAngle === undefined) {
+        d.holdAngle = d.body.getAngle();
+        // una unión de motor (sin fuerza lineal) sujeta el ángulo; su fuerza depende de lo que pesa y mide el objeto
+        const bb = bodyAABB(d.body), r = Math.max(0.1, Math.hypot(bb[2] - bb[0], bb[3] - bb[1]) / 2);
+        d.rotStrong = d.joint.getMaxForce() * r * 3; d.rotWeak = d.rotStrong * 0.02;
+        d.rotJoint = Phys.world.createJoint(pl.MotorJoint({ maxForce: 0, maxTorque: d.rotStrong, correctionFactor: 0.5, angularOffset: d.holdAngle }, Phys.ground, d.body));
+      }
+      d.holdAngle += da;
+    } else d.body.applyAngularImpulse(da * d.body.getInertia() * 14, true);
+  },
+  // bisagras: con la tecla de ajuste (M) se clavan en el centro de masa del objeto
+  pinPoint(wx, wy) {
+    if (!this.held('pinSnap')) return [wx, wy];
+    const h = this.pickAt(wx, wy, 3 / Cam.zoom); if (!h) return [wx, wy];
+    const c = h.body.getWorldCenter(); return [c.x, c.y];
+  },
+  // borrar (se puede deshacer con Z)
+  deleteThings(ts) {
+    ts = ts.filter((t) => t && !t.isTerrain && !t.dead);
+    if (!ts.length) return;
+    const us = ts.filter((t) => Blueprint.usable(t)), bp = us.length ? Blueprint.capture(us) : null;
+    if (bp) { let cx = 0, cy = 0; for (const t of us) { const p = (t.isHuman ? t.root.body : t.main).getPosition(); cx += p.x; cy += p.y; } Undo.push({ type: 'del', bp, x: cx / us.length, y: cy / us.length }); }
+    for (const t of ts) t.destroy(true);
+    Sound.play('delete');
   },
   // ---------------- táctil ----------------
   touchDown(e) {
@@ -6758,7 +6922,7 @@ const Input = {
   drawWorld(ctx) {
     const z = Cam.zoom;
     // vista de extremidades
-    if (this.limbView) {
+    if (this.limbView || Settings.showInfo) {
       for (const t of World.things) {
         if (!t.isHuman) continue;
         for (const L of t.limbList) {
@@ -6771,7 +6935,7 @@ const Input = {
       }
     }
     // resaltado al pasar el ratón
-    if (this.hover && !this.spawnDef && this.hover.thing && !this.hover.thing.dead) {
+    if (this.hover && !this.spawnHold && !this.pasteHold && this.hover.thing && !this.hover.thing.dead) {
       const t = this.hover.thing;
       const bodies = t.isHuman && this.hover.limb ? [this.hover.limb.body] : t.bodies;
       for (const b of bodies) if (b.getWorld) strokeBody(ctx, b, 'rgba(255,255,255,0.55)', 1.5 / z);
@@ -6801,16 +6965,15 @@ const Input = {
     }
     Powers.draw(ctx);
     if (Settings.showInfo) drawDetailMarkers(ctx);
-    // fantasma de aparición
-    if (this.spawnDef && !UI.pointerOverUI) {
-      const d = this.spawnDef;
-      const spr = defPreview(d);
-      const an = spr.anchor || [spr.w / 2, d.entity ? HUMAN_CENTER_Y - 1 : spr.h / 2];
-      ctx.save(); ctx.globalAlpha = 0.55;
-      if (this.keys.alt) ctx.translate(snapPos(this.wx), snapPos(this.wy)); else ctx.translate(this.wx, this.wy);
-      ctx.rotate(this.keys.alt ? snapAng(this.spawnAngle) : this.spawnAngle); if (this.spawnFlip) ctx.scale(-1, 1);
-      ctx.drawImage(spr.canvas, -an[0] * PX, -an[1] * PX, spr.w * PX, spr.h * PX);
-      ctx.restore();
+    // silueta de lo que va a aparecer mientras se mantiene Q/E (o V para pegar)
+    if (!UI.pointerOverUI) {
+      const px = this.keys.alt ? snapPos(this.wx) : this.wx, py = this.keys.alt ? snapPos(this.wy) : this.wy;
+      if (this.spawnHold && this.spawnDef) {
+        const d = this.spawnDef;
+        if (d.blueprint) drawBlueprintGhost(ctx, d.blueprint, px, py);
+        else drawGhost(ctx, d, px, py, 0, this.spawnHold.flip);
+      }
+      if (this.pasteHold && this.clip) drawBlueprintGhost(ctx, this.clip, px, py);
     }
     // punto de herramienta
     if ((this.tool === 'weld' || this.tool === 'hinge' || this.tool === 'motor') && !this.spawnDef) {
@@ -6820,6 +6983,24 @@ const Input = {
   },
 };
 
+function drawGhost(ctx, d, x, y, ang, flip) {
+  const spr = defPreview(d);
+  const an = spr.anchor || [spr.w / 2, d.entity ? HUMAN_CENTER_Y - 1 : spr.h / 2];
+  ctx.save(); ctx.globalAlpha = 0.5;
+  ctx.translate(x, y); ctx.rotate(ang || 0); if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(spr.canvas, -an[0] * PX, -an[1] * PX, spr.w * PX, spr.h * PX);
+  ctx.globalAlpha = 0.9; ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = PX * 0.6; ctx.setLineDash([PX * 3, PX * 2]);
+  ctx.strokeRect(-an[0] * PX, -an[1] * PX, spr.w * PX, spr.h * PX); ctx.setLineDash([]);
+  ctx.restore();
+}
+function drawBlueprintGhost(ctx, bp, x, y) {
+  for (const r of bp.things) {
+    const d = DEFS[r.id]; if (!d) continue;
+    const p = r.bodies[0];
+    if (r.human) drawGhost(ctx, d, x + p[0], y + p[1], 0, r.flip);
+    else drawGhost(ctx, d, x + p[0], y + p[1], p[2], r.flip);
+  }
+}
 function duplicateThing(t) {
   if (t.isTerrain) return;
   const b = t.isHuman ? t.root.body : t.main;
@@ -6953,13 +7134,13 @@ const UI = {
     tools.appendChild(modeBtn);
     const tbar = this.el('div', 'tgrp'); tbar.id = 'toolsBar'; tools.appendChild(tbar);
     const pbar = this.el('div', 'tgrp'); pbar.id = 'powersBar'; pbar.style.display = 'none'; tools.appendChild(pbar);
-    const groups = [['drag', 'gentle', 'move'], ['fixed', 'weld', 'hinge', 'motor', 'rod', 'strut', 'heatpipe', 'steel', 'woodbind', 'spring', 'springStrong', 'bandage', 'rope', 'cable', 'chain', 'elastic', 'belt'], ['copper', 'wire', 'wireR', 'wireB', 'link', 'conduit'], ['freeze', 'nocollide', 'phase', 'delete', 'fire', 'lightning']];
+    const groups = []; for (const t of TOOLS) (groups[t.grp - 1] = groups[t.grp - 1] || []).push(t.id);
     for (const g of groups) {
       const sep = this.el('div', 'sep'); tbar.appendChild(sep);
       for (const id of g) {
         const t = TOOLS.find((x) => x.id === id);
         const b = this.el('button', 'tb tool', `<img src="${iconURL(id)}">`);
-        b.dataset.tool = id; b.title = t.name + (t.key ? ` (${t.key})` : '');
+        b.dataset.tool = id; b.title = `${t.name} (${t.key}${g.length > 1 ? `, pulsa ${t.key} otra vez para la siguiente` : ''})`;
         b.onclick = () => this.setTool(id);
         tbar.appendChild(b);
       }
@@ -7005,12 +7186,17 @@ const UI = {
     this.pausedTag = this.el('div', 'pausedtag', 'PAUSA'); this.root.appendChild(this.pausedTag);
     // botones táctiles
     this.touchBar = this.el('div', 'touchbar');
-    this.touchBar.innerHTML = `<button id="tF">F</button><button id="tRot">⟳</button><button id="tCancel">✕</button>`;
+    this.touchBar.innerHTML = `<button id="tQ">Q</button><button id="tE">E</button><button id="tF">F</button><button id="tRot">⟳</button><button id="tCancel">✕</button>`;
     this.root.appendChild(this.touchBar);
     const tF = this.touchBar.querySelector('#tF');
     tF.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); Sound.unlock(); Input.pressF(); });
     tF.addEventListener('pointerup', (e) => { e.stopPropagation(); Input.releaseF(); });
-    this.touchBar.querySelector('#tRot').onclick = () => { if (Input.drag && Input.drag.holdAngle !== null && Input.drag.holdAngle !== undefined) Input.drag.holdAngle += Math.PI / 4; else if (Input.drag && Input.drag.kind === 'move') Input.drag.rot += Math.PI / 4; else if (Input.spawnDef) Input.spawnAngle += Math.PI / 4; };
+    this.touchBar.querySelector('#tRot').onclick = () => { if (Input.drag) Input.rotateHeld(Math.PI / 4); };
+    for (const [id, left] of [['#tQ', true], ['#tE', false]]) {
+      const bt = this.touchBar.querySelector(id);
+      bt.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); Sound.unlock(); Input.beginSpawnHold(left, '__touch'); });
+      bt.addEventListener('pointerup', (e) => { e.stopPropagation(); if (Input.spawnHold) { const h = Input.spawnHold; Input.spawnHold = null; if (Input.spawnDef) { Input.spawnFlip = h.flip; Input.spawnAt(Input.wx, Input.wy); } } });
+    }
     this.touchBar.querySelector('#tCancel').onclick = () => { if (Input.spawnDef) Input.cancelSpawn(); else if (Input.pending) Input.pending = null; else if (Input.selection.size) Input.selection.clear(); };
     if (!isTouchDevice) this.touchBar.style.display = 'none';
     // detectar si el puntero está sobre la interfaz
@@ -7027,10 +7213,10 @@ const UI = {
     this.$('#ihead').textContent = c.name;
     const grid = this.$('#igrid'); grid.innerHTML = '';
     const desc = this.$('#idesc');
-    desc.textContent = 'Elige un objeto y haz clic en el escenario para colocarlo.';
+    desc.textContent = `Elige un objeto y mantén ${keyLabel(keyOf('spawnLeft'))} o ${keyLabel(keyOf('spawnRight'))} sobre el escenario: suelta para colocarlo.`;
     if (this.cat === 'contraptions') {
       const l = Contraptions.list();
-      desc.innerHTML = l.length ? 'Clic: colocar el artefacto · Clic derecho: borrarlo del catálogo.' : 'Aún no hay artefactos. Selecciona objetos (arrastra en vacío para hacer un recuadro) o señala una construcción, abre el menú con clic derecho y elige <b>Guardar como artefacto</b>.';
+      desc.innerHTML = l.length ? `Clic: elegir el artefacto y mantén ${keyLabel(keyOf('spawnLeft'))}/${keyLabel(keyOf('spawnRight'))} para colocarlo · Clic derecho: borrarlo del catálogo.` : 'Aún no hay artefactos. Selecciona objetos (arrastra en vacío para hacer un recuadro) o señala una construcción, abre el menú con clic derecho y elige <b>Guardar como artefacto</b>.';
       l.forEach((e, i) => {
         const d = Contraptions.def(i);
         const b = this.el('button', 'item');
@@ -7065,7 +7251,6 @@ const UI = {
   },
   setMode(m) {
     Input.mode = m; Input.pending = null; Powers.up(); Powers.stopLoop();
-    if (Input.spawnDef && m === 'powers') Input.cancelSpawn();
     this.$('#toolsBar').style.display = m === 'tools' ? '' : 'none';
     this.$('#powersBar').style.display = m === 'powers' ? '' : 'none';
     this.$('#btnMode img').src = iconURL(m === 'tools' ? 'tools' : 'powers');
@@ -7075,14 +7260,13 @@ const UI = {
   setTool(id) {
     Input.tool = id; Input.pending = null;
     if (Input.mode !== 'tools') this.setMode('tools');
-    if (Input.spawnDef) Input.cancelSpawn();
     for (const b of this.root.querySelectorAll('.tool')) b.classList.toggle('on', b.dataset.tool === id);
     this.refreshHint();
   },
   refreshHint() {
-    if (Input.spawnDef) this.hint.innerHTML = `<b>${Input.spawnDef.name}</b> · Clic: colocar · Mayús+arrastrar: en serie · ${keyLabel(keyOf('spawnLeft'))}/${keyLabel(keyOf('spawnRight'))}: mirar a izquierda/derecha · ${keyLabel(keyOf('rotLeft'))}/${keyLabel(keyOf('rotRight'))}: girar · Clic derecho / Esc: cancelar`;
+    if (Input.spawnDef) this.hint.innerHTML = `<b>${Input.spawnDef.name}</b> · Mantén <b>${keyLabel(keyOf('spawnLeft'))}</b> o <b>${keyLabel(keyOf('spawnRight'))}</b> para ver dónde aparece (mirando a la izquierda o a la derecha) y suelta para colocarlo · Alt: ajustar a la cuadrícula · Esc o clic en el catálogo: deseleccionar${isTouchDevice ? ' · En táctil: toca un hueco o usa los botones Q/E' : ''}`;
     else if (Input.mode === 'powers') { const pw = POWERS.find((x) => x.id === Powers.current); this.hint.innerHTML = `<b>Poder: ${pw.name}</b> · ${pw.hint} · Ctrl: volver a herramientas`; }
-    else { const t = TOOLS.find((x) => x.id === Input.tool); this.hint.innerHTML = `<b>${t.name}</b> · ${t.hint.replace('{rot}', keyLabel(keyOf('rotLeft')) + '/' + keyLabel(keyOf('rotRight')))}`; }
+    else { const t = TOOLS.find((x) => x.id === Input.tool); this.hint.innerHTML = `<b>${t.name}</b> <span class="kk">${t.key}</span> · ${t.hint.replace('{rot}', keyLabel(keyOf('rotLeft')) + '/' + keyLabel(keyOf('rotRight'))).replace('{pin}', keyLabel(keyOf('pinSnap')))}`; }
   },
   refreshTop() {
     const p = this.$('#btnPause img'); if (p) p.src = iconURL(Game.paused ? 'play' : 'pause');
@@ -7105,7 +7289,7 @@ const UI = {
     if (this.tipT <= 0) {
       this.tipT = 0.08;
       const h = Input.hover;
-      if (Settings.showInfo && h && h.thing && !h.thing.dead && !this.ctxOpen && !Input.spawnDef && !this.pointerOverUI) {
+      if (Settings.showInfo && h && h.thing && !h.thing.dead && !this.ctxOpen && !Input.spawnHold && !this.pointerOverUI) {
         const t = h.thing;
         let html = `<div class="tn">${t.name}${h.limb ? ` <span>· ${h.limb.def.name}</span>` : ''}</div>`;
         for (const [txt, col] of t.info()) html += `<div style="color:${col}">${txt}</div>`;
@@ -7150,7 +7334,7 @@ const UI = {
       items.push({ label: 'Traer al frente', fn: () => { t.z = ++World.zc; } });
       items.push({ label: 'Enviar al fondo', fn: () => { let mn = 0; for (const o of World.things) if (!o.isTerrain) mn = Math.min(mn, o.z); t.z = mn - 1; } });
       items.push({ label: Cam.follow === t ? 'Dejar de seguir' : 'Seguir con la cámara', fn: () => { Cam.follow = Cam.follow === t ? null : t; } });
-      items.push({ label: 'Eliminar', cls: 'danger', fn: () => t.destroy() });
+      items.push({ label: 'Eliminar', cls: 'danger', fn: () => Input.deleteThings(Input.selection.has(t) ? [...Input.selection] : [t]) });
     } else {
       const c = Connections.near(wx, wy, 8 / Cam.zoom);
       if (c) {
@@ -7317,27 +7501,22 @@ const UI = {
   openHelp() {
     const K = (a) => keyLabel(keyOf(a));
     const html = `<h2>Controles</h2><div class="help">
-      <div><b>Clic izquierdo</b> agarrar y arrastrar · en vacío: seleccionar con un recuadro</div>
-      <div><b>Clic derecho</b> menú contextual · <b>clic derecho mientras arrastras</b>: congelar en el aire</div>
-      <div><b>Botón central / arrastrar con clic derecho / flechas</b> mover la cámara · <b>Rueda</b> zoom</div>
-      <div><b>${K('rotLeft')} / ${K('rotRight')}</b> o <b>rueda mientras arrastras</b> girar lo que sostienes o lo que vas a colocar</div>
-      <div><b>${K('spawnLeft')} / ${K('spawnRight')}</b> colocar mirando a la izquierda / derecha (o girar lo que señalas)</div>
-      <div><b>${K('activate')}</b> activar (disparar, encender, detonar...) · mantener: uso continuo</div>
-      <div><b>${K('info')}</b> vista detalle: estado, pulso, sangre, temperatura, líquidos...</div>
-      <div><b>${K('flip')}</b> voltear · <b>${K('follow')}</b> seguir con la cámara · <b>${K('camReset')}</b> centrar cámara</div>
-      <div><b>${K('delete')} / ${K('delete2')}</b> borrar · <b>${K('undo')}</b> deshacer · <b>${K('copy')} / ${K('paste')}</b> copiar y pegar · <b>${K('duplicate')}</b> duplicar</div>
-      <div><b>${K('pause')}</b> pausa · <b>${K('slowmo')}</b> cámara lenta · <b>${K('limbView')}</b> vista de extremidades</div>
-      <div><b>1-0</b> herramientas · <b>${K('toolsPowers')}</b> herramientas / poderes · <b>${K('toggleUI')}</b> mostrar u ocultar la interfaz · <b>Esc</b> menú</div>
-      <div><b>Mayús + clic</b> añadir o quitar de la selección · <b>Mayús + arrastrar</b> con un objeto elegido: colocar en serie · <b>Mayús al girar</b> girar más rápido</div>
-      <div><b>Alt</b> mientras mueves, giras o colocas: ajustar a la cuadrícula y al ángulo (tamaño en Ajustes) · <b>${K('help')}</b> esta ayuda</div>
-      <div><b>Con el juego en pausa</b> lo que arrastras se coloca directamente, sin física</div>
-      <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. En Ajustes → Entorno: temperatura, lluvia, nieve, niebla y tormenta.</div>
+      <div><b>Catálogo</b> elige un objeto con un clic · <b>mantén ${K('spawnLeft')} / ${K('spawnRight')}</b> para ver su silueta en el cursor y <b>suelta</b> para que aparezca mirando a la izquierda / derecha</div>
+      <div><b>Clic izquierdo</b> agarrar y arrastrar · en un hueco: seleccionar con un recuadro · <b>Mayús + clic</b> añadir o quitar de la selección (arrastrar uno mueve toda la selección)</div>
+      <div><b>${K('rotLeft')} / ${K('rotRight')}</b> girar lo que arrastras (<b>Mayús</b>: más rápido). Al girarlo, mantiene ese ángulo mientras no lo sueltes, aunque choque con algo blando; sólo lo rígido (el suelo, paredes, objetos congelados o mucho más pesados) puede torcerlo</div>
+      <div><b>Alt</b> ajustar a la cuadrícula y al ángulo al mover, girar o colocar</div>
+      <div><b>${K('activate')}</b> activar lo que señalas o lo seleccionado (mantener: uso continuo, por ejemplo para disparar)</div>
+      <div><b>Clic derecho</b> menú contextual (congelar, redimensionar, borrar uniones...) · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara, también mientras agarras algo</div>
+      <div><b>${K('delete')}</b> borrar lo seleccionado o lo que señalas · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar</div>
+      <div><b>${K('pause')}</b> detener el tiempo (en pausa, lo que arrastras se coloca sin física y lo congelado se puede mover) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle</div>
+      <div><b>1-9</b> herramientas (pulsa el mismo número otra vez para pasar a la siguiente de su grupo) · <b>${K('toolsPowers')}</b> herramientas / poderes · <b>${K('toggleUI')}</b> mostrar u ocultar el catálogo · <b>${K('pinSnap')}</b> con la bisagra: al centro de masa · <b>Esc</b> menú</div>
+      <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas (ahí también hay acciones sin tecla, como congelar, voltear o duplicar). En Ajustes → Entorno: temperatura, lluvia, nieve, niebla y tormenta.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable de cobre a lámparas, motores, máquinas... o a una persona. Señales: botones, detectores, contadores y retardadores se unen con el cable de activación.</div>
       <div class="sub">Cables de colores: las señales por el cable rojo o azul hacen cosas distintas (invertir motores, frenar vehículos, cambiar la polaridad del imán...). Los convertidores pasan señales de un color a otro.</div>
       <div class="sub">Conductos de líquido: unen recipientes y personas; con un presurizador el líquido sale a presión, y las válvulas lo dejan pasar o lo cortan.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer). Prueba a mezclar tritio con otros sueros.</div>
       <div class="sub">Consejos: suelta un arma junto a la mano de una persona y la empuñará; actívala a ella (F) para que dispare. Arrastra accesorios (mira láser, silenciador...) encima de un arma para montarlos.</div>
-      <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Usa el botón F para activar.</div>
+      <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
     const b = this.openModal(html);
     b.querySelector('#hBack').onclick = () => this.closeModal();
@@ -11427,7 +11606,7 @@ const MapEditor = {
 MapEditor.register();
 {
   const ld = Input.leftDown.bind(Input), lu = Input.leftUp.bind(Input), dw = Input.drawWorld.bind(Input);
-  Input.leftDown = (shift, ctrl) => { if (MapEditor.active && !Input.spawnDef) { MapEditor.down(Input.wx, Input.wy); return; } return ld(shift, ctrl); };
+  Input.leftDown = (shift, ctrl) => { if (MapEditor.active) { MapEditor.down(Input.wx, Input.wy); return; } return ld(shift, ctrl); };
   Input.leftUp = () => { if (MapEditor.active && MapEditor.start) { MapEditor.up(Input.wx, Input.wy); return; } return lu(); };
   Input.drawWorld = (ctx) => { dw(ctx); MapEditor.draw(ctx); };
   // la lista de mapas muestra los mapas propios y el botón del editor
@@ -11482,7 +11661,11 @@ const Game = {
     this.setPaused(false);
     Sound.unlock();
     UI.refreshTop();
-    if (!this._welcomed) { this._welcomed = true; UI.toast(isTouchDevice ? 'Elige un objeto del catálogo y toca para colocarlo. Mantén pulsado para ver más opciones.' : 'Elige un objeto del catálogo y haz clic para colocarlo. Clic derecho: más opciones.', 4500); }
+    if (!this._welcomed) {
+      this._welcomed = true;
+      UI.toast(isTouchDevice ? 'Elige un objeto del catálogo y toca un hueco del escenario (o los botones Q/E) para colocarlo. Mantén pulsado para ver más opciones.' : `Elige un objeto del catálogo y mantén ${keyLabel(keyOf('spawnLeft'))} o ${keyLabel(keyOf('spawnRight'))} sobre el escenario: suelta para colocarlo. ${keyLabel(keyOf('help'))}: controles.`, 5500);
+      if (Settings._keysReset) { delete Settings._keysReset; saveSettings(); setTimeout(() => UI.toast('Las teclas han vuelto a las del juego original (puedes cambiarlas en Ajustes → Teclas).', 4500), 5800); }
+    }
   },
   setPaused(p) {
     this.paused = p;
