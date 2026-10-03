@@ -1265,6 +1265,12 @@ const SHIRT_COLORS = [
 const PANTS_COLORS = [
   { P: '#3c4558', p: '#2f3646' }, { P: '#4c4038', p: '#3c322b' }, { P: '#2b2d31', p: '#212226' }, { P: '#58607a', p: '#474e64' },
 ];
+const ZOMBIE_SKINS = [
+  { S: '#8fa77a', s: '#74895f', L: '#a2b98c' }, { S: '#7d9a6a', s: '#637d52', L: '#93ae80' }, { S: '#9bb07a', s: '#7f945f', L: '#afc28f' },
+  { S: '#6f8a62', s: '#56704a', L: '#84a077' }, { S: '#a3b58a', s: '#879a6e', L: '#b6c69e' }, { S: '#86a184', s: '#6b8669', L: '#9db89a' },
+  { S: '#7a8f58', s: '#617345', L: '#90a56c' }, { S: '#93a86f', s: '#788c56', L: '#a8bb85' },
+];
+function mixHex(a, b, k) { const x = hexToRgb(a), y = hexToRgb(b); const h = (v) => Math.round(v).toString(16).padStart(2, '0'); return '#' + h(x[0] + (y[0] - x[0]) * k) + h(x[1] + (y[1] - x[1]) * k) + h(x[2] + (y[2] - x[2]) * k); }
 function humanPalette(kind, rng) {
   const R = rng || Math.random;
   const base = { E: '#1e1a1a', M: '#8c4b42', R: null, Z: '#2a221d', A: '#b8a25a', O: '#2b2420', o: '#3b322c', z: '#18130f' };
@@ -1280,8 +1286,13 @@ function humanPalette(kind, rng) {
       C: '#e8c23a', c: '#c9a427', K: '#f5d65e', P: '#e8c23a', p: '#c9a427', Z: '#222222', A: '#222222', O: '#2a2a2a', o: '#222', z: '#111',
     });
   } else if (kind === 'zombie') {
-    p = Object.assign({}, base, { S: '#8fa77a', s: '#74895f', L: '#a2b98c', E: '#d8d24a', M: '#4b2a2a' },
-      HAIR_COLORS[4], { C: '#6c6a5c', c: '#55534a', K: '#7e7c6c' }, { P: '#3c4052', p: '#2e3240' });
+    // como las personas (pelo y ropa al azar), pero con la piel verde y la ropa sucia y apagada
+    const v = Settings.variety, pk = (a) => a[Math.floor(R() * a.length)];
+    const dirty = (o) => { const r = {}; for (const k in o) r[k] = mixHex(o[k], '#5a5446', 0.32); return r; };
+    p = Object.assign({}, base, v ? pk(ZOMBIE_SKINS) : ZOMBIE_SKINS[0], { E: v ? pk(['#d8d24a', '#e3df6c', '#c8c03a', '#e8cf62', '#d6e070']) : '#d8d24a', M: '#4b2a2a' },
+      v ? pk(HAIR_COLORS) : HAIR_COLORS[4],
+      dirty(v ? pk(SHIRT_COLORS) : { C: '#6c6a5c', c: '#55534a', K: '#7e7c6c' }),
+      dirty(v ? pk(PANTS_COLORS) : { P: '#3c4052', p: '#2e3240' }));
   } else {
     const sk = SKIN_TONES[Math.floor(R() * SKIN_TONES.length)];
     p = Object.assign({}, base,
@@ -3504,7 +3515,7 @@ const Holding = {
    ------------------------------------------------------------------------- */
 const CONN_TYPES = {
   weld: { name: 'Soldadura', col: '#9aa3ad' },
-  fixed: { name: 'Cable fijo', col: '#3c4148' },
+  fixed: { name: 'Cable rígido', col: '#3c4148' },
   hinge: { name: 'Bisagra', col: '#c9ced4' },
   spring: { name: 'Resorte', col: '#d9d2c2' },
   springStrong: { name: 'Resorte fuerte', col: '#8a9099' },
@@ -3512,7 +3523,7 @@ const CONN_TYPES = {
   rope: { name: 'Cuerda', col: '#a07a4a' },
   cable: { name: 'Cable de acero', col: '#5b616a' },
   chain: { name: 'Cadena', col: '#8a9099' },
-  rod: { name: 'Barra rígida', col: '#8a9099' },
+  rod: { name: 'Cable rígido articulado', col: '#8a9099' },
   strut: { name: 'Puntal de madera', col: '#a07a4e' },
   heatpipe: { name: 'Tubo de calor', col: '#c86a3a', heat: true },
   elastic: { name: 'Elástico', col: '#c94a3a' },
@@ -4207,6 +4218,8 @@ function shootGun(it, g) {
   const mz = it.muzzle();
   const ign = new Set([it]);
   if (it.holder) ign.add(it.holder);
+  // la IA sólo le da a quien quiere darle: sus balas atraviesan a las demás personas
+  if (it._aiIgnore && it.holder && it.holder.aiGoal && it.holder.aiGoal.kind === 'shoot') for (const t of it._aiIgnore) ign.add(t);
   const pellets = g.pellets || 1;
   const mods = it.mods || {};
   const onHit = (mods.incendiary || g.onHit) ? (t, h) => { if (mods.incendiary && t.isFlammable && t.isFlammable()) t.ignite(0.7); if (g.onHit) g.onHit(t, h, it); } : undefined;
@@ -6406,12 +6419,12 @@ const TOOLS = [
   { id: 'wireR', grp: 2, name: 'Cable de activación rojo', hint: 'Igual que el cable de activación, por el canal rojo.' },
   { id: 'wireB', grp: 2, name: 'Cable de activación azul', hint: 'Igual que el cable de activación, por el canal azul.' },
   { id: 'link', grp: 2, name: 'Enlace de propagación', hint: 'Como el cable de activación, pero invisible.' },
-  { id: 'rod', grp: 3, name: 'Cable rígido', hint: 'Une dos puntos con una barra de longitud fija.' },
+  { id: 'fixed', grp: 3, name: 'Cable rígido', hint: 'Arrastra de un objeto a otro: quedan unidos por un cable que no se dobla, sin poder moverse ni girar entre sí (como si fueran una sola pieza).' },
+  { id: 'rod', grp: 3, name: 'Cable rígido articulado', hint: 'Une dos puntos a una distancia fija; los extremos pueden girar.' },
   { id: 'strut', grp: 3, name: 'Puntal de madera', hint: 'Barra rígida de madera que se rompe si soporta demasiada fuerza.' },
   { id: 'heatpipe', grp: 3, name: 'Tubo de calor', hint: 'Barra rígida que transmite el calor entre los dos objetos.' },
   { id: 'copper', grp: 4, name: 'Cable de cobre', hint: 'Conduce la electricidad entre dos objetos (baterías, generadores, lámparas...).' },
   { id: 'conduit', grp: 4, name: 'Conducto de líquido', hint: 'Une recipientes (o personas) para que el líquido pase de uno a otro. Úsalo con presurizadores y válvulas.' },
-  { id: 'fixed', grp: 5, name: 'Cable fijo', hint: 'Arrastra de un objeto a otro: quedan unidos sin poder moverse ni girar entre sí.' },
   { id: 'steel', grp: 5, name: 'Atadura de acero', hint: 'Arrastra de un objeto a otro: quedan unidos rígidamente. Aguanta muchísimo.' },
   { id: 'woodbind', grp: 5, name: 'Atadura de madera', hint: 'Une rígidamente dos objetos. Se parte con mucha fuerza o si se quema.' },
   { id: 'weld', grp: 5, name: 'Soldar', hint: 'Clic donde se tocan dos objetos para soldarlos. Sobre uno solo, lo fija al fondo.' },
@@ -7640,6 +7653,7 @@ const UI = {
     add(t.noCollide ? 'Activar colisiones' : 'Desactivar colisiones', () => t.setCollide(!!t.noCollide));
     add(t.weightless ? 'Quitar ingravidez' : 'Hacer ingrávido', () => t.setWeightless(!t.weightless));
     if (!t.isHuman && !t.def.build) add('Redimensionar', (g) => openResize(g.filter((o) => !o.isHuman && !o.def.build)), { group: true });
+    if (forceAdjustable(t)) add('Fuerza', (g) => openForce(g), { group: true });
     add('Editar capa', (g) => this.openLayer(g), { group: true });
     sep();
     add('Fijar temperatura', (g) => {
@@ -7971,12 +7985,12 @@ const UI = {
       <div><b>Clic izquierdo</b> agarrar y arrastrar · en un hueco: seleccionar con un recuadro · <b>Mayús + clic</b> añadir o quitar de la selección</div>
       <div><b>${K('rotLeft')} / ${K('rotRight')}</b> girar lo que arrastras (<b>Mayús</b>: más rápido); mantiene ese ángulo mientras no lo sueltes · <b>${K('flip')}</b> voltear lo que arrastras o señalas (una persona sigue sosteniendo lo que tenga en las manos)</div>
       <div><b>${K('activate')}</b> activar lo que señalas (mantener: uso continuo) · arrastrando a alguien por el brazo, <b>${K('activate')}</b> hace que su mano agarre lo que tenga cerca (otra vez: soltar)</div>
-      <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA...); con varias cosas seleccionadas, cada opción se aplica a todas las que la admiten · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
+      <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA, fuerza de las máquinas...); con varias cosas seleccionadas, cada opción se aplica a todas las que la admiten · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
       <div><b>${K('delete')}</b> borrar · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar · <b>Alt</b> ajustar a la cuadrícula</div>
       <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas)</div>
       <div><b>${K('toggleUI')}</b> ocultar la interfaz · <b>${K('pinSnap')}</b> con la bisagra: al centro de masa · <b>Esc</b> menú</div>
       <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
-      <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan apuntando sin herir a otros, pelean cuerpo a cuerpo, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
+      <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan sin herir a quien esté en medio, pelean cuerpo a cuerpo (estocadas con las armas de punta, golpes desde arriba con las demás) y rematan a los zombis caídos, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable de cobre a lámparas, motores, máquinas... o a una persona. Señales: botones, detectores, contadores y retardadores se unen con el cable de activación.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
@@ -12463,7 +12477,8 @@ drawDetailMarkers = function (ctx) {
     if (!t.isHuman || t.dead) continue;
     for (const L of t.limbList) {
       if (L.destroyed) continue;
-      const c = L.body.getWorldCenter(), h = clamp(L.health, 0, 1);
+      // al morir (o quedar carbonizado), todas las partes se ven sin vida
+      const c = L.body.getWorldCenter(), h = !t.alive && (t.deathReason || t.charred) ? 0 : clamp(L.health, 0, 1);
       ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(c.x - bw / 2 - 1 / z, c.y - bh / 2 - 1 / z, bw + 2 / z, bh + 2 / z);
       ctx.fillStyle = h > 0.5 ? '#3ce65a' : h > 0.25 ? '#e8d23c' : '#e8493c';
       if (L.broken) ctx.fillStyle = '#c070ff';
@@ -12547,11 +12562,13 @@ const Combat = {
     if (a && a !== this && a.isHuman && !a.dead && amount > 0.015 && this.alive) this.noteAttacker(a);
     return hurt0.call(this, L, amount, type, ...rest);
   };
-  // golpes físicos: el atacante es la persona (o quien sostiene el objeto) que choca con esta
+  // golpes físicos: el atacante es la persona (o quien sostiene el objeto) que choca con esta. Pero chocarse sin
+  // querer no es atacar: sólo cuenta si la lanzas o la arrastras tú contra la otra, si va a por ella o si le tira algo
   const imp0 = Human.prototype.onImpact;
   Human.prototype.onImpact = function (im, body, fix, obody, ofix, dv, sgn) {
     const o = ofix && thingOf(ofix);
-    const a = o && o !== this ? Combat.attackerOf(o) : null;
+    let a = o && o !== this ? Combat.attackerOf(o) : null;
+    if (a && !(a.dragged || Phys.time - (a._dragT || -9) < 2 || (a.aiGoal && a.aiGoal.t === this) || (o !== a && o._thrower === a && !o.holder))) a = null;
     return Combat.with(a, () => imp0.call(this, im, body, fix, obody, ofix, dv, sgn));
   };
   // disparos: el que sostiene el arma
@@ -12559,7 +12576,11 @@ const Combat = {
   shootGun = function (it, g) { return Combat.with(it && it.holder, () => sg(it, g)); };
   // puñaladas: el que sostiene el arma blanca (o quien la lanzó)
   const sc = Stuck.create.bind(Stuck);
-  Stuck.create = function (item, ...rest) { return Combat.with(Combat.attackerOf(item), () => sc(item, ...rest)); };
+  Stuck.create = function (item, ...rest) {
+    // el arma con la que alguien está atacando no se queda clavada: atraviesa y vuelve a chocar al salir
+    if (item && item.holder && item.holder.atk && item.holder.atk.wpn === item) { const bS = rest[0], fO = rest[1]; if (bS && fO) Stuck.pend.push({ a: bS, b: fO.getBody(), t: 0.3 }); return; }
+    return Combat.with(Combat.attackerOf(item), () => sc(item, ...rest));
+  };
   // soltar algo con impulso cuenta como lanzarlo
   const rel = Holding.release.bind(Holding);
   Holding.release = function (item) { const r = this.map.get(item); if (r) { item._thrower = r.h; item._thrownT = Phys.time; } return rel(item); };
@@ -12665,7 +12686,35 @@ const AI = {
     const p = L.body.getPosition(); return [p.x, p.y];
   },
   hostileTo(h, o) { return !!(o && o.isHuman && !o.dead && ((o.zombie && o.alive) || o === h.aggressor)); },
+  // ¿dispara balas (que pueden atravesar a quien no es el objetivo) o lanza proyectiles?
+  hitscan(it) { return !!(it.def.gun && it.def.cat !== 'launchers' && !this.EXPLOSIVE_SHOT.has(it.def.id)); },
+  // cómo ataca con un arma: estocada (cuchillos, lanzas, pinchos, motosierra), desde arriba (contundentes,
+  // hachas y machetes) o de las dos formas (espadas)
+  SWORDS: new Set(['sword', 'katana', 'legend_sword', 'energy_sword']),
+  meleeStyle(it) {
+    const d = it.def, id = d.id;
+    if (this.SWORDS.has(id)) return 'both';
+    if (id === 'machete' || id === 'axe') return 'overhead';
+    return d.sharp ? 'thrust' : 'overhead';
+  },
+  // la punta (en píxeles del dibujo): la de su filo o, si no tiene, el punto más alejado del agarre
+  tipPx(it) {
+    const d = it.def;
+    if (d._tipPx) return d._tipPx;
+    const sp = it.parts[0].spr, g = d.grip || [sp.w / 2, sp.h / 2];
+    let best = d.sharp && d.sharp.tip, bd = -1;
+    if (!best) for (const c of [[0, g[1]], [sp.w, g[1]], [g[0], 0], [g[0], sp.h]]) { const dd = Math.hypot(c[0] - g[0], c[1] - g[1]); if (dd > bd) { bd = dd; best = c; } }
+    return (d._tipPx = best);
+  },
+  tip(it) { const t = this.tipPx(it); return it.worldPt(t[0], t[1]); },
+  // del agarre a la punta y del hombro a la punta con el brazo estirado
+  bladeLen(it) { const t = this.tipPx(it), g = it.def.grip || t; return Math.hypot(t[0] - g[0], t[1] - g[1]) * PX * (it.parts[0].scale || 1); },
+  meleeReach(it) { return 0.58 + this.bladeLen(it); },
 };
+function segDist(px, py, ax, ay, bx, by) {
+  const vx = bx - ax, vy = by - ay, l2 = vx * vx + vy * vy || 1e-9, k = clamp(((px - ax) * vx + (py - ay) * vy) / l2, 0, 1);
+  return Math.hypot(px - (ax + vx * k), py - (ay + vy * k));
+}
 
 /* ---------------- percepción ---------------- */
 Human.prototype.aiSense = function () {
@@ -12780,11 +12829,15 @@ Human.prototype.aiDecide = function () {
       // hay un zombi cerca aunque no lo vea: si tiene un arma fácil de coger, va a por ella
       const w = this.aiPickWeapon(null);
       if (w) want = { kind: 'fetch', w: w.w, mode: w.mode, sx: w.sx };
+    } else if (wpn && AI.isMelee(wpn)) {
+      // un zombi caído (pero vivo) al lado: lo remata antes de que se levante
+      const zd = S.zombies.find((z) => !z.active && z.t.alive && !z.t.immortal && z.d < 3.2);
+      if (zd) want = { kind: 'melee', t: zd.t, finish: true };
     }
   }
   const cur = this.aiGoal;
   const same = cur && cur.kind === want.kind && cur.t === want.t && cur.w === want.w;
-  if (same) return;
+  if (same) { if (cur.kind === 'melee') cur.finish = !!want.finish; return; }
   const urgent = want.kind === 'panic' || want.kind === 'avoid';
   if (cur && !urgent && this.aiValid(cur)) {
     // compromiso mínimo
@@ -12800,7 +12853,7 @@ Human.prototype.aiDecide = function () {
     if (cur.kind === 'avoid' && cur.until > now) return;
   }
   this.aiStopUse();
-  this.punch = null; this.kick = null;
+  this.punch = null; this.kick = null; this.endAttack();
   want.t0 = now;
   this.aiSetGoal(want.kind === 'idle' ? null : want);
 };
@@ -12808,6 +12861,8 @@ Human.prototype.aiDecide = function () {
 Human.prototype.aiSetGoal = function (g) {
   const o = this.aiGoal;
   if (o && o !== g && o.kind === 'fetch' && o.nc && o.w.holder !== this) for (const [a, b] of o.nc) if (a.getWorld && b.getWorld) Stuck.pend.push({ a, b, t: 0.3 });
+  // la motosierra que encendió para pelear se apaga al acabar
+  if (this._aiSaw && (!g || g.kind !== 'melee')) { const sw = this._aiSaw; this._aiSaw = null; if (!sw.dead && sw.on) sw.activate(); }
   this.aiGoal = g || null;
 };
 Human.prototype.aiValid = function (g) {
@@ -12820,8 +12875,8 @@ Human.prototype.aiValid = function (g) {
 Human.prototype.aiStopUse = function () { const u = this._aiUsing; if (u) { this._aiUsing = null; if (!u.dead) u.use(false); } };
 Human.prototype.aiStop = function () {
   this.aiStopUse();
-  this.aiSetGoal(null); this.aiAim = null; this.punch = null; this.kick = null; this.walking = false;
-  this.endFightNoCollide();
+  this.aiSetGoal(null); this.aiAim = null; this.punch = null; this.kick = null; this.endAttack(); this.walking = false;
+  this.endFightNoCollide(); this.endStepOver();
 };
 
 /* ---------------- moverse ---------------- */
@@ -12866,7 +12921,9 @@ Human.prototype.aiHop = function (dir) {
 Human.prototype.aiAct = function (dt) {
   const g = this.aiGoal;
   this.aiAim = null;
+  if (!g || g.kind !== 'shoot') for (const sd of ['F', 'B']) { const w = this.held[sd]; if (w && w._aiIgnore) w._aiIgnore = null; }
   if (!g || g.kind !== 'brawl') this.endFightNoCollide();
+  if (!g || g.kind !== 'melee') this.endStepOver();
   if (!g) return false;
   if (!this.aiValid(g)) { this.aiStopUse(); this.aiSetGoal(null); return false; }
   const p = AI.pos(this), now = Phys.time;
@@ -12967,7 +13024,13 @@ Human.prototype.aiAct = function (dt) {
         else if (d < lo && t.consc >= 0.35) { if (!this.aiMove(-Math.sign(dx), 0.9, true)) this.walking = false; }
         else this.walking = false;
       }
-      // disparar si apunta bien y no hay nadie inocente en medio
+      // las balas atraviesan a quien no es el objetivo (salvo a otros enemigos)
+      if (!g.ignT || now - g.ignT > 0.25) {
+        g.ignT = now; g.ign = new Set();
+        for (const o of World.things) if (o.isHuman && o !== t && o !== this && !AI.hostileTo(this, o)) g.ign.add(o);
+      }
+      wpn._aiIgnore = AI.hitscan(wpn) ? g.ign : null;
+      // disparar si apunta bien y no hay nada que tape (con proyectiles, tampoco alguien inocente en medio)
       g.cool = (g.cool || 0) - dt;
       const ok = Math.sign(dx) === this.facing && d < hi + 5 && this.aiAimed(wpn, tq) && this.aiClearShot(wpn, t, tq);
       if (this._aiUsing) {
@@ -12981,10 +13044,28 @@ Human.prototype.aiAct = function (dt) {
     }
     case 'melee': {
       const t = g.t, wpn = AI.weapon(this);
-      if (!wpn || !AI.isMelee(wpn) || (t.zombie && t.consc < 0.35)) { this.aiSetGoal(null); return false; }
-      const q = AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y);
-      this.aiFace(Math.sign(dx));
-      if (standing && Math.abs(dx) > 1.05 && !this.punch) this.aiMove(Math.sign(dx), d > 4 ? 1.9 : 1.1); else this.walking = false;
+      // a un zombi caído sólo se le remata si está cerca (y se le puede matar)
+      if (!wpn || !AI.isMelee(wpn) || (t.zombie && t.consc < 0.35 && (t.immortal || !g.finish))) { this.aiSetGoal(null); return false; }
+      const plan = this.meleePlan(t, wpn);
+      if (plan.down) this.stepOver(t); else this.endStepOver();
+      // a quien está en el suelo se le busca la cabeza (si no, se queda a los pies)
+      const q = plan.down && !t.limbs.head.destroyed ? t.limbs.head.body.getPosition() : AI.pos(t), dx = q.x - p.x, d = Math.hypot(dx, q.y - p.y), adx = Math.abs(dx);
+      if (!this.atk) this.aiFace(Math.sign(dx));
+      {
+        // en guardia, con el arma lista
+        const side = this.held.F === wpn ? 'F' : 'B', sh = this.limbs['upperArm' + side].body.getPosition(), tq = (t.limbs.upperBody.destroyed ? t.root : t.limbs.upperBody).body.getPosition();
+        const pt = AI.meleeStyle(wpn) === 'thrust';
+        this.guard = { side, wpn, at: Phys.time, up: pt ? -0.35 : -0.5, e: pt ? clamp(Math.atan2(-(tq.y - sh.y), Math.max(0.1, Math.abs(tq.x - sh.x))), -0.35, 0.4) : 1.25,
+          // junto a alguien en el suelo se queda agachado entre golpe y golpe (levantarse y agacharse cada vez le desequilibra)
+          down: plan.down && plan.style !== 'kick' && adx < plan.dist + 0.45 };
+        if (!this.atk) this.aiFixLong(wpn, side, this.guard.e, this.guard.up);
+      }
+      // se pone a la distancia justa para su arma (con una larga, si está demasiado cerca, retrocede)
+      if (standing && !this.atk && !this.kick) {
+        if (adx > plan.dist + 0.06) this.aiMove(Math.sign(dx), adx > 4 ? 1.9 : adx > 1.6 ? 1.2 : 0.8);
+        else if (adx < plan.dist * 0.5 && plan.dist > 0.9) this.aiMove(-Math.sign(dx), 0.7, true);
+        else this.walking = false;
+      } else this.walking = false;
       this.aiStrike(t, dt, d, dx, standing, wpn);
       return true;
     }
@@ -13027,11 +13108,12 @@ Human.prototype.aiAimed = function (wpn, tq) {
 // ¿hay vía libre? (ni una pared ni alguien que no sea un enemigo en la línea de tiro)
 Human.prototype.aiClearShot = function (wpn, t, tq) {
   const mz = wpn.muzzle();
+  const pass = AI.hitscan(wpn);
   for (const h of rayAll(mz.x, mz.y, tq[0], tq[1])) {
     const o = h.d.thing;
     if (!o || o === this || o === wpn || h.f.isSensor()) continue;
     if (o.isTerrain) return false;
-    if (o.isHuman) return o === t || AI.hostileTo(this, o);
+    if (o.isHuman) { if (o === t || AI.hostileTo(this, o)) return true; if (pass) continue; return false; }
     if (h.b.getType() !== 'dynamic' || (o.mass && o.mass() > 60)) return false;
   }
   return true;
@@ -13041,62 +13123,261 @@ Human.prototype.aiClearShot = function (wpn, t, tq) {
 // mientras dos personas pelean, sus brazos no chocan entre sí (si no, se quedan trabados con los brazos
 // estirados sin poder acercarse); los puños sí chocan con el cuerpo y la cabeza del otro
 const ARM_IDS = ['upperArmF', 'lowerArmF', 'upperArmB', 'lowerArmB'];
+// dejar de chocar (y anular cualquier vuelta a chocar que estuviera pendiente para esa pareja)
+function holdNoCollide(list) {
+  if (!list.length) return;
+  const m = new Map(), add = (a, b) => { let s = m.get(a); if (!s) m.set(a, (s = new Set())); s.add(b); };
+  for (const [a, b] of list) { setNoCollide(a, b, true); add(a, b); add(b, a); }
+  Stuck.pend = Stuck.pend.filter((p) => { const s = m.get(p.a); return !(s && s.has(p.b)); });
+}
 Human.prototype.fightNoCollide = function (o) {
   if (this._ncWith === o) return;
   this.endFightNoCollide();
   if (!o || !o.isHuman || o.dead) return;
   const arms = (h) => ARM_IDS.map((k) => h.limbs[k]).filter((L) => L && !L.destroyed).map((L) => L.body);
   this._ncWith = o; this._ncPairs = [];
-  for (const a of arms(this)) for (const b of arms(o)) { setNoCollide(a, b, true); this._ncPairs.push([a, b]); }
+  for (const a of arms(this)) for (const b of arms(o)) this._ncPairs.push([a, b]);
+  holdNoCollide(this._ncPairs);
+};
+// para rematar a alguien que está en el suelo, pasa por encima de él (si no, se queda a sus pies o tropieza)
+Human.prototype.stepOver = function (o) {
+  if (this._soWith === o) return;
+  this.endStepOver();
+  if (!o || !o.isHuman || o.dead) return;
+  this._soWith = o; this._soPairs = [];
+  for (const L of this.limbList) { if (L.destroyed) continue; for (const b of o.bodies) this._soPairs.push([L.body, b]); }
+  holdNoCollide(this._soPairs);
+};
+Human.prototype.endStepOver = function () {
+  if (!this._soPairs) return;
+  for (const [a, b] of this._soPairs) if (a.getWorld && b.getWorld) Stuck.pend.push({ a, b, t: 0.3 });
+  this._soPairs = null; this._soWith = null;
 };
 Human.prototype.endFightNoCollide = function () {
   if (!this._ncPairs) return;
   for (const [a, b] of this._ncPairs) if (a.getWorld && b.getWorld) Stuck.pend.push({ a, b, t: 0.3 });
   this._ncPairs = null; this._ncWith = null;
 };
+// cómo atacar con un arma a ese objetivo: estilo y a qué distancia ponerse (horizontal, entre los cuerpos).
+// A quien está en el suelo se le ataca desde arriba y agachado; si el arma no llega, de una patada
+Human.prototype.meleePlan = function (t, wpn) {
+  const R = AI.meleeReach(wpn), st = AI.meleeStyle(wpn);
+  const tl = t.limbs.head.destroyed ? t.root : t.limbs.head, q = tl.body.getPosition();
+  // en el suelo de verdad (su cabeza, por debajo de la cadera de alguien de pie), no sólo derribado mientras aún cae
+  const fy = AI.feetY(this), down = q.y > fy - 0.95;
+  if (down) {
+    // agachado, el hombro (a 1,47 m del suelo de pie) baja unos 0,6 m
+    const dy = Math.max(0, q.y - (fy - 1.47 + 0.6)), r = R * 0.92;
+    const hx = r > dy ? Math.sqrt(r * r - dy * dy) : 0;
+    if (hx < 0.15) return { style: 'kick', dist: 0.85, down };
+    return { style: 'overhead', dist: clamp(hx * 0.85, 0.3, 2.4), down };
+  }
+  const dT = clamp(R - 0.3, 0.5, 3), dO = clamp(R * 0.82, 0.5, 3);
+  return { style: st, dist: st === 'thrust' ? dT : st === 'overhead' ? dO : Math.min(dT, dO), down };
+};
 Human.prototype.aiStrike = function (t, dt, d, dx, standing, wpn) {
   this.aiCool = (this.aiCool || 0) - dt;
   if (!t.isHuman) return;
   const tgtL = t.limbs.upperBody.destroyed ? t.root : t.limbs.upperBody;
-  if (!this.punch && !this.kick && this.aiCool <= 0 && standing && (t.state === 'lying' || t.state === 'getup') && Math.abs(dx) < 1.15) {
-    // en el suelo no le llegan los puños: una patada
-    this.aiCool = rand(0.8, 1.2);
+  const busy = this.punch || this.kick || this.atk, down = t.state === 'lying' || t.state === 'getup';
+  const plan = wpn ? this.meleePlan(t, wpn) : null, adx = Math.abs(dx);
+  if (!busy && this.aiCool <= 0 && standing && (wpn ? plan.style === 'kick' : down) && adx < 1.15) {
+    // en el suelo no le llegan los puños (ni un arma corta): una patada
+    this.aiCool = rand(0.7, 1.0);
     this.kick = { t: 0.3, tgt: t, best: 9, L: null };
-  } else if (!this.punch && !this.kick && this.aiCool <= 0 && tgtL && !tgtL.destroyed && (d < (wpn ? 1.35 : 0.95) || (standing && d < 1.4 && Math.abs(this.root.body.getLinearVelocity().x) < 0.2))) {
-    // golpe con el arma o con el puño; a veces a la cabeza, que puede dejar inconsciente
-    this.aiCool = wpn ? rand(0.6, 0.9) : rand(0.55, 0.85);
-    const side = this.held.F === wpn && wpn ? 'F' : this.held.B === wpn && wpn ? 'B' : (Math.random() < 0.5 ? 'F' : 'B');
-    const arm = this.limbs['lowerArm' + side];
-    const head = !t.limbs.head.destroyed && Math.random() < 0.35;
+  } else if (!busy && this.aiCool <= 0 && standing && wpn && plan.style !== 'kick' && tgtL && !tgtL.destroyed && Math.sign(dx) === this.facing && adx < plan.dist + 0.25 && Math.abs(AI.pos(t).y - AI.pos(this).y) < 1.6) {
+    // con un arma: estocada o golpe desde arriba, según el arma (las espadas, de las dos formas)
+    let style = plan.style;
+    if (style === 'both') style = Math.random() < 0.5 ? 'thrust' : 'overhead';
+    const head = !t.limbs.head.destroyed && (plan.down || Math.random() < (style === 'overhead' ? 0.65 : 0.4));
+    const side = this.held.F === wpn ? 'F' : 'B', m = wpn.mass();
+    this.atk = { style, side, wpn, tgt: t, aimL: head ? t.limbs.head : tgtL, down: plan.down, phase: 'wind', t: (style === 'overhead' ? 0.22 : 0.13) + Math.min(0.2, m * 0.035), eDes: 0, eVel: 0 };
+    this.aiCool = (style === 'overhead' ? rand(0.6, 0.85) : rand(0.45, 0.7)) + Math.min(0.35, m * 0.05);
+    if (wpn.def.id === 'chainsaw' && !wpn.on) { wpn.activate(); this._aiSaw = wpn; }
+  } else if (!busy && this.aiCool <= 0 && !wpn && tgtL && !tgtL.destroyed && (d < 0.95 || (standing && d < 1.4 && Math.abs(this.root.body.getLinearVelocity().x) < 0.2))) {
+    // puñetazo; a veces a la cabeza, que puede dejar inconsciente
+    this.aiCool = rand(0.45, 0.75);
+    const side = Math.random() < 0.5 ? 'F' : 'B', arm = this.limbs['lowerArm' + side];
+    const head = !t.limbs.head.destroyed && Math.random() < 0.45;
     const aimL = head ? t.limbs.head : tgtL;
     if (!arm.destroyed) {
       const ab = arm.body, ap = ab.getPosition(), tq = aimL.body.getPosition(), ux = tq.x - ap.x, uy = tq.y - ap.y, ul = Math.hypot(ux, uy) || 1;
-      ab.applyLinearImpulse(V(ux / ul * 5 * HUMAN_MASS_MUL, (uy / ul * 5 - 0.5) * HUMAN_MASS_MUL), ap, true);
-      if (wpn) wpn.main.applyAngularImpulse(this.facing * wpn.main.getInertia() * 30, true);
-      this.punch = { side, aimL, t: 0.2, wpn, head, tgt: t, best: 9 };
+      ab.applyLinearImpulse(V(ux / ul * 7 * HUMAN_MASS_MUL, (uy / ul * 7 - 0.5) * HUMAN_MASS_MUL), ap, true);
+      this.punch = { side, aimL, t: 0.2, head, tgt: t, best: 9 };
     }
   }
   this.updatePunch(dt);
   this.updateKick(dt);
-  if (this.kick) this.walking = false;
+  this.updateAttack(dt);
+  if (this.kick || this.atk) this.walking = false;
 };
 Human.prototype.updatePunch = function (dt) {
   const pu = this.punch; if (!pu) return;
   const arm = this.limbs['lowerArm' + pu.side];
   if (pu.tgt.dead || pu.aimL.destroyed || arm.destroyed || !this.alive || this.consc < 0.5) { this.punch = null; return; }
-  const hp = pu.wpn && !pu.wpn.dead ? pu.wpn.main.getWorldCenter() : V(...this.handPoint(pu.side)), lp = pu.aimL.body.getPosition();
-  pu.best = Math.min(pu.best, Math.hypot(hp.x - lp.x, hp.y - lp.y));
+  const hp = this.handPoint(pu.side), lp = pu.aimL.body.getPosition();
+  pu.best = Math.min(pu.best, Math.hypot(hp[0] - lp.x, hp[1] - lp.y));
   pu.t -= dt;
   if (pu.t > 0) return;
   this.punch = null;
-  if (pu.best > (pu.wpn ? 0.7 : 0.4)) return;
+  if (pu.best > 0.42) return;
   this._lastLand = Phys.time;
   const ux = Math.sign(lp.x - this.root.body.getPosition().x) || this.facing;
-  const dmg = pu.wpn ? 0.14 : pu.head ? rand(0.06, 0.12) : 0.07;
-  Combat.with(this, () => pu.tgt.hurt(pu.aimL, dmg, pu.wpn && pu.wpn.def.edge ? 'cut' : 'blunt', lp.x, lp.y, ux, 0));
-  pu.aimL.body.applyLinearImpulse(V(ux * (pu.wpn ? 14 : 9) * HUMAN_MASS_MUL, -2 * HUMAN_MASS_MUL), lp, true);
-  Sound.play('impact_flesh', lp.x, lp.y, 0.8, { key: 'punch' + this.id, gap: 120 });
-  if (pu.tgt.isHuman && pu.tgt.state === 'stand' && Math.random() < (pu.wpn ? 0.35 : 0.18)) pu.tgt.setState('lying');
+  Combat.with(this, () => pu.tgt.hurt(pu.aimL, pu.head ? rand(0.13, 0.21) : 0.14, 'blunt', lp.x, lp.y, ux, 0));
+  pu.aimL.body.applyLinearImpulse(V(ux * 15 * HUMAN_MASS_MUL, -2 * HUMAN_MASS_MUL), lp, true);
+  Sound.play('impact_flesh', lp.x, lp.y, 0.9, { key: 'punch' + this.id, gap: 120 });
+  if (pu.tgt.isHuman && pu.tgt.state === 'stand' && Math.random() < (pu.head ? 0.3 : 0.2)) pu.tgt.setState('lying');
+};
+// un arma larga que ha quedado apuntando hacia atrás o clavada en el suelo (arrastrada) ya no puede girar
+// hacia delante sin clavarse: la vuelve a coger bien
+Human.prototype.aiFixLong = function (wpn, side, e, up) {
+  const now = Phys.time;
+  if (AI.bladeLen(wpn) < 0.7 || now - (this._regripT || 0) < 1.5 || this.dragged) return;
+  const el = this.weaponElev(wpn, side), tip = AI.tip(wpn);
+  if (el < -1.75 || el > 2.8 || (el < -1.1 && tip[1] > AI.feetY(this) - 0.08)) { this._regripT = now; this.aiRegrip(wpn, side, e, up); }
+};
+// sin pelear, las armas largas se llevan levantadas (colgando, la punta se clavaría en el suelo)
+Human.prototype.aiCarry = function () {
+  if (this.atk || (this.guard && this.guard.at === Phys.time)) return;
+  for (const side of ['F', 'B']) {
+    const w = this.held[side];
+    if (!w || w.dead || !AI.isMelee(w) || AI.bladeLen(w) < 0.7) continue;
+    this.guard = { side, wpn: w, at: Phys.time, up: -0.25, e: 1.28, carry: true };
+    this.aiFixLong(w, side, 1.28, -0.25);
+    return;
+  }
+};
+// volver a coger el arma con el brazo ya en guardia (el brazo se coloca de golpe y el arma, alineada con el antebrazo)
+Human.prototype.aiRegrip = function (wpn, side, e, up) {
+  const U = this.limbs['upperArm' + side], L = this.limbs['lowerArm' + side], f = this.facing;
+  if (!U.joint || !L.joint || U.destroyed || L.destroyed || !U.connected || !L.connected) return false;
+  const pl = clamp(-(Math.PI / 2 + e) - up, -2.6, 0);
+  const place = (limb, ang) => {
+    const j = limb.joint, pa = j.getAnchorA(), la = j.getLocalAnchorB ? j.getLocalAnchorB() : j.m_localAnchorB, r = rot(la.x, la.y, ang);
+    limb.body.setTransform(V(pa.x - r[0], pa.y - r[1]), ang);
+    limb.body.setLinearVelocity(this.root.body.getLinearVelocity()); limb.body.setAngularVelocity(0);
+  };
+  Holding.release(wpn);
+  const u0 = U.body.getAngle(), nu = u0 + (up * f - U.joint.getJointAngle());
+  const nl = L.body.getAngle() + (nu - u0) + (pl * f - L.joint.getJointAngle());
+  place(U, nu); place(L, nl);
+  Holding.attach(wpn, this, side, true);
+  return true;
+};
+// elevación del arma (rad): 0 = hacia delante, π/2 = hacia arriba, más = hacia atrás; negativa = hacia abajo
+Human.prototype.weaponElev = function (wpn, side) {
+  const hp = this.handPoint(side), tp = AI.tip(wpn);
+  return Math.atan2(-(tp[1] - hp[1]), this.facing * (tp[0] - hp[0]));
+};
+// ataque con arma: preparación (brazo atrás o arriba), golpe y recuperación. El brazo sigue una trayectoria
+// (con ayuda, para que también se puedan blandir las armas pesadas) y el golpe cuenta si el arma pasa por
+// el objetivo (o lo toca) en algún momento del recorrido
+const ATK_UP = 2.25;
+Human.prototype.updateAttack = function (dt) {
+  const a = this.atk; if (!a) return;
+  const arm = this.limbs['lowerArm' + a.side];
+  if (a.tgt.dead || a.aimL.destroyed || arm.destroyed || a.wpn.dead || a.wpn.holder !== this || !this.alive || this.consc < 0.5 || this.state !== 'stand') { this.endAttack(); return; }
+  a.t -= dt; a.seen = Phys.time;
+  const lp = a.aimL.body.getPosition(), k = HUMAN_MASS_MUL, f = this.facing;
+  const sh = this.limbs['upperArm' + a.side].body.getPosition();
+  const eT = Math.atan2(-(lp.y - sh.y), Math.max(0.05, f * (lp.x - sh.x)));
+  // agachado (a quien está en el suelo) no levanta tanto el arma: se iría de espaldas
+  const up = a.down ? 1.7 : ATK_UP;
+  if (a.phase === 'wind') {
+    a.eDes = a.style === 'thrust' ? eT : up; a.eVel = 0;
+    if (a.t > 0) return;
+    a.phase = 'strike'; a.T = a.t = a.style === 'overhead' ? 0.24 : 0.16;
+    // el arma atraviesa el resto del objetivo (sus brazos, o el cuerpo de quien está en el suelo) hasta lo que
+    // busca: si no, se queda en ellos y nunca llega a la cabeza
+    a.nc = [];
+    for (const L of a.tgt.limbList) if (L !== a.aimL && !L.destroyed) for (const b of a.wpn.bodies) a.nc.push([b, L.body]);
+    // y no le da a nadie más que esté cerca (sólo a quien quiere dar)
+    const me = AI.pos(this);
+    for (const o of World.things) {
+      if (!o.isHuman || o === this || o === a.tgt || o.dead || AI.hostileTo(this, o)) continue;
+      const q = AI.pos(o); if (Math.abs(q.x - me.x) > 3.5 || Math.abs(q.y - me.y) > 3) continue;
+      for (const L of o.limbList) if (!L.destroyed) for (const b of a.wpn.bodies) a.nc.push([b, L.body]);
+    }
+    holdNoCollide(a.nc);
+    if (a.style === 'thrust') {
+      // estocada: el brazo y el arma salen disparados hacia el objetivo y el cuerpo acompaña
+      const ab = arm.body, ap = ab.getPosition(), ux = lp.x - ap.x, uy = lp.y - ap.y, ul = Math.hypot(ux, uy) || 1, wm = a.wpn.main;
+      ab.applyLinearImpulse(V(ux / ul * 8 * k, uy / ul * 8 * k), ap, true);
+      wm.applyLinearImpulse(V(ux / ul * a.wpn.mass() * 3, uy / ul * a.wpn.mass() * 3), wm.getWorldCenter(), true);
+      this.root.body.applyLinearImpulse(V(f * 7 * k, 0), this.root.body.getWorldCenter(), true);
+    }
+    a.prev = null;
+  }
+  if (a.phase === 'recover') { a.eVel = 0; if (a.t <= 0) this.endAttack(); return; }
+  if (a.phase === 'strike') {
+    const s = clamp(1 - a.t / a.T, 0, 1);
+    a.eEnd = eT - (a.style === 'overhead' ? (a.down ? 0.12 : 0.35) : 0);
+    if (a.style === 'thrust') { a.eDes = eT; a.eVel = 0; }
+    else { a.eDes = lerp(up, a.eEnd, Math.pow(s, 1.6)); a.eVel = (a.eEnd - up) * 1.6 * Math.pow(Math.max(s, 0.05), 0.6) / a.T; }
+    if (a.t <= 0) { a.phase = 'follow'; a.t = 0.14; }
+  } else if (a.phase === 'follow') { a.eDes = a.eEnd; a.eVel = 0; }
+  // ¿ha dado? (durante el golpe y lo que sigue moviéndose después)
+  const hp = this.handPoint(a.side), tp = AI.tip(a.wpn), cur = [hp[0], hp[1], tp[0], tp[1]], pr = a.prev || cur;
+  a.prev = cur;
+  const hit = this.meleeContact(a, pr, cur, a.phase === 'follow' && a.t <= 0);
+  if (hit) { this.meleeHit(a, hit.L, hit.x, hit.y); a.phase = 'recover'; a.t = 0.16; a.eDes = this.weaponElev(a.wpn, a.side); a.eVel = 0; return; }
+  if (a.phase === 'follow' && a.t <= 0) { a.phase = 'recover'; a.t = 0.1; }
+};
+Human.prototype.endAttack = function () {
+  const a = this.atk; if (!a) return;
+  this.atk = null;
+  if (a.nc) for (const [b1, b2] of a.nc) if (b1.getWorld && b2.getWorld) Stuck.pend.push({ a: b1, b: b2, t: 0.25 });
+};
+// ¿el arma (del agarre a la punta) ha pasado por el objetivo desde el fotograma anterior? Lo que se buscaba
+// (la cabeza o el cuerpo) cuenta en cuanto pasa cerca; otra parte, sólo si al final no ha dado en lo que buscaba
+Human.prototype.meleeContact = function (a, pr, cur, last) {
+  const T = a.tgt;
+  for (let i = 1; i <= 3; i++) {
+    const kk = i / 3, ax = lerp(pr[0], cur[0], kk), ay = lerp(pr[1], cur[1], kk), bx = lerp(pr[2], cur[2], kk), by = lerp(pr[3], cur[3], kk);
+    const ap = a.aimL.body.getPosition();
+    if (segDist(ap.x, ap.y, ax, ay, bx, by) < 0.27) return { L: a.aimL, x: ap.x, y: ap.y };
+    for (const L of T.limbList) {
+      if (L.destroyed || L === a.aimL) continue;
+      const p = L.body.getPosition(), dd = segDist(p.x, p.y, ax, ay, bx, by);
+      if (dd < 0.2 && (!a.other || dd < a.other.d)) a.other = { L, x: p.x, y: p.y, d: dd };
+    }
+  }
+  for (const b of a.wpn.bodies) for (let ce = b.getContactList(); ce; ce = ce.next) {
+    if (!ce.contact.isTouching()) continue;
+    const L = T.limbList.find((l) => l.body === ce.other && !l.destroyed);
+    if (!L) continue;
+    const p = L.body.getPosition();
+    if (L === a.aimL) return { L, x: p.x, y: p.y };
+    if (!a.other || a.other.d > 0) a.other = { L, x: p.x, y: p.y, d: 0 };
+  }
+  return last && a.other && !a.other.L.destroyed ? a.other : null;
+};
+// el golpe: cuánto daña depende del arma (su peso, si corta o pincha) y de dónde da
+Human.prototype.meleeHit = function (a, L, x, y) {
+  const W = a.wpn, d = W.def, T = a.tgt, m = W.mass(), k = HUMAN_MASS_MUL;
+  const mf = 0.85 + Math.min(m, 6) * 0.13, head = L.id === 'head', sharp = !!d.sharp, edge = !!d.edge;
+  const thrustOnly = AI.meleeStyle(W) === 'thrust';
+  const ux = Math.sign(L.body.getPosition().x - this.root.body.getPosition().x) || this.facing;
+  let type, amt;
+  if (a.style === 'thrust') { type = sharp ? 'stab' : 'blunt'; amt = (head ? 0.42 : 0.34) * mf; }
+  else if (sharp && thrustOnly) { type = 'stab'; amt = (head ? 0.44 : 0.34) * mf; }
+  else if (edge) { type = 'slice'; amt = (head ? 0.4 : 0.32) * mf * Math.sqrt(clamp(d.edge.dmg || 1, 0.6, 2)); }
+  else { type = 'blunt'; amt = (head ? 0.4 : 0.28) * mf; }
+  // el punto de impacto: entre el centro de la parte y el arma
+  const hp = this.handPoint(a.side), tp = AI.tip(W), vx = tp[0] - hp[0], vy = tp[1] - hp[1], l2 = vx * vx + vy * vy || 1e-9;
+  const kq = clamp(((x - hp[0]) * vx + (y - hp[1]) * vy) / l2, 0, 1), hx = lerp(x, hp[0] + vx * kq, 0.5), hy = lerp(y, hp[1] + vy * kq, 0.5);
+  this._lastLand = Phys.time;
+  Combat.with(this, () => T.hurt(L, amt, type, hx, hy, a.style === 'thrust' ? ux : ux * 0.4, a.style === 'thrust' ? 0 : 1));
+  // un tajo en la cabeza también llega al cerebro (y aturde)
+  if (head && type === 'slice' && T.alive && !T.immortal) { T.brain -= amt * 1.3; T.knock = Math.max(T.knock, amt * 6); }
+  const imp = a.style === 'thrust' ? V(ux * 16 * k * mf, -1.5 * k) : V(ux * 7 * k * mf, 11 * k * mf);
+  if (!L.destroyed) L.body.applyLinearImpulse(imp, L.body.getPosition(), true);
+  // el arma se frena al dar
+  const wm = W.main; wm.setAngularVelocity(wm.getAngularVelocity() * 0.35);
+  if (T.bleedKind && (sharp || edge)) Effects.blood(hx, hy, ux * (a.style === 'thrust' ? 2 : 1), a.style === 'thrust' ? -0.5 : -1.5, 12, 1.7, T.bleedKind);
+  else if (T.kind === 'android') Effects.sparks(hx, hy, ux, -1, 6, 1.5);
+  Sound.play(sharp || edge ? 'stab' : 'impact_flesh', hx, hy, 1, { key: 'atk' + this.id, gap: 120 });
+  if (T.isHuman && T.state === 'stand' && Math.random() < (a.style === 'overhead' ? clamp(0.3 + mf * 0.2 + (head ? 0.1 : 0), 0, 0.85) : 0.25)) T.setState('lying');
 };
 Human.prototype.updateKick = function (dt) {
   const k = this.kick; if (!k) return;
@@ -13110,7 +13391,8 @@ Human.prototype.updateKick = function (dt) {
   if (!k.L || k.best > 0.32) return;
   const lp = k.L.body.getPosition(), ux = Math.sign(lp.x - this.root.body.getPosition().x) || this.facing;
   this._lastLand = Phys.time;
-  Combat.with(this, () => k.tgt.hurt(k.L, 0.09, 'blunt', lp.x, lp.y, ux, 0));
+  const kd = k.L.id === 'head' ? (k.tgt.state === 'stand' ? 0.16 : 0.22) : 0.12;
+  Combat.with(this, () => k.tgt.hurt(k.L, kd, 'blunt', lp.x, lp.y, ux, 0));
   k.L.body.applyLinearImpulse(V(ux * 10 * HUMAN_MASS_MUL, -3 * HUMAN_MASS_MUL), lp, true);
   Sound.play('impact_flesh', lp.x, lp.y, 0.8, { key: 'punch' + this.id, gap: 120 });
 };
@@ -13265,6 +13547,24 @@ Human.prototype.updateZombieAttack = function (dt) {
   Human.prototype.aimPose = function (P) {
     ap.call(this, P);
     if (this.kick) { P.upperLegF = -1.2; P.lowerLegF = 0.25; }
+    const at = this.atk;
+    if (at) {
+      // el antebrazo (y con él el arma) apunta con la elevación que toca en cada fase: en la estocada, el codo
+      // atrás y luego el brazo estirado hacia el objetivo; desde arriba, el arma por encima de la cabeza y abajo
+      const U = 'upperArm' + at.side, Lo = 'lowerArm' + at.side, F = -(Math.PI / 2 + at.eDes);
+      if (at.style === 'thrust' && at.phase === 'wind') { P[U] = 0.3; P[Lo] = clamp(F - 0.3, -2.6, 0); }
+      else { P[U] = clamp(F, -3.0, 1.2); P[Lo] = clamp(F - P[U], -2.6, 0); }
+      if (at.phase !== 'wind') P.middleBody = at.style === 'thrust' ? -0.15 : -0.25;
+      // a quien está en el suelo se le ataca agachado
+      if (at.down && this.state === 'stand') Object.assign(P, { upperLegF: -1.3, lowerLegF: 1.65, upperLegB: -1.15, lowerLegB: 1.75, middleBody: -0.45, lowerBody: -0.3, head: 0.3 });
+    }
+    // en guardia: el arma lista (las de punta, hacia el objetivo; las demás, levantadas)
+    const gd = this.guard;
+    if (!at && gd && Phys.time - gd.at < 0.15 && gd.wpn.holder === this) {
+      const U = 'upperArm' + gd.side, Lo = 'lowerArm' + gd.side, F = -(Math.PI / 2 + gd.e);
+      P[U] = gd.up; P[Lo] = clamp(F - gd.up, -2.6, 0);
+      if (gd.down && this.state === 'stand') Object.assign(P, { upperLegF: -1.3, lowerLegF: 1.65, upperLegB: -1.15, lowerLegB: 1.75, middleBody: -0.45, lowerBody: -0.3, head: 0.3 });
+    }
     const pu = this.punch;
     if (pu && !pu.aimL.destroyed) {
       const sh = this.limbs['upperArm' + pu.side].body.getPosition(), q = pu.aimL.body.getPosition();
@@ -13283,7 +13583,9 @@ Human.prototype.updateZombieAttack = function (dt) {
   const fo = Human.prototype.forces;
   Human.prototype.forces = function (dt) {
     fo.call(this, dt);
-    if (!this.aiAim || this.dead || this.frozenSolid) return;
+    if (this.dead || this.frozenSolid) return;
+    if (this.atk || this.guard) this.attackForces();
+    if (!this.aiAim) return;
     for (const side of ['F', 'B']) {
       const it = this.held[side]; if (!it || !AI.isRanged(it)) continue;
       const mul = clamp(1 + it.mass() * 0.6, 1, 6);
@@ -13292,26 +13594,63 @@ Human.prototype.updateZombieAttack = function (dt) {
   };
 }
 
+// durante un ataque con arma (y en guardia): el brazo hace más fuerza, una ayuda lleva el arma por su
+// trayectoria (sin reacción sobre el cuerpo, para que no se caiga al blandir las pesadas) y se mantiene firme
+Human.prototype.attackForces = function () {
+  const at = this.atk, gd = this.guard, a = at || (gd && Phys.time - gd.at < 0.15 ? gd : null);
+  if (!a) return;
+  const W = a.wpn;
+  if (!W || W.dead || W.holder !== this || this.state !== 'stand' || !this.alive) return;
+  const m = W.mass(), f = this.facing, mul = clamp(1.5 + m * 0.5, 1.5, 6);
+  const ju = this.limbs['upperArm' + a.side], jl = this.limbs['lowerArm' + a.side];
+  for (const L of [ju, jl]) { const j = L.joint; if (j && !L.destroyed) j.setMaxMotorTorque(j.getMaxMotorTorque() * mul); }
+  const eDes = at ? a.eDes : a.e, eVel = at ? a.eVel : 0;
+  // al golpear, los músculos del brazo siguen la trayectoria a su ritmo (si no, frenan el arma)
+  if (at && (at.phase === 'strike' || at.phase === 'follow') && ju.joint && jl.joint && !ju.destroyed && !jl.destroyed) {
+    const F = -(Math.PI / 2 + eDes), pu = clamp(F, -3.0, 1.2), plo = clamp(F - pu, -2.6, 0);
+    ju.joint.setMotorSpeed(clamp((pu * f - ju.joint.getJointAngle()) * 22 - eVel * f, -40, 40));
+    jl.joint.setMotorSpeed(clamp((plo * f - jl.joint.getJointAngle()) * 22, -40, 40));
+  }
+  const wm = W.main, hp = this.handPoint(a.side), tp = AI.tip(W);
+  const e = Math.atan2(-(tp[1] - hp[1]), f * (tp[0] - hp[0])), ed = -f * wm.getAngularVelocity();
+  const c = wm.getWorldCenter(), I = wm.getInertia() + wm.getMass() * ((c.x - hp[0]) ** 2 + (c.y - hp[1]) ** 2) + 0.08;
+  let acc = at ? clamp(angWrap(eDes - e) * 170 - (ed - eVel) * 24, -1100, 1100) : clamp(angWrap(eDes - e) * 80 - ed * 14, -300, 300);
+  // con la punta ya en el suelo no sigue empujando hacia abajo (haría palanca y le levantaría)
+  if (acc < 0 && Math.abs(e) < Math.PI / 2 && AI.feetY(this) - tp[1] < 0.07) acc = Math.max(acc, -ed * 24);
+  // es la fuerza de su brazo: lo que gira el arma lo nota el cuerpo al revés (si no, el golpe le haría girar entero)
+  wm.applyTorque(-f * acc * I, true);
+  this.root.body.applyTorque(f * acc * I, true);
+  if (at && this.grounded()) {
+    const ch = this.root.body, ang = angWrap(ch.getAngle()), w = ch.getAngularVelocity();
+    const tq = clamp(-ang * 1200 - w * 160, -1500, 1500) * HUMAN_MASS_MUL * clamp(0.6 + m * 0.15, 0.6, 1.5) * (at.down ? 1.6 : 1);
+    ch.applyTorque(tq * 0.5, true); this.limbs.middleBody.body.applyTorque(tq * 0.2, true); this.limbs.lowerBody.body.applyTorque(tq * 0.3, true);
+  }
+};
+
 /* ---------------- la IA se ejecuta en cada actualización de las personas que la tienen activada ---------------- */
 {
   const up = Human.prototype.update;
   Human.prototype.update = function (dt) {
     up.call(this, dt);
     if (this.dead) return;
+    if (this.dragged) this._dragT = Phys.time;
     const on = this.aiOn();
     if (!on || this.zombie || !this.alive || this.consc < 0.5 || this.frozenSolid || this.kind === 'dummy' || this.kind === 'skeleton') {
       if (!this.zombie) this.crawling = false;
-      if (this.aiGoal || this._aiUsing || this._ncPairs) this.aiStop();
+      if (this.aiGoal || this._aiUsing || this._ncPairs || this._soPairs || this.atk) this.aiStop();
       if (this.consc < 0.35) this.aggressor = null; // quien queda inconsciente pierde la pelea y no la retoma
       return;
     }
     this.crawling = false;
     // mientras la arrastras o tiene una pose elegida por ti, no hace nada por su cuenta
-    if (this.dragged || this.posing()) { this.aiStopUse(); this.punch = null; this.kick = null; return; }
+    if (this.dragged || this.posing()) { this.aiStopUse(); this.punch = null; this.kick = null; this.endAttack(); return; }
     this._aiDt = dt;
     this.aiT2 = (this.aiT2 === undefined ? rand(0, 0.25) : this.aiT2) - dt;
     if (this.aiT2 <= 0) { this.aiT2 = 0.25; this.aiSense(); this.aiDecide(); }
     if (!this.aiAct(dt)) this.walking = false;
+    this.aiCarry();
+    // un ataque que ya nadie lleva (cambió de objetivo) se cancela
+    if (this.atk && Phys.time - (this.atk.seen || 0) > 0.1) this.endAttack();
   };
 }
 Human.prototype.aiOn = function () { return this.ai !== undefined ? this.ai : Settings.aiDefault; };
@@ -13480,6 +13819,316 @@ Human.prototype.carbonize = function () {
   Effects.smoke(c.x, c.y, 24, [55, 52, 50], 0.6, 1.2);
   this.markDirty();
 };
+
+/* ---- 34_v8.js ---- */
+/* =========================================================================
+   VERSIÓN 8: cable rígido (sin giro ni movimiento entre lo que une) y fuerza
+   ajustable de las máquinas (servomotores, motores, pistones, propulsores...)
+   ========================================================================= */
+
+/* ---------------- cable rígido ---------------- */
+// Une dos cosas como si fueran una sola pieza. Una unión física entre cuerpos cede con mucho peso o con mucha
+// diferencia de masa (por ejemplo, una carga pesada en el brazo de un servomotor), así que, si una de las dos
+// está libre (sin otras articulaciones), pasa a formar parte del cuerpo de la otra: sus formas se copian en ese
+// cuerpo (con su masa, su inercia y sus choques) y ella lo sigue sin física propia. Si las dos están unidas a
+// otras cosas, las sujeta la unión física.
+const RigidCables = {
+  alive(b) { return !!b && !b.m_destroyed && (b === Phys.ground || !!b.getWorld()); },
+  root(b) { return b._mergedInto || b; },
+  // libre: se mueve con la física y no tiene más articulaciones que cables rígidos (ni lo agarra nadie)
+  free(b) {
+    if (b.getType() !== 'dynamic' || b._mergedInto) return false;
+    for (let je = b.getJointList(); je; je = je.next) { const j = je.joint; if (!j._rigidCable && j.getType() !== 'mouse-joint') return false; }
+    return true;
+  },
+  cloneShape(sh, F, L) {
+    const t = sh.getType(), tp = (v) => L.getLocalPoint(F.getWorldPoint(v));
+    if (t === 'circle') return new pl.Circle(tp(sh.getCenter()), sh.getRadius());
+    if (t === 'polygon') { const vs = []; for (let i = 0; i < sh.m_count; i++) vs.push(tp(sh.m_vertices[i])); return new pl.Polygon(vs); }
+    return null;
+  },
+  merge(c, L, F) {
+    const clones = [], saved = [];
+    for (let f = F.getFixtureList(); f; f = f.getNext()) {
+      const sh = this.cloneShape(f.getShape(), F, L); if (!sh) continue;
+      const nf = L.createFixture({ shape: sh, density: f.getDensity(), friction: f.getFriction(), restitution: f.getRestitution(), isSensor: f.isSensor(),
+        filterGroupIndex: f.getFilterGroupIndex(), filterCategoryBits: f.getFilterCategoryBits(), filterMaskBits: f.getFilterMaskBits(), userData: f.getUserData() });
+      nf._rigidClone = F; clones.push(nf);
+      // las formas originales dejan de chocar y de tocarse con nada (las copias hacen su papel)
+      saved.push([f, f.isSensor(), f.getFilterCategoryBits(), f.getFilterMaskBits()]);
+      f.setSensor(true); f.setFilterData({ groupIndex: f.getFilterGroupIndex(), categoryBits: 0, maskBits: 0 });
+    }
+    c.m = { L, F, clones, saved, type: F.getType(), rel: { a: F.getAngle() - L.getAngle(), p: L.getLocalPoint(F.getPosition()) } };
+    F._rigidMass = F.getMass();
+    if (c.joint) { try { Phys.world.destroyJoint(c.joint); } catch (e) {} c.joint = null; }
+    F.setType('kinematic'); F._mergedInto = L;
+    L.resetMassData(); L.setAwake(true);
+    this.follow(c);
+  },
+  follow(c) {
+    const { L, F, rel } = c.m;
+    F.setTransform(L.getWorldPoint(rel.p), L.getAngle() + rel.a);
+    const v = L.getLinearVelocityFromWorldPoint(F.getWorldCenter());
+    F.setLinearVelocity(v); F.setAngularVelocity(L.getAngularVelocity());
+  },
+  unmerge(c) {
+    const m = c.m; if (!m) return;
+    c.m = null;
+    const { L, F } = m, la = this.alive(L), fa = this.alive(F);
+    if (la) { for (const nf of m.clones) { try { L.destroyFixture(nf); } catch (e) {} } if (L.getType() === 'dynamic') L.resetMassData(); }
+    if (fa) {
+      for (const [f, sensor, cat, mask] of m.saved) { f.setSensor(sensor); f.setFilterData({ groupIndex: f.getFilterGroupIndex(), categoryBits: cat, maskBits: mask }); }
+      F._mergedInto = null; F._rigidMass = undefined;
+      // congelado mientras seguía a la otra: al descongelarlo vuelve a moverse con física
+      if (F._frozen) F._wasType = 'dynamic'; else F.setType(m.type === 'kinematic' ? 'dynamic' : m.type);
+      if (la) { F.setLinearVelocity(L.getLinearVelocityFromWorldPoint(F.getWorldCenter())); F.setAngularVelocity(L.getAngularVelocity()); }
+      F.setAwake(true);
+    }
+    // vuelve la unión física (si el cable sigue)
+    if (la && fa && Connections.list.includes(c) && !c.joint) this.weld(c);
+  },
+  weld(c) {
+    if (!this.alive(c.bA) || !this.alive(c.bB)) return;
+    const [ax, ay, bx, by] = Connections.ends(c);
+    c.joint = Phys.world.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: true }, c.bA, c.bB, V((ax + bx) / 2, (ay + by) / 2)));
+    c.joint._rigidCable = true;
+  },
+  preStep() {
+    for (const c of Connections.list) {
+      if (c.type !== 'fixed') continue;
+      const A = c.bA, B = c.bB;
+      if (c.m) {
+        // sigue valiendo si las dos existen, la que sigue no se ha congelado ni la ha agarrado nada y la que manda
+        // es la que corresponde
+        const { L, F } = c.m, other = F === A ? B : A;
+        const ok = this.alive(L) && this.alive(F) && F.getType() === 'kinematic' && this.root(other) === L && !F.getJointList();
+        if (!ok) this.unmerge(c);
+        continue;
+      }
+      if (!this.alive(A) || !this.alive(B)) continue;
+      const RA = this.root(A), RB = this.root(B);
+      if (RA === RB) { if (c.joint) { try { Phys.world.destroyJoint(c.joint); } catch (e) {} c.joint = null; } continue; }
+      if (!c.joint) this.weld(c);
+      else c.joint._rigidCable = true;
+      // ¿cuál se une a la otra? La libre; si lo son las dos, la más ligera. Si ya llevaba otras unidas, esas se
+      // sueltan un momento y en el paso siguiente se unen a la nueva
+      const fA = RA === A && this.free(A), fB = RB === B && this.free(B);
+      let L = null, F = null;
+      if (fA && fB) { if (A.getMass() < B.getMass()) { L = B; F = A; } else { L = A; F = B; } }
+      else if (fB) { L = RA; F = B; } else if (fA) { L = RB; F = A; }
+      if (!F) {
+        // los dos extremos siguen a otras piezas: si una de esas está libre, suelta las suyas para que en el
+        // paso siguiente se unan todas a la otra
+        const rel = (R) => { for (const o of Connections.list) if (o.m && o.m.L === R) this.unmerge(o); };
+        if (RB !== B && this.free(RB)) rel(RB); else if (RA !== A && this.free(RA)) rel(RA);
+        continue;
+      }
+      for (const o of Connections.list) if (o.m && o.m.L === F) this.unmerge(o);
+      this.merge(c, L, F);
+    }
+  },
+  postStep() { for (const c of Connections.list) if (c.m) this.follow(c); },
+};
+{
+  // al quitar un cable rígido, lo unido vuelve a ser independiente
+  const rm = Connections.remove.bind(Connections);
+  Connections.remove = function (c) { if (c && c.m) RigidCables.unmerge(c); return rm(c); };
+  // lo que sigue a otra cosa recibe sus empujones (propulsores, explosiones, agua...) a través de ella
+  const BP = pl.Body.prototype, af = BP.applyForce, afc = BP.applyForceToCenter, ali = BP.applyLinearImpulse, at = BP.applyTorque, aai = BP.applyAngularImpulse;
+  BP.applyForce = function (f, p, w) { const L = this._mergedInto; return L ? af.call(L, f, p, true) : af.call(this, f, p, w); };
+  BP.applyForceToCenter = function (f, w) { const L = this._mergedInto; return L ? af.call(L, f, this.getWorldCenter(), true) : afc.call(this, f, w); };
+  BP.applyLinearImpulse = function (f, p, w) { const L = this._mergedInto; return L ? ali.call(L, f, p, true) : ali.call(this, f, p, w); };
+  BP.applyTorque = function (t, w) { const L = this._mergedInto; return L ? at.call(L, t, true) : at.call(this, t, w); };
+  BP.applyAngularImpulse = function (t, w) { const L = this._mergedInto; return L ? aai.call(L, t, true) : aai.call(this, t, w); };
+  // antes de rehacer sus formas o de voltear algo, lo unido se separa (en el paso siguiente se vuelve a unir)
+  RigidCables.release = function (t) {
+    if (!t || !t.bodies) return;
+    for (const c of Connections.list) if (c.m && (t.bodies.includes(c.m.L) || t.bodies.includes(c.m.F))) this.unmerge(c);
+  };
+  for (const [K, m] of [[Item, 'rebuildFixtures'], [Item, 'setFlip'], [Human, 'flipFacing']]) {
+    const f = K.prototype[m]; if (typeof f !== 'function') continue;
+    K.prototype[m] = function (...a) { RigidCables.release(this); return f.apply(this, a); };
+  }
+  // su masa sigue siendo la suya (aunque ahora la lleve el cuerpo de la otra)
+  Thing.prototype.mass = function () { let m = 0; for (const b of this.bodies) m += b._mergedInto ? (b._rigidMass || 0) : b.getMass(); return m; };
+  // quitarle o devolverle las colisiones también afecta a sus formas copiadas
+  const sc = Thing.prototype.setCollide;
+  Thing.prototype.setCollide = function (on) {
+    sc.call(this, on);
+    for (const c of Connections.list) {
+      if (!c.m || !this.bodies.includes(c.m.F)) continue;
+      for (const nf of c.m.clones) nf.setFilterData({ groupIndex: nf.getFilterGroupIndex(), categoryBits: 1, maskBits: on ? 0xffff : 0x0002 });
+      for (const rec of c.m.saved) { const f = rec[0]; rec[2] = 1; rec[3] = on ? 0xffff : 0x0002; f.setFilterData({ groupIndex: f.getFilterGroupIndex(), categoryBits: 0, maskBits: 0 }); }
+    }
+  };
+}
+// paso de la física con los cables rígidos (antes y después de cada subpaso)
+Phys.step = function (dt) {
+  const sub = dt / this.substeps;
+  for (let i = 0; i < this.substeps; i++) {
+    for (const t of World.things) if (t.forces && !t.dead) t.forces(sub);
+    Input.forces(sub); Connections.forces(sub); Water.forces(sub);
+    RigidCables.preStep();
+    this.world.step(sub, this.velIters, this.posIters);
+    RigidCables.postStep();
+    this.time += sub; this.stepCount++;
+    processImpacts();
+    this.runDeferred();
+  }
+};
+
+/* ---------------- fuerza de las máquinas ---------------- */
+// Cada máquina tiene un multiplicador de fuerza (forceMul; 1 = normal) que se cambia en su menú contextual:
+// multiplica el par y la fuerza de sus motores (servomotores, rotores, ruedas, pistones...) y todo lo que
+// empuja, atrae o hace girar (propulsores, hélices, ventiladores, electroimanes...).
+const FORCE_RE = /apply(Force|ForceToCenter|LinearImpulse|Torque|AngularImpulse)|MaxMotorTorque|MaxMotorForce|maxMotorTorque|maxMotorForce/;
+let FORCE_MUL = 1;
+{
+  const BP = pl.Body.prototype;
+  const af = BP.applyForce, afc = BP.applyForceToCenter, ali = BP.applyLinearImpulse, at = BP.applyTorque, aai = BP.applyAngularImpulse;
+  BP.applyForce = function (f, p, w) { return af.call(this, FORCE_MUL !== 1 ? V(f.x * FORCE_MUL, f.y * FORCE_MUL) : f, p, w); };
+  BP.applyForceToCenter = function (f, w) { return afc.call(this, FORCE_MUL !== 1 ? V(f.x * FORCE_MUL, f.y * FORCE_MUL) : f, w); };
+  BP.applyLinearImpulse = function (f, p, w) { return ali.call(this, FORCE_MUL !== 1 ? V(f.x * FORCE_MUL, f.y * FORCE_MUL) : f, p, w); };
+  BP.applyTorque = function (t, w) { return at.call(this, t * FORCE_MUL, w); };
+  BP.applyAngularImpulse = function (t, w) { return aai.call(this, t * FORCE_MUL, w); };
+}
+function withForce(it, fn) {
+  const m = it && it.forceMul;
+  if (!m || m === 1) return fn();
+  const o = FORCE_MUL; FORCE_MUL = m;
+  try { return fn(); } finally { FORCE_MUL = o; }
+}
+// qué objetos tienen fuerza que ajustar: las máquinas y los vehículos que mueven, empujan o hacen girar algo
+for (const id in DEFS) {
+  const d = DEFS[id];
+  const src = ['init', 'build', 'update', 'forces', 'activate', 'onUse'].map((k) => (typeof d[k] === 'function' ? String(d[k]) : '')).join('\n');
+  d._forceAdj = (d.cat === 'machinery' || d.cat === 'vehicles') && FORCE_RE.test(src);
+  if (!d._forceAdj) continue;
+  for (const k of ['update', 'forces', 'activate', 'onUse']) {
+    if (typeof d[k] !== 'function') continue;
+    const f = d[k];
+    d[k] = function (it, ...r) { return withForce(it, () => f.call(this, it, ...r)); };
+  }
+}
+// (los vehículos con motor se reconocen por el par de su motor)
+function forceAdjustable(t) { return !!(t && !t.dead && !t.isHuman && t.def && (t.def._forceAdj || (t.def.vehicle && t.vars && t.vars.torque > 0))); }
+// los motores de las articulaciones: el par (o la fuerza) que les pone la máquina se multiplica por su fuerza
+function wrapMotor(it, j) {
+  if (!j || j._fw) return;
+  j._fw = true;
+  if (typeof j.setMaxMotorTorque === 'function' && typeof j.getMaxMotorTorque === 'function') {
+    const set = j.setMaxMotorTorque;
+    j._baseT = j.getMaxMotorTorque();
+    j.setMaxMotorTorque = function (v) { this._baseT = v; return set.call(this, v * (it.forceMul || 1)); };
+  }
+  if (typeof j.setMaxMotorForce === 'function' && typeof j.getMaxMotorForce === 'function') {
+    const set = j.setMaxMotorForce;
+    j._baseF = j.getMaxMotorForce();
+    j.setMaxMotorForce = function (v) { this._baseF = v; return set.call(this, v * (it.forceMul || 1)); };
+  }
+}
+{
+  const ij = Item.prototype.joint;
+  Item.prototype.joint = function (jd) { const j = ij.call(this, jd); wrapMotor(this, j); return j; };
+}
+function setForceMul(it, m) {
+  it.forceMul = clamp(m, 0.1, 20);
+  for (const j of it.joints || []) {
+    wrapMotor(it, j);
+    if (j._baseT !== undefined) j.setMaxMotorTorque(j._baseT);
+    if (j._baseF !== undefined) j.setMaxMotorForce(j._baseF);
+  }
+  for (const b of it.bodies) b.setAwake(true);
+}
+// ventana con un deslizador (de 10 % a 2000 %), para una máquina o para todas las seleccionadas
+function openForce(things) {
+  things = things.filter(forceAdjustable);
+  if (!things.length) { UI.toast('No tiene fuerza que ajustar'); return; }
+  const m0 = things[0].forceMul || 1, pct = (m) => Math.round(m * 100) + ' %';
+  const who = things.length > 1 ? `${things.length} máquinas` : things[0].name;
+  const b = UI.openModal(`<h2>Fuerza</h2><div class="settings"><label class="srow"><span>Fuerza</span><input type="range" id="frc" min="-1" max="1.301" step="0.005" value="${Math.log10(m0)}"><em id="frcv">${pct(m0)}</em></label></div>
+    <div class="sub">${who}: multiplica la fuerza de sus motores, pistones, propulsores... Con más fuerza mueven más peso, más rápido.</div>
+    <div class="row"><button class="btn" id="frcHalf">50 %</button><button class="btn" id="frc1">100 %</button><button class="btn" id="frc5">500 %</button><button class="btn" id="frc20">2000 %</button><button class="btn" id="frcOk">Hecho</button></div>`);
+  const inp = b.querySelector('#frc'), em = b.querySelector('#frcv');
+  const apply = (m) => { m = clamp(m, 0.1, 20); for (const t of things) setForceMul(t, m); em.textContent = pct(m); inp.value = Math.log10(m); };
+  inp.oninput = () => apply(Math.pow(10, parseFloat(inp.value)));
+  for (const [id, m] of [['#frcHalf', 0.5], ['#frc1', 1], ['#frc5', 5], ['#frc20', 20]]) b.querySelector(id).onclick = () => apply(m);
+  b.querySelector('#frcOk').onclick = () => UI.closeModal();
+}
+// copiar, pegar, guardar y deshacer conservan la fuerza
+{
+  const cap = Blueprint.capture.bind(Blueprint);
+  Blueprint.capture = function (things) {
+    const bp = cap(things);
+    if (bp) { const list = things.filter((t) => this.usable(t)); bp.things.forEach((r, i) => { const t = list[i]; if (t && t.forceMul && t.forceMul !== 1) r.fm = t.forceMul; }); }
+    return bp;
+  };
+  const sp = Blueprint.spawn.bind(Blueprint);
+  Blueprint.spawn = function (bp, x, y) {
+    const made = sp(bp, x, y);
+    let k = 0;
+    for (const r of bp.things) {
+      const i = made.findIndex((t, j) => j >= k && (r.human ? t.isHuman : t.def && t.def.id === r.id));
+      if (i < 0) continue;
+      k = i + 1;
+      if (r.fm && forceAdjustable(made[i])) setForceMul(made[i], r.fm);
+    }
+    return made;
+  };
+}
+// se ve al inspeccionar
+{
+  const inf = Item.prototype.info;
+  if (inf) Item.prototype.info = function (...a) { const r = inf.apply(this, a); if (Array.isArray(r) && this.forceMul && this.forceMul !== 1) r.push(['Fuerza: ' + Math.round(this.forceMul * 100) + ' %', '#f0b23c']); return r; };
+}
+
+/* ---------------- borrar restos también limpia la sangre ---------------- */
+// Cada mancha guarda el color que tenía ese píxel antes de mancharse; al borrar los restos se devuelven todos (los
+// objetos quedan como nuevos) y a las personas se les quita la sangre de encima (las heridas siguen).
+Thing.prototype.stain = function (x, y, col, part) {
+  const p = part || this.partAt(x, y);
+  if (!p || !p.spr || p.noStain) return false;
+  if (!p.ownSpr) { p.spr = p.spr.clone(); p.ownSpr = true; }
+  const lp = partLocalPx(p, x, y);
+  const sx = Math.floor(lp[0]), sy = Math.floor(lp[1]);
+  let best = null, bd = 9;
+  for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+    if (p.spr.a(sx + ox, sy + oy) > 0) { const d = ox * ox + oy * oy; if (d < bd) { bd = d; best = [sx + ox, sy + oy]; } }
+  }
+  if (!best) return false;
+  const c = p.spr.get(best[0], best[1]);
+  if (p._stainSpr !== p.spr) { p._stainSpr = p.spr; p._clean = new Map(); }
+  const k = best[1] * p.spr.w + best[0];
+  if (!p._clean.has(k)) p._clean.set(k, c);
+  p.spr.set(best[0], best[1], mixRgb(c, col, 0.65));
+  return true;
+};
+{
+  // si se quema después de mancharse, lo limpio también queda quemado
+  const ac = Item.prototype.applyChar;
+  Item.prototype.applyChar = function () {
+    ac.call(this);
+    for (const p of this.parts) if (p._clean && p._stainSpr === p.spr) for (const c of p._clean.values()) { c[0] *= 0.35; c[1] *= 0.3; c[2] *= 0.28; }
+  };
+}
+function cleanStains(t) {
+  if (!t || t.dead) return 0;
+  let n = 0;
+  if (t.isHuman) {
+    for (const L of t.limbList) { if (L.destroyed || !L.bloodMap) continue; if (L.bloodMap.some((v) => v > 0)) { L.bloodMap.fill(0); L.dirty = true; n++; } }
+    return n;
+  }
+  for (const p of t.parts || []) {
+    if (!p._clean || !p._clean.size) continue;
+    if (p._stainSpr === p.spr) { for (const [k, c] of p._clean) p.spr.set(k % p.spr.w, Math.floor(k / p.spr.w), c); n++; }
+    p._clean = null; p._stainSpr = null;
+  }
+  return n;
+}
+{
+  const cd = Clear.debris.bind(Clear);
+  Clear.debris = function () { cd(); for (const t of World.things) cleanStains(t); };
+}
 
 /* ---- 99_main.js ---- */
 /* =========================================================================

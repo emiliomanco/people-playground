@@ -41,7 +41,7 @@ Con el tiempo detenido, lo que arrastras se coloca directamente sin física y co
 
 ## Qué incluye
 
-- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento, consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua). Poses (tropezar, caminar, encogerse, sentarse, pose rígida) e IA que se puede activar en cada una: corren, buscan armas a las que se puede llegar, disparan, pelean, se apartan de explosivos y fuego, saltan obstáculos y se arrastran si tienen las piernas dañadas. Zombis que contagian al morder o arañar (algunos corren y otros saltan).
+- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento, consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua). Poses (tropezar, caminar, encogerse, sentarse, pose rígida) e IA que se puede activar en cada una: corren, buscan armas a las que se puede llegar, disparan (sin herir a los inocentes que haya en medio), pelean cuerpo a cuerpo con estocadas o golpes desde arriba según el arma, rematan a los zombis caídos, se apartan de explosivos y fuego, saltan obstáculos y se arrastran si tienen las piernas dañadas. Zombis variados (cada uno con su pelo y su ropa) que contagian al morder o arañar (algunos corren y otros saltan).
 - 330 objetos: armas blancas y de fuego, accesorios para armas, explosivos, lanzadores, armas de energía, electrónica, biológico, química y líquidos, maquinaria, vehículos, iluminación y objetos.
 - Electricidad con cable de cobre y señales con cables de activación verde, rojo y azul (botones, interruptores, detectores, contadores, compuertas, radios...).
 - Temperatura: fuego, metal al rojo, congelación, calefactores y refrigerantes.
@@ -50,7 +50,8 @@ Con el tiempo detenido, lo que arrastras se coloca directamente sin física y co
 - Editor de mapas: dibuja bloques, rampas, agua y lava, y guarda tus propios mapas.
 - Entorno: temperatura ambiente, lluvia, nieve, niebla, tormenta eléctrica y colisiones entre seres (humanos, zombis y androides).
 - El fuego consume lo que arde: los objetos acaban en ceniza y las personas, como esqueletos carbonizados.
-- Herramientas de unión (soldar, bisagras, resortes, cuerdas, cadenas, vendas, ataduras de acero y madera, correas, conductos...) y poderes (empujar, atraer, levantar, rayo, fuego, frío...).
+- Herramientas de unión (soldar, cable rígido que une dos cosas como una sola pieza, cable rígido articulado, bisagras, resortes, cuerdas, cadenas, vendas, ataduras de acero y madera, correas, conductos...) y poderes (empujar, atraer, levantar, rayo, fuego, frío...).
+- Máquinas con fuerza ajustable (servomotores, rotores, pistones, propulsores, vehículos...) desde el menú contextual.
 - Menú contextual como el del original (congelar por partes, inspeccionar, editar capa, poses, IA...), además de redimensionar, fijar ángulo y temperatura, hacer indestructible, silenciar y más.
 - Guardar escenas y guardar construcciones como artefactos en el catálogo.
 
