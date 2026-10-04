@@ -813,6 +813,14 @@ const Sound = {
       lfo.connect(lg); lg.connect(osc.frequency); lfo.start(); nodes.push(lfo);
       filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 2200;
       osc.connect(filt); filt.connect(out); osc.start(); nodes.push(osc);
+    } else if (kind === 'heli') {
+      // rotor: ruido grave que las palas cortan («chop-chop») y el silbido de la turbina
+      const n = mkNoise('lowpass', 420, 0.8);
+      const am = ctx.createGain(); am.gain.value = 0.3; n.connect(am); am.connect(out);
+      osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 14;
+      const lg = ctx.createGain(); lg.gain.value = 0.7; osc.connect(lg); lg.connect(am.gain); osc.start(); nodes.push(osc);
+      const w = ctx.createOscillator(); w.type = 'sine'; w.frequency.value = 540;
+      const wg = ctx.createGain(); wg.gain.value = 0.05; w.connect(wg); wg.connect(out); w.start(); nodes.push(w);
     } else if (kind === 'beam') {
       osc = ctx.createOscillator(); osc.type = 'square'; osc.frequency.value = 220;
       filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 1600;
@@ -829,7 +837,7 @@ const Sound = {
         out.gain.setTargetAtTime(v, ctx.currentTime, 0.05);
         if (pn) pn.pan.setTargetAtTime(sp.pan, ctx.currentTime, 0.05);
         if (pitch && osc) {
-          const base = kind === 'engine' ? 45 : kind === 'chainsaw' ? 95 : kind === 'saw' ? 240 : kind === 'tesla' ? 120 : kind === 'beam' ? 220 : kind === 'siren' ? 650 : kind === 'hum' ? 60 : 70;
+          const base = kind === 'heli' ? 14 : kind === 'engine' ? 45 : kind === 'chainsaw' ? 95 : kind === 'saw' ? 240 : kind === 'tesla' ? 120 : kind === 'beam' ? 220 : kind === 'siren' ? 650 : kind === 'hum' ? 60 : 70;
           osc.frequency.setTargetAtTime(base * pitch, ctx.currentTime, 0.08);
         }
         if (pitch && filt && !osc) filt.frequency.setTargetAtTime(700 * pitch, ctx.currentTime, 0.08);
@@ -8087,7 +8095,7 @@ const UI = {
       <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
       <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan sin herir a quien esté en medio, pelean cuerpo a cuerpo (estocadas con las armas de punta, golpes desde arriba con las demás) y rematan a los zombis caídos, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
-      <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones).</div>
+      <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones). Estos cables de activación son invisibles: sólo se ven, todos los colores a la vez, mientras tienes equipada una de sus herramientas.</div>
       <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
@@ -8730,7 +8738,7 @@ const Liquids = {
         if (th && th.def && th.def.drain) { E.kill(i); return true; }
         if (th && !th.isTerrain && !(o && th === o.src && Phys.time - o.t < 0.6)) {
           const id = o && o.c ? this.main(o.c) : 'water';
-          if (id === 'water' || id === 'coolant') { if (th.fire > 0 && Math.random() < 0.25) th.extinguish(); if (th.temp !== undefined) th.temp -= 2; }
+          if (id === 'water' || id === 'coolant') { if (th.fire > 0 && Math.random() < 0.25) th.extinguish(); if (th.temp !== undefined) { const fl = id === 'coolant' ? -40 : Math.min(Settings.ambientTemp, 12); if (th.temp > fl) th.temp = Math.max(fl, th.temp - 2); } }
           else if (id === 'acid') { if (th.acidHit) th.acidHit(hf, nx, ny); }
           else if (id === 'oil' && th.fire <= 0 && Math.random() < 0.02) { /* el aceite sólo arde con fuego */ }
           else if (th.stainAt) th.stainAt(hf, nx, ny, [E.r[i], E.g[i], E.b[i], 255]);
@@ -15173,6 +15181,1641 @@ const V10_CATS = {
       if (s && s !== last) { last = s; grid.insertBefore(this.el('div', 'isub', s), b); }
     }
   };
+}
+
+/* ---- 38_v11_vehiculos.js ---- */
+/* =========================================================================
+   VERSIÓN 11 (1): el bote y el helicóptero
+   ========================================================================= */
+
+/* ---------------- pasajeros: subirlos sentados y bajarlos ---------------- */
+// postura de una persona calculada desde el torso (x, y en metros respecto al centro del torso)
+function v11PoseFK(h, P) {
+  const f = h.facing, pos = {}, an = {};
+  let hip = null;
+  for (const d of LIMB_DEFS) {
+    if (!d.parent) { pos[d.id] = [0, 0]; an[d.id] = 0; continue; }
+    const pd = LIMB_BY_ID[d.parent], pa = an[pd.id], pp = pos[pd.id];
+    const la = rot((d.jx - pd.cx) * f * PX, (d.jy - pd.cy) * PX, pa);
+    const j = [pp[0] + la[0], pp[1] + la[1]];
+    const a = pa + (P[d.id] || 0) * f;
+    const lb = rot((d.jx - d.cx) * f * PX, (d.jy - d.cy) * PX, a);
+    pos[d.id] = [j[0] - lb[0], j[1] - lb[1]]; an[d.id] = a;
+    if (d.id === 'upperLegF') hip = j;
+  }
+  return { pos, an, hip };
+}
+// lo que lleva en las manos o clavado se mueve con la extremidad que lo sujeta
+function v11Carried(h) {
+  const out = [], seen = new Set();
+  const rel = (b, Lb) => { if (seen.has(b) || b.getType() !== 'dynamic') return; seen.add(b); const p = Lb.getLocalPoint(b.getPosition()); out.push({ b, Lb, x: p.x, y: p.y, a: b.getAngle() - Lb.getAngle() }); };
+  for (const s of ['F', 'B']) {
+    const it = h.held[s], L = h.limbs['lowerArm' + s];
+    if (!it || it.dead || !L || L.destroyed) continue;
+    for (const t of [it, ...(it.attachments || [])]) if (!t.dead) for (const b of t.bodies) rel(b, L.body);
+  }
+  for (const r of Stuck.list) if (r.target === h && r.bS && r.bO) rel(r.bS, r.bO);
+  return out;
+}
+// mueve a la persona entera a una postura: torso en (x, y) del mundo, girada «ang»
+function v11PlaceHuman(h, P, place, z) {
+  if (Input.drag && Input.drag.thing === h) Input.endDrag();
+  const carry = v11Carried(h);
+  // dentro del vehículo se dibuja detrás de su carrocería (se ve por encima de la borda o por las ventanillas)
+  if (z !== undefined) { h.z = z; for (const c of carry) { const t = bodyData(c.b).thing; if (t) t.z = z + 0.2; } }
+  const fk = v11PoseFK(h, P), { ang, ox, oy, vel } = place(fk);
+  for (const L of h.limbList) {
+    if (L.destroyed || !L.connected) continue;
+    const q = rot(fk.pos[L.id][0], fk.pos[L.id][1], ang), x = ox + q[0], y = oy + q[1];
+    L.body.setTransform(V(x, y), fk.an[L.id] + ang);
+    const v = vel ? vel(x, y) : V(0, 0);
+    L.body.setLinearVelocity(v); L.body.setAngularVelocity(0); L.body.setAwake(true);
+  }
+  for (const c of carry) { const p = c.Lb.getWorldPoint(V(c.x, c.y)); c.b.setTransform(p, c.Lb.getAngle() + c.a); c.b.setLinearVelocity(c.Lb.getLinearVelocity()); c.b.setAngularVelocity(0); c.b.setAwake(true); }
+}
+// sienta a una persona en un asiento del vehículo (s = punto de la superficie del asiento, en px del sprite)
+function v11Seat(h, veh, s) {
+  if (!h || h.dead || !h.isHuman || h.frozenSolid || !h.root || h.root.destroyed) return false;
+  const vf = veh.flip ? -1 : 1;
+  if (h.facing !== vf) h.flipFacing();
+  const b = veh.main, ang = b.getAngle(), seat = veh.worldPt(s[0], s[1]);
+  v11PlaceHuman(h, POSE_SIT, (fk) => {
+    // la cadera queda justo encima del asiento
+    const q = rot(-fk.hip[0], -fk.hip[1] - 4.5 * PX, ang);
+    return { ang, ox: seat[0] + q[0], oy: seat[1] + q[1], vel: (x, y) => b.getLinearVelocityFromWorldPoint(V(x, y)) };
+  }, veh.z - 0.6);
+  h.forcedPose = 'sit'; h.walking = false;
+  if (h.state === 'stand' || h.state === 'getup') h.setState('lying');
+  return true;
+}
+// la baja de pie junto al vehículo (detrás si hay sitio; si no, delante)
+function v11Unseat(h, veh) {
+  if (!h || h.dead || !h.root || h.root.destroyed) return;
+  if (h.forcedPose === 'sit') h.forcedPose = null;
+  let x0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const b of veh.bodies) { const bb = bodyAABB(b); x0 = Math.min(x0, bb[0]); x1 = Math.max(x1, bb[2]); y1 = Math.max(y1, bb[3]); }
+  const back = veh.flip ? 1 : -1, b = veh.main;
+  const free = (x) => { let ok = true; queryAABB(x - 0.25, y1 - 1.8, x + 0.25, y1 - 0.1, (f) => { const t = thingOf(f); if (t && t !== h && !f.isSensor() && f.getBody().getType() !== 'dynamic') ok = false; return ok; }); return ok; };
+  let x = back > 0 ? x1 + 0.45 : x0 - 0.45;
+  if (!free(x)) x = back > 0 ? x0 - 0.45 : x1 + 0.45;
+  // el suelo bajo ese punto (o la altura de la base del vehículo si no hay suelo cerca)
+  const g = rayFirst(x, y1 - 2, x, y1 + 3, (f) => { const t = thingOf(f); return t !== h && t !== veh && !f.isSensor(); });
+  let gy = g ? Math.min(g.y, y1 + 0.05) : y1;
+  // en el agua: con la cabeza fuera
+  const wa = Water.areas.find((w) => x > w.x0 && x < w.x1 && w.y0 < gy && w.y1 > w.y0);
+  if (wa && wa.kind !== 'lava') gy = Math.min(gy, wa.y0 + 1.05);
+  v11PlaceHuman(h, {}, () => ({ ang: 0, ox: x, oy: gy - 61 * PX, vel: () => { const v = b.getLinearVelocity(); return V(v.x, v.y); } }), ++World.zc);
+}
+// comportamiento común: asientos, subir a bordo y bajar a todos
+function v11Seats(seats) {
+  const sitting = (it) => {
+    const p = it.vars.pax || (it.vars.pax = seats.map(() => null));
+    p.forEach((h, i) => {
+      if (!h) return;
+      const pel = h.limbs && h.limbs.lowerBody;
+      const s = it.worldPt(seats[i][0], seats[i][1]);
+      if (h.dead || !pel || pel.destroyed || Math.hypot(pel.body.getPosition().x - s[0], pel.body.getPosition().y - s[1]) > 1.3) p[i] = null;
+    });
+    return p;
+  };
+  return {
+    seats,
+    board(it) {
+      const p = sitting(it), i = p.indexOf(null);
+      if (i < 0) { UI.toast('No quedan asientos libres'); return; }
+      const c = it.main.getWorldCenter();
+      let best = null, bd = 9;
+      for (const t of World.things) {
+        if (!t.isHuman || t.dead || !t.root || t.root.destroyed || t.frozenSolid || p.includes(t)) continue;
+        if (World.things.some((o) => o !== it && o.vars && o.vars.pax && o.vars.pax.includes(t))) continue;
+        const q = t.root.body.getPosition(), d = Math.hypot(q.x - c.x, q.y - c.y) - (t.alive ? 1 : 0);
+        if (d < bd) { bd = d; best = t; }
+      }
+      if (!best) { UI.toast('No hay nadie cerca para subir'); return; }
+      if (v11Seat(best, it, seats[i])) { p[i] = best; Sound.play('clunk', c.x, c.y, 0.4); }
+    },
+    unboard(it) {
+      const p = sitting(it); let n = 0;
+      p.forEach((h, i) => { if (h) { v11Unseat(h, it); p[i] = null; n++; } });
+      if (!n) UI.toast('No hay pasajeros');
+    },
+    count(it) { return sitting(it).filter(Boolean).length; },
+  };
+}
+
+/* ---------------- BOTE ---------------- */
+function boatSprite() {
+  return drawSprite(240, 76, (a) => {
+    const white = '#eef1f4', shade = '#cdd3da', blue = '#2c62a8', bottom = '#9b2f2a';
+    a.poly([[22, 22], [196, 18], [238, 6], [230, 28], [214, 46], [192, 60], [26, 60], [22, 54]], white);
+    // franja azul, línea de flotación y fondo antiincrustante
+    a.poly([[22, 34], [200, 30], [229, 22], [226, 30], [204, 38], [22, 40]], blue);
+    a.poly([[22, 51], [203, 51], [192, 60], [26, 60], [22, 54]], bottom);
+    a.hline(22, 202, 51, '#7a2420');
+    // regala, defensa y espejo de popa
+    a.poly([[20, 19], [196, 15], [238, 4], [238, 8], [196, 19], [20, 23]], '#5b616a');
+    a.rect(20, 22, 5, 38, shade); a.vline(20, 22, 59, '#9aa1a9');
+    for (let x = 44; x < 190; x += 32) a.vline(x, 24, 31, shade);
+    // parabrisas y barandilla de proa
+    a.poly([[148, 17], [156, 2], [172, 2], [174, 16]], [150, 200, 230, 150]);
+    a.line(148, 17, 156, 2, '#3c4148'); a.line(156, 2, 172, 2, '#3c4148'); a.vline(173, 2, 16, '#3c4148');
+    a.line(194, 11, 236, 1, '#b9bfc7'); a.vline(204, 7, 15, '#b9bfc7'); a.vline(220, 4, 11, '#b9bfc7');
+    for (let k = 0; k < 6; k++) a.rect(194 + k * 4, 24 - k * 0.6, 2, 3, '#1f2a3a');
+    // motor fueraborda: capó, pata, placa anticavitación y aleta
+    a.rect(4, 12, 15, 16, '#1f2023'); a.rect(5, 13, 13, 4, '#3c4148'); a.hline(5, 17, 21, '#c33a2e'); a.rect(16, 18, 6, 4, '#2a2d32');
+    a.rect(8, 28, 6, 34, '#2a2d32'); a.vline(9, 29, 60, '#4b5058');
+    a.rect(3, 58, 16, 2, '#3c4148'); a.rect(8, 62, 6, 6, '#2a2d32'); a.poly([[9, 68], [13, 68], [12, 74], [10, 74]], '#1b1c1f');
+    a.edge(0.82);
+  });
+}
+const BOAT_SEATS = [[65, 34], [119, 34]];
+// puntos de flotación: el fondo, la proa y (por si vuelca) la regala
+const BOAT_PTS = [[30, 60, 1], [62, 60, 1], [94, 60, 1], [126, 60, 1], [158, 60, 1], [188, 59, 0.9], [208, 48, 0.6], [224, 32, 0.35],
+  [30, 22, 0.8], [110, 20, 0.8], [190, 18, 0.8]];
+const BOAT_PROP = [9, 65];
+const BOAT = v11Seats(BOAT_SEATS);
+const BOAT_VB = vehicleBehavior({
+  sprite: () => boatSprite(), mat: 'plastic', mass: 260, wr: 0, wmass: 0, torque: 0, speed: 0, wheels: [], exhaust: [4, 16], tankPt: [11, 18], tankR: 0.28, hp: 90, tankPower: 2,
+  shapes: [
+    { poly: [[22, 50], [200, 50], [190, 60], [26, 60]] },
+    { poly: [[188, 18], [236, 6], [239, 9], [200, 56], [188, 50]] },
+    { box: [20, 20, 6, 40] },
+    { box: [56, 34, 18, 4] }, { box: [110, 34, 18, 4] },
+    { box: [4, 12, 15, 16], mat: 'metal' }, { box: [8, 28, 6, 40], mat: 'metal' },
+  ],
+});
+def('boat', Object.assign({}, BOAT_VB, {
+  name: 'Bote', cat: 'vehicles', mat: 'plastic', mass: 260, floatK: 0,
+  desc: 'Lancha con motor fueraborda: flota con gente dentro y el motor sólo empuja con la hélice en el agua. F: arrancar o apagar. Menú: subir a bordo a la persona más cercana, marcha atrás y bajar a todos. Si se rompe el casco, se hunde.',
+  sprite: () => boatSprite(),
+  build(it, x, y, ang, flip) {
+    BOAT_VB.build(it, x, y, ang, flip);
+    it.vars.thr = 0; it.vars.flood = 0;
+    it.main.setAngularDamping(0.2);
+  },
+  // flotación por puntos a lo largo del casco: cabecea con el peso, las olas y el empuje
+  forces(it, dt) {
+    if (it.frozen || !Water.areas.length) return;
+    const b = it.main, g = GRAVITY * Settings.gravity * Math.max(0, b.getGravityScale());
+    const K = 260 * 9.81 / 0.14 / 5.9 * (1 - 0.85 * (it.vars.flood || 0)), C = 2400 / 5.9;
+    let wet = 0;
+    for (const [px, py, w] of BOAT_PTS) {
+      const p = it.worldPt(px, py), a = Water.at(p[0], p[1]); if (!a) continue;
+      const d = Math.min(p[1] - a.y0, 0.75); if (d <= 0) continue;
+      const v = b.getLinearVelocityFromWorldPoint(V(p[0], p[1]));
+      b.applyForce(V(0, -(K * d * (a.kind === 'lava' ? 2.6 : 1) * (g / 9.81) + C * v.y) * w), V(p[0], p[1]), true);
+      wet += w;
+    }
+    it.vars.wet = wet;
+    // motor: empuja si la hélice está en el agua
+    if (it.on && it.vars.hp > 0) {
+      const q = it.worldPt(BOAT_PROP[0], BOAT_PROP[1]);
+      it.vars.thr = Math.min(1, (it.vars.thr || 0) + (dt || 1 / 120) * 0.8);
+      if (Water.at(q[0], q[1])) {
+        const [dx, dy] = it.dirWorld(1, 0), v = b.getLinearVelocity(), fwd = (v.x * dx + v.y * dy) * it.vars.dir;
+        const m = it.forceMul || 1, rev = it.vars.dir < 0, F = 4500 * m * it.vars.thr * clamp(1 - fwd / ((rev ? 7 : 16) * Math.sqrt(m)), 0, 1.2) * it.vars.dir * (rev ? 0.55 : 1);
+        b.applyForce(V(dx * F, dy * F), V(q[0], q[1]), true);
+      }
+    } else it.vars.thr = 0;
+  },
+  update(it, dt) {
+    BOAT_VB.update(it, dt);
+    const q = it.worldPt(BOAT_PROP[0], BOAT_PROP[1]), inW = Water.at(q[0], q[1]);
+    it.vars.spin = (it.vars.spin || 0) + dt * (it.on && it.vars.hp > 0 ? 40 * (0.3 + it.vars.thr) : 0);
+    if (it.vars.loop) { const p = it.pos(); it.vars.loop.set(0.24, p.x, p.y, 1.1 + it.vars.thr * (inW ? 0.5 : 0.9)); }
+    if (it.on && it.vars.hp > 0 && inW && Math.random() < dt * 30) {
+      const [dx] = it.dirWorld(1, 0); Water.bubble(q[0] - dx * 0.2 + gauss() * 0.1, q[1] + gauss() * 0.1);
+      // estela en la superficie
+      const v = it.main.getLinearVelocity(); if (Math.abs(v.x) > 2 && Math.random() < 0.5) Effects.add(PT.DUST, q[0] - dx * 0.3, inW.y0 - 0.02, -dx * rand(1, 3), -rand(0.5, 1.5), 0.4, 1.4, [225, 238, 250]);
+    }
+    // el casco destrozado se inunda y se hunde poco a poco
+    if (it.vars.hp <= 0 && (it.vars.wet || 0) > 0) {
+      it.vars.flood = Math.min(1, (it.vars.flood || 0) + dt / 25);
+      if (Math.random() < dt * 8) { const p = it.worldPt(rand(30, 180), 54); Water.bubble(p[0], p[1]); }
+    }
+  },
+  draw(it, ctx) {
+    // la hélice del motor girando
+    const q = it.worldPt(5, BOAT_PROP[1]), [dx, dy] = it.dirWorld(0, 1), s = Math.sin(it.vars.spin || 0);
+    ctx.strokeStyle = it.on && it.vars.hp > 0 ? 'rgba(60,64,72,0.75)' : '#3c4148'; ctx.lineWidth = PX * 2;
+    ctx.beginPath(); ctx.moveTo(q[0] - dx * 5 * PX * s, q[1] - dy * 5 * PX * s); ctx.lineTo(q[0] + dx * 5 * PX * s, q[1] + dy * 5 * PX * s); ctx.stroke();
+  },
+  onChannel(it, ch) { if (ch === 'r') it.vars.dir *= -1; return undefined; },
+  menu(it) {
+    const m = [
+      { label: it.on ? 'Apagar motor' : 'Arrancar motor', fn: () => it.activate() },
+      { label: it.vars.dir > 0 ? 'Marcha atrás' : 'Marcha adelante', fn: () => { it.vars.dir *= -1; } },
+      { label: 'Subir a bordo a la persona más cercana', fn: () => BOAT.board(it) },
+    ];
+    if (BOAT.count(it)) m.push({ label: 'Bajar a todos', fn: () => BOAT.unboard(it) });
+    m.push(it.vars.hp > 0 ? { label: 'Averiar', fn: () => { it.vars.hp = 0; if (it.on) it.activate(); } }
+      : { label: 'Reparar', fn: () => { it.vars.hp = 90; it.vars.flood = 0; it.vars.boomed = false; it.vars.leak = 0; } });
+    return m;
+  },
+  info(it) {
+    const l = [[it.vars.hp <= 0 ? 'Averiado' : it.on ? (it.vars.dir > 0 ? 'Avante' : 'Marcha atrás') : 'Motor apagado', it.vars.hp <= 0 ? '#e05a4f' : it.on ? '#7ad48a' : '#9aa3ad']];
+    const n = BOAT.count(it); if (n) l.push([`${n} a bordo`, '#cfd5dc']);
+    if ((it.vars.flood || 0) > 0.02) l.push([`Inundándose (${Math.round(it.vars.flood * 100)} %)`, '#ff8a3c']);
+    if (it.vars.leak > 0) l.push(['¡Pierde combustible!', '#ff8a3c']);
+    return l;
+  },
+}));
+DEFS.boat._forceAdj = true;
+
+/* ---------------- HELICÓPTERO ---------------- */
+function heliSprite() {
+  return drawSprite(300, 110, (a) => {
+    const body = '#b8322a', dark = '#8e2620', light = '#d4584e', gray = '#3c4148', glass = [150, 195, 220, 150];
+    // botalón de cola, estabilizador y deriva
+    a.poly([[24, 34], [152, 26], [152, 50], [24, 42]], body); a.hline(26, 150, 30, light); a.hline(26, 150, 46, dark);
+    a.poly([[60, 46], [84, 46], [86, 50], [58, 50]], dark);
+    a.poly([[10, 8], [24, 8], [32, 38], [28, 66], [14, 66], [16, 40]], body); a.vline(18, 10, 64, light);
+    a.rect(14, 26, 8, 8, gray); a.circle(18, 30, 2.5, '#1b1c1f');
+    // carenado del motor, mástil y cabeza del rotor
+    a.poly([[160, 15], [168, 8], [226, 8], [236, 15]], '#5b616a'); a.hline(168, 226, 9, '#7f8691');
+    for (let x = 176; x < 220; x += 8) a.rect(x, 11, 5, 2, '#2a2d32');
+    a.rect(194, 0, 5, 9, gray); a.rect(188, 0, 17, 3, '#2a2d32');
+    // cabina
+    a.poly([[150, 15], [244, 15], [268, 26], [288, 48], [297, 66], [294, 84], [270, 92], [150, 92]], body);
+    a.poly([[244, 18], [266, 28], [285, 50], [292, 64], [262, 62], [254, 40]], glass);
+    a.line(244, 18, 266, 28, '#2a2d32'); a.line(266, 28, 285, 50, '#2a2d32'); a.line(254, 40, 262, 62, '#2a2d32');
+    // puerta con ventanilla
+    a.poly([[178, 22], [244, 22], [252, 40], [254, 60], [178, 60]], glass);
+    a.rect(176, 20, 2, 66, dark); a.vline(214, 22, 86, dark); a.rect(206, 64, 6, 2, '#2a2d32');
+    a.hline(150, 296, 74, dark); a.hline(150, 268, 16, light); a.hline(150, 296, 91, '#5e1a16');
+    a.rect(150, 15, 4, 77, dark); a.rect(286, 72, 6, 4, '#f4f0c8');
+    // patines
+    a.rect(176, 92, 4, 12, gray); a.rect(258, 92, 4, 12, gray);
+    a.rect(150, 103, 130, 4, gray); a.poly([[280, 103], [288, 96], [291, 98], [284, 107], [280, 107]], gray);
+    a.edge(0.84);
+  });
+}
+const HELI_SEATS = [[244, 66], [196, 66]];
+const HELI = v11Seats(HELI_SEATS);
+const HELI_HUB = [196, 2], HELI_R = 140;
+const HELI_VB = vehicleBehavior({
+  sprite: () => heliSprite(), mass: 900, wr: 0, wmass: 0, torque: 0, speed: 0, wheels: [], lights: [292, 74], tankPt: [165, 70], tankR: 0.4, hp: 120, tankPower: 3.5,
+  shapes: [
+    { box: [150, 84, 146, 8] }, { box: [150, 14, 94, 6] }, { poly: [[160, 14], [168, 8], [226, 8], [236, 14]] }, { box: [150, 20, 12, 64] },
+    { poly: [[268, 52], [288, 56], [297, 68], [294, 84], [268, 92]] },
+    { box: [234, 66, 22, 6] }, { box: [184, 66, 22, 6] },
+    { poly: [[24, 34], [150, 26], [150, 50], [24, 42]] }, { box: [10, 8, 18, 58] }, { box: [58, 46, 28, 4] },
+    { box: [150, 103, 132, 4] }, { box: [176, 92, 4, 11] }, { box: [258, 92, 4, 11] },
+  ],
+});
+function heliRotorSprite() { return drawSprite(HELI_R * 2, 4, (a) => { a.rect(0, 1, HELI_R * 2, 2, '#2a2d32'); a.rect(HELI_R - 8, 0, 16, 4, '#1b1c1f'); }); }
+// altura del suelo (o del agua) bajo los patines
+function heliGround(it) {
+  let best = null;
+  for (const px of [160, 270]) {
+    const p = it.worldPt(px, 107);
+    const h = rayFirst(p[0], p[1] - 0.05, p[0], p[1] + 40, (f) => { const t = thingOf(f); return t !== it && !f.isSensor() && !(it.vars.pax || []).includes(t); });
+    let d = h ? h.y - p[1] : 40;
+    const wa = Water.areas.find((w) => p[0] > w.x0 && p[0] < w.x1 && w.y0 > p[1] - 0.2 && w.y0 < p[1] + 40);
+    if (wa) d = Math.min(d, wa.y0 - p[1]);
+    best = best === null ? d : Math.min(best, d);
+  }
+  return best;
+}
+def('helicopter', Object.assign({}, HELI_VB, {
+  name: 'Helicóptero', cat: 'vehicles', mat: 'metal', mass: 900,
+  desc: 'Helicóptero ligero. F: arrancar o apagar el motor (despega solo y se mantiene en el aire). Menú: subir, bajar, avanzar, retroceder, aterrizar y subir a bordo a la persona más cercana. Cuidado con el rotor: corta lo que toca, y si choca contra algo duro se rompe.',
+  sprite: () => heliSprite(),
+  thumb() { return composeSprites(320, 110, [{ spr: heliSprite(), x: 20, y: 0 }, { spr: heliRotorSprite(), x: 20 + HELI_HUB[0] - HELI_R, y: 0 }], [170, 55]); },
+  build(it, x, y, ang, flip) {
+    HELI_VB.build(it, x, y, ang, flip);
+    Object.assign(it.vars, { spool: 0, lift: 0, mode: 'landed', move: 0, alt: y, rotorHP: 100, rot: 0, tail: 0 });
+    it.main.setAngularDamping(0.6);
+  },
+  activate(it) {
+    if (it.vars.hp <= 0) { Sound.play('dryfire', it.pos().x, it.pos().y, 0.6); UI.toast('El helicóptero está averiado (menú: reparar)'); return; }
+    it.on = !it.on;
+    if (it.on) {
+      if (!it.vars.loop) { it.vars.loop = Sound.loop('heli'); if (it.vars.loop) it.loops.push(it.vars.loop); }
+      // arranca y despega: se queda flotando unos metros por encima de donde está
+      it.vars.mode = 'hover'; it.vars.alt = it.main.getPosition().y - 5; it.vars.lift = 0;
+    }
+    Sound.play('clunk', it.pos().x, it.pos().y, 0.5);
+  },
+  onChannel(it, ch) {
+    // rojo: subir · azul: bajar
+    if (ch === 'r') { it.vars.mode = 'hover'; it.vars.alt -= 3; }
+    else if (ch === 'b') { it.vars.mode = 'hover'; it.vars.alt += 3; }
+    return undefined;
+  },
+  forces(it, dt) {
+    if (it.frozen) return;
+    const b = it.main, v = b.getLinearVelocity(), p = b.getPosition(), gs = Math.max(0, b.getGravityScale());
+    const g = GRAVITY * Settings.gravity * gs, m = b.getMass(), fm = it.forceMul || 1;
+    const sp = it.vars.spool, rotorOk = it.vars.rotorHP > 0;
+    if (!rotorOk || sp < 0.05) { it.vars.lift = 0; return; }
+    const ground = heliGround(it), grounded = ground < 0.12;
+    const mode = it.vars.mode;
+    // velocidad vertical que quiere (y hacia abajo)
+    let vyT = 0;
+    if (mode === 'hover') vyT = clamp((it.vars.alt - p.y) * 1.1, -4 * Math.sqrt(fm), 3.5);
+    else if (mode === 'land') { vyT = clamp(ground * 0.8, 0.6, 3); if (grounded && Math.abs(v.y) < 0.6) it.vars.mode = 'landed'; }
+    if (mode === 'landed') { it.vars.lift = Math.max(0, it.vars.lift - dt); }
+    else {
+      // el término integral aprende el peso de lo que carga (pasajeros, cuerdas...)
+      if (sp > 0.9) it.vars.lift = clamp(it.vars.lift + (v.y - vyT) * dt * 0.9, -0.5, 3 * fm);
+      const up = clamp((g * (1 + it.vars.lift) + (v.y - vyT) * 3.2) * m, 0, m * 9.81 * 3.2 * fm) * sp * sp * Math.max(0, Math.cos(b.getAngle()));
+      const hub = it.worldPt(HELI_HUB[0], HELI_HUB[1] + 6);
+      b.applyForce(V(0, -up), V(hub[0], hub[1]), true);
+    }
+    // avance: se inclina hacia donde va
+    const face = it.flip ? -1 : 1, air = !grounded && mode !== 'landed';
+    const vxT = air ? it.vars.move * face * 11 * Math.sqrt(fm) : 0;
+    if (air) b.applyForceToCenter(V(clamp((vxT - v.x) * 1.4, -7, 7) * m * fm * sp, 0), true);
+    const tilt = air ? clamp((vxT - v.x) * 0.035 + vxT * 0.012, -0.32, 0.32) : 0;
+    const I = b.getInertia(), a = angWrap(b.getAngle() - tilt), w = b.getAngularVelocity();
+    if (Math.abs(angWrap(b.getAngle())) > 1.2) return; // volcado: ya no se endereza
+    // el término integral compensa el peso descentrado (pasajeros delante o detrás)
+    it.vars.trim = air ? clamp((it.vars.trim || 0) - a * dt * 6, -12, 12) : (it.vars.trim || 0) * 0.99;
+    const k = air ? 1 : 0.35;
+    b.applyTorque(clamp(-a * 14 - w * 6 + it.vars.trim, -40, 40) * I * k * sp, true);
+  },
+  update(it, dt) {
+    HELI_VB.update(it, dt);
+    const V_ = it.vars, b = it.main;
+    // el rotor acelera y se frena poco a poco
+    const want = it.on && V_.hp > 0 && V_.rotorHP > 0 ? 1 : 0;
+    V_.spool = clamp(V_.spool + (want ? dt / 3 : -dt / 5), 0, 1);
+    V_.rot += dt * V_.spool * 26; V_.tail += dt * V_.spool * 70;
+    if (!it.on && V_.loop && V_.spool <= 0) { V_.loop.stop(); V_.loop = null; }
+    if (V_.loop) { const p = it.pos(); V_.loop.set(0.12 + V_.spool * 0.3, p.x, p.y, 0.35 + V_.spool * 0.75); }
+    if (V_.spool > 0.3 && V_.rotorHP > 0) {
+      // polvo y salpicaduras bajo el rotor cuando está cerca del suelo
+      const gd = heliGround(it);
+      if (gd < 5 && Math.random() < dt * 30 * V_.spool) {
+        const c = it.worldPt(220, 107), x = c[0] + gauss() * 2.5, y = c[1] + gd;
+        const wa = Water.at(x, y + 0.05);
+        Effects.add(PT.DUST, x, y - 0.05, Math.sign(x - c[0]) * rand(2, 5), -rand(0.2, 1), 0.5, 1.8, wa ? [215, 232, 248] : [170, 160, 140]);
+      }
+      DEFS.helicopter.rotorHits(it, dt);
+    }
+    if (V_.hp <= 0 && Math.random() < dt * 4) { const p = it.worldPt(200, 10); Effects.smoke(p[0], p[1], 1, [50, 50, 54], 0.6, 1.4); }
+  },
+  // el rotor corta lo que toca; si golpea algo duro, se rompe
+  rotorHits(it, dt) {
+    const V_ = it.vars, hub = it.worldPt(HELI_HUB[0], HELI_HUB[1] + 1), [dx, dy] = it.dirWorld(1, 0);
+    V_.hitT = V_.hitT || new Map();
+    for (const s of [-1, 1]) {
+      const ex = hub[0] + dx * s * HELI_R * PX, ey = hub[1] + dy * s * HELI_R * PX;
+      const h = rayFirst(hub[0] + dx * s * 0.3, hub[1] + dy * s * 0.3, ex, ey, (f) => { const t = thingOf(f); return t && t !== it && !f.isSensor(); });
+      if (!h) continue;
+      const t = h.d.thing, last = V_.hitT.get(t) || -9;
+      if (Phys.time - last < 0.12) continue;
+      V_.hitT.set(t, Phys.time);
+      const hb = h.b, hard = hb.getType() === 'static' || t.isTerrain || (hb.getMass() > 150 && !t.isHuman);
+      const out = [h.x - hub[0], h.y - hub[1]], ol = Math.hypot(out[0], out[1]) || 1, ux = out[0] / ol, uy = out[1] / ol;
+      Effects.sparks(h.x, h.y, ux * 4, uy * 4 - 2, 6, 5);
+      Sound.play(t.isHuman ? 'slice' : 'impact_metal', h.x, h.y, 0.9);
+      if (t.isHuman) {
+        const L = h.d.part;
+        if (L && !L.destroyed) {
+          t.hurt(L, 0.55 * V_.spool, 'slice', h.x, h.y, ux, uy, { power: 3 });
+          hb.applyLinearImpulse(V(ux * 40 * V_.spool, (uy - 0.6) * 40 * V_.spool), V(h.x, h.y), true);
+          if (Settings.gore && !t.immortal && L.joint && Math.random() < 0.55 * V_.spool) Phys.later(() => { if (L.joint) t.sever(L, 'cut'); });
+        }
+      } else if (hb.getType() === 'dynamic') hb.applyLinearImpulse(V(ux * Math.min(hb.getMass(), 60) * 6 * V_.spool, uy * Math.min(hb.getMass(), 60) * 6 * V_.spool), V(h.x, h.y), true);
+      if (hard || (!t.isHuman && hb.getMass() > 40)) {
+        V_.rotorHP -= hard ? 45 * V_.spool : 12 * V_.spool;
+        it.main.applyAngularImpulse(-s * (it.flip ? -1 : 1) * 900 * V_.spool, true);
+        if (V_.rotorHP <= 0) {
+          // las palas saltan en pedazos
+          Sound.play('snap', h.x, h.y, 1); Sound.play('impact_heavy_metal', h.x, h.y, 1); Cam.addShake(0.4);
+          for (let k = 0; k < 10; k++) Effects.debris(hub[0] + dx * s * rand(0.5, 3), hub[1] + dy * s * rand(0.5, 3), gauss() * 8, -rand(2, 8), 1, [40, 42, 46], 2);
+          UI.toast('¡El rotor se ha roto!');
+        }
+      }
+    }
+  },
+  onImpact(it, im, dv) {
+    // un golpe muy fuerte (caer a plomo) lo destroza
+    if (dv < 11) return;
+    it.vars.hp -= (dv - 11) * 9;
+    if (it.vars.hp <= 0) { it.vars.hp = 0; if (it.on) { it.on = false; } if (dv > 17 && !it.vars.boomed) Phys.later(() => vehicleExplode(it, { tankPt: [165, 70], tankPower: 3.5 })); }
+  },
+  draw(it, ctx) {
+    const V_ = it.vars, hub = it.worldPt(HELI_HUB[0], HELI_HUB[1] + 1), [dx, dy] = it.dirWorld(1, 0);
+    const R = HELI_R * PX * (V_.rotorHP > 0 ? 1 : 0.28);
+    // rotor principal: cuatro palas vistas de lado (se acortan al girar); deprisa, un disco borroso
+    if (V_.spool > 0.45 && V_.rotorHP > 0) {
+      ctx.fillStyle = `rgba(40,42,46,${0.12 + 0.1 * V_.spool})`;
+      ctx.beginPath(); ctx.ellipse(hub[0], hub[1], R, PX * 2.2, Math.atan2(dy, dx), 0, TAU); ctx.fill();
+    }
+    ctx.strokeStyle = V_.spool > 0.45 ? `rgba(30,32,36,${0.75 - V_.spool * 0.45})` : '#2a2d32'; ctx.lineWidth = PX * 2;
+    for (let k = 0; k < 4; k++) {
+      const c = Math.cos(V_.rot + k * Math.PI / 2) * R;
+      ctx.beginPath(); ctx.moveTo(hub[0], hub[1]); ctx.lineTo(hub[0] + dx * c, hub[1] + dy * c); ctx.stroke();
+    }
+    ctx.fillStyle = '#1b1c1f'; ctx.fillRect(hub[0] - PX * 7, hub[1] - PX * 2, PX * 14, PX * 4);
+    // rotor de cola
+    const tr = it.worldPt(18, 30), [ux, uy] = it.dirWorld(0, 1), r = 16 * PX;
+    if (V_.spool > 0.45) { ctx.fillStyle = 'rgba(40,42,46,0.22)'; ctx.beginPath(); ctx.arc(tr[0], tr[1], r, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = '#2a2d32'; ctx.lineWidth = PX * 1.6;
+    for (let k = 0; k < 2; k++) {
+      const an = V_.tail + k * Math.PI / 2, cx = Math.cos(an) * r, cy = Math.sin(an) * r;
+      ctx.beginPath(); ctx.moveTo(tr[0] - dx * cx - ux * cy, tr[1] - dy * cx - uy * cy); ctx.lineTo(tr[0] + dx * cx + ux * cy, tr[1] + dy * cx + uy * cy); ctx.stroke();
+    }
+    // luz anticolisión
+    if (it.on && Math.sin(Phys.time * 6) > 0.6) { const bp = it.worldPt(18, 9); ctx.fillStyle = '#ff3a2a'; ctx.fillRect(bp[0] - PX * 1.5, bp[1] - PX * 1.5, PX * 3, PX * 3); Effects.light(bp[0], bp[1], 1.4, [255, 60, 40], 0.7, 0.03); }
+  },
+  menu(it) {
+    const V_ = it.vars, m = [{ label: it.on ? 'Apagar motor' : 'Arrancar motor', fn: () => it.activate() }];
+    if (it.on) {
+      if (V_.mode === 'landed') m.push({ label: 'Despegar', fn: () => { V_.mode = 'hover'; V_.alt = it.main.getPosition().y - 5; } });
+      else m.push({ label: 'Aterrizar', fn: () => { V_.mode = 'land'; } });
+      m.push({ label: 'Subir 3 m', fn: () => { V_.mode = 'hover'; V_.alt = Math.min(V_.alt, it.main.getPosition().y) - 3; } });
+      if (V_.mode !== 'landed') m.push({ label: 'Bajar 3 m', fn: () => { V_.mode = 'hover'; V_.alt += 3; } });
+      if (V_.move !== 1) m.push({ label: 'Avanzar', fn: () => { V_.move = 1; } });
+      if (V_.move !== -1) m.push({ label: 'Retroceder', fn: () => { V_.move = -1; } });
+      if (V_.move !== 0) m.push({ label: 'Quedarse quieto', fn: () => { V_.move = 0; } });
+    }
+    m.push({ label: 'Subir a bordo a la persona más cercana', fn: () => HELI.board(it) });
+    if (HELI.count(it)) m.push({ label: 'Bajar a todos', fn: () => HELI.unboard(it) });
+    m.push(V_.hp > 0 && V_.rotorHP > 0 ? { label: 'Averiar', fn: () => { V_.hp = 0; it.on = false; } }
+      : { label: 'Reparar', fn: () => { V_.hp = 120; V_.rotorHP = 100; V_.boomed = false; V_.leak = 0; } });
+    return m;
+  },
+  info(it) {
+    const V_ = it.vars, l = [];
+    if (V_.hp <= 0) l.push(['Averiado', '#e05a4f']);
+    else if (V_.rotorHP <= 0) l.push(['Rotor roto', '#e05a4f']);
+    else if (!it.on) l.push([V_.spool > 0 ? 'Rotor parándose' : 'Motor apagado', '#9aa3ad']);
+    else if (V_.spool < 1) l.push(['Arrancando el rotor', '#e0b34f']);
+    else l.push([V_.mode === 'landed' ? 'En tierra (motor en marcha)' : V_.mode === 'land' ? 'Aterrizando' : V_.move ? (V_.move > 0 ? 'Avanzando' : 'Retrocediendo') : 'Suspendido en el aire', '#7ad48a']);
+    const n = HELI.count(it); if (n) l.push([`${n} a bordo`, '#cfd5dc']);
+    if (V_.leak > 0) l.push(['¡Pierde combustible!', '#ff8a3c']);
+    return l;
+  },
+  light(it) { return it.on && it.vars.light ? [it.vars.light] : []; },
+}));
+DEFS.helicopter._forceAdj = true;
+
+/* ---- 39_v11_armas.js ---- */
+/* =========================================================================
+   VERSIÓN 11 (2): armas de fuego reales. Se dibujan con un juego de piezas
+   (culatas, cajones, guardamanos, cargadores, miras, bocachas...) y cada una
+   tiene su calibre, cadencia, retroceso y precisión.
+   ========================================================================= */
+
+/* ---------------- acabados ---------------- */
+const GP = {
+  black: { b: '#3a3d43', h: '#5b5f67', d: '#222428', m: '#45484f' },
+  steel: { b: '#4a4f57', h: '#70767f', d: '#2b2e33', m: '#3d4249' },
+  blued: { b: '#343a46', h: '#566072', d: '#1d2129', m: '#2a303a' },
+  silver: { b: '#a5acb4', h: '#d6dbe0', d: '#6f767f', m: '#8c939c' },
+  gold: { b: '#cfa634', h: '#f6dd80', d: '#8c6c17', m: '#b28c26' },
+  tan: { b: '#a89068', h: '#c9b38b', d: '#7a6545', m: '#937e59' },
+  od: { b: '#555f3f', h: '#717c53', d: '#383f27', m: '#475035' },
+  green: { b: '#495540', h: '#647157', d: '#313a2b', m: '#3e4936' },
+  wood: { b: '#7c5333', h: '#9d6e46', d: '#4f341f', m: '#69462a' },
+  walnut: { b: '#5f3c22', h: '#7f5534', d: '#3b2513', m: '#4e311b' },
+  smoke: { b: '#7f8790', h: '#a7afb7', d: '#596068', m: '#6d747c' },
+  rust: { b: '#6b4a32', h: '#87603f', d: '#45301f', m: '#5a3e29' },
+};
+const GLASS = [140, 205, 235, 255], RED = '#d8382c';
+
+/* ---------------- piezas ---------------- */
+const GK = {
+  // caja con luz arriba y sombra abajo
+  box(a, x, y, w, h, p) {
+    if (w <= 0 || h <= 0) return;
+    a.rect(x, y, w, h, p.b); a.hline(x, x + w - 1, y, p.h);
+    if (h > 2) a.hline(x, x + w - 1, y + h - 1, p.d);
+  },
+  // raíl picatinny (muescas alternas)
+  rail(a, x0, x1, y, p) { a.hline(x0, x1, y, p.b); for (let x = x0 + 1; x <= x1; x += 2) a.px(x, y, p.d); },
+  // cañón de 1 o 2 px
+  barrel(a, x0, x1, y, p, th = 1) {
+    if (x1 < x0) return;
+    a.rect(x0, y, x1 - x0 + 1, th, th > 1 ? p.b : p.m);
+    if (th > 1) { a.hline(x0, x1, y, p.h); if (th > 2) a.hline(x0, x1, y + th - 1, p.d); }
+  },
+  // bocachas: x = primer px, y = fila del cañón (cañón de 1 px). Devuelven la x de la boca
+  muzzle(a, type, x, y, p = GP.black, len) {
+    switch (type) {
+      case 'bird': a.rect(x, y - 1, 3, 3, p.d); a.px(x + 1, y - 1, p.m); a.px(x + 1, y + 1, p.m); return x + 3;
+      case 'duck': a.px(x, y - 1, p.d); a.px(x, y + 1, p.d); a.hline(x, x + 2, y, p.d); a.px(x + 1, y - 1, p.d); a.px(x + 1, y + 1, p.d); a.px(x + 2, y - 1, p.m); a.px(x + 2, y + 1, p.m); return x + 3;
+      case 'brake': a.rect(x, y - 1, len || 4, 3, p.d); for (let i = 1; i < (len || 4); i += 2) { a.px(x + i, y - 1, p.h); a.px(x + i, y + 1, p.h); } return x + (len || 4);
+      case 'big': a.rect(x, y - 2, len || 6, 5, p.d); for (let i = 1; i < (len || 6) - 1; i += 2) a.vline(x + i, y - 1, y + 1, p.m); a.hline(x, x + (len || 6) - 1, y - 2, p.m); return x + (len || 6);
+      case 'can': { const L = len || 10; a.rect(x, y - 1, L, 4, '#1c1d20'); a.hline(x, x + L - 1, y - 1, '#3a3d42'); a.vline(x, y - 1, y + 2, '#111214'); a.vline(x + L - 1, y - 1, y + 2, '#111214'); return x + L; }
+      case 'slant': a.rect(x, y - 1, 3, 3, p.d); a.px(x + 2, y + 1, p.m); a.px(x + 1, y - 1, p.m); return x + 3;
+      case 'cone': a.rect(x, y - 1, 2, 3, p.d); a.px(x + 2, y, p.d); return x + 3;
+      case 'hk': a.rect(x, y - 1, 3, 3, p.d); a.px(x + 1, y, p.m); a.px(x + 2, y - 1, p.m); a.px(x + 2, y + 1, p.m); return x + 3;
+      default: return x;
+    }
+  },
+  // base de punto de mira en «A» (fusiles AR); top = fila de arriba del poste
+  fsb(a, x, y, top, p) { a.rect(x, y - 1, 2, 3, p.b); a.px(x, y - 2, p.b); a.vline(x + 1, top, y - 2, p.d); a.px(x + 1, top, p.m); },
+  // asa de transporte con alza; x0..x1 sobre el cajón; y = fila del cajón de arriba
+  carry(a, x0, x1, y, p, a2) {
+    a.hline(x0, x1, y - 3, p.b); a.hline(x0 + 1, x1 - 1, y - 3, p.h);
+    a.vline(x0, y - 3, y - 1, p.b); a.vline(x1, y - 3, y - 1, p.b); a.vline(x0 + 1, y - 2, y - 1, p.d);
+    a.rect(x0, y - 4, a2 ? 3 : 2, 1, p.d); if (a2) a.px(x0 + 1, y - 5, p.d);
+  },
+  // miras: x = inicio, y = fila del raíl (la mira queda por encima)
+  optic(a, type, x, y) {
+    const K = '#1d1e21', k = '#2e3035', hi = '#4c5058';
+    switch (type) {
+      case 'irons': a.rect(x, y - 2, 2, 2, K); a.px(x, y - 3, K); return;
+      case 'dot': // tubo tipo Aimpoint
+        a.rect(x + 1, y - 1, 3, 1, K); a.rect(x, y - 4, 6, 3, k); a.hline(x, x + 5, y - 4, hi); a.vline(x + 5, y - 4, y - 2, GLASS); a.px(x + 2, y - 5, K); return;
+      case 'holosun': // reflex abierto pequeño
+        a.rect(x, y - 1, 5, 1, K); a.poly([[x + 1, y - 1], [x + 3, y - 4], [x + 5, y - 4], [x + 5, y - 1]], k); a.vline(x + 4, y - 3, y - 2, GLASS); a.px(x + 1, y - 2, RED); return;
+      case 'holo': // EOTech: caja con ventana
+        a.rect(x, y - 1, 7, 1, K); a.rect(x, y - 5, 7, 4, k); a.hline(x, x + 6, y - 5, hi); a.rect(x + 2, y - 4, 3, 2, GLASS); a.px(x + 6, y - 2, K); return;
+      case 'holomag': // EOTech + lupa
+        GK.optic(a, 'holo', x + 6, y); a.rect(x, y - 1, 5, 1, K); a.rect(x, y - 4, 5, 3, k); a.hline(x, x + 4, y - 4, hi); a.vline(x + 4, y - 3, y - 2, '#3f6f8a'); return;
+      case 'acog': // ACOG: tubo que se ensancha delante, con fibra
+        a.rect(x + 1, y - 1, 6, 1, K); a.rect(x, y - 4, 6, 3, k); a.rect(x + 6, y - 5, 3, 4, k); a.hline(x, x + 5, y - 4, hi); a.hline(x + 2, x + 5, y - 5, '#4fa84a'); a.vline(x + 8, y - 4, y - 2, GLASS); return;
+      case 'c79': // Elcan: cuerpo cuadrado y robusto
+        a.rect(x + 1, y - 1, 7, 1, K); a.rect(x, y - 5, 9, 4, k); a.hline(x, x + 8, y - 5, hi); a.rect(x + 3, y - 6, 3, 1, k); a.vline(x + 8, y - 4, y - 2, GLASS); a.px(x, y - 4, K); return;
+      case 'susat': // SUSAT: grueso y corto, con ocular de goma
+        a.rect(x + 1, y - 1, 6, 1, K); a.rect(x, y - 5, 8, 4, k); a.hline(x + 1, x + 7, y - 5, hi); a.rect(x - 1, y - 4, 1, 3, '#111214'); a.vline(x + 7, y - 4, y - 2, GLASS); return;
+      case 'scope': case 'longscope': { // visor de francotirador con campanas y torreta
+        const L = type === 'longscope' ? 18 : 13;
+        a.rect(x + 3, y - 1, 2, 1, K); a.rect(x + L - 6, y - 1, 2, 1, K);
+        a.rect(x, y - 5, 3, 4, k); a.rect(x + 3, y - 4, L - 7, 2, k); a.rect(x + L - 4, y - 6, 4, 5, k);
+        a.hline(x + 3, x + L - 5, y - 4, hi); a.rect(x + (L >> 1) - 1, y - 6, 2, 2, K); a.vline(x + L - 1, y - 5, y - 2, GLASS); return;
+      }
+      case 'pso': // PSO-1 (Dragunov) con ocular de goma
+        a.rect(x + 3, y - 2, 6, 2, K); a.rect(x, y - 5, 2, 3, '#111214'); a.rect(x + 2, y - 5, 9, 2, k); a.rect(x + 11, y - 6, 3, 4, k);
+        a.hline(x + 2, x + 10, y - 5, hi); a.rect(x + 5, y - 7, 2, 2, K); a.vline(x + 13, y - 5, y - 3, GLASS); return;
+      case 'g36': // asa-mira integrada del G36
+        a.rect(x, y - 5, 13, 2, k); a.hline(x, x + 12, y - 5, hi); a.vline(x, y - 3, y - 1, k); a.vline(x + 12, y - 3, y - 1, k); a.vline(x + 1, y - 3, y - 1, K);
+        a.px(x + 12, y - 4, GLASS); a.rect(x + 9, y - 6, 3, 1, k); a.px(x + 11, y - 6, RED); return;
+      default: return;
+    }
+  },
+  // cargadores (x = borde trasero arriba, y = primera fila)
+  mag(a, type, x, y, n, p = GP.black) {
+    const curve = { stanag: [0, 0, 0, 1, 1, 1, 2, 2, 2], ak: [0, 0, 1, 1, 2, 3, 3, 4, 5], banana: [0, 1, 1, 2, 3, 4, 5, 6, 7], straight: [0, 0, 0, 0, 0, 1, 1, 1, 1], smg: [0, 0, 1, 1, 2, 2, 3, 3, 4], box: [0, 0, 0, 0, 0, 0, 0, 0, 0] }[type] || [];
+    const w = type === 'straight' ? 4 : type === 'box' ? 4 : 3;
+    for (let i = 0; i < n; i++) { const o = curve[Math.min(i, curve.length - 1)] || 0; a.hline(x + o, x + o + w - 1, y + i, p.b); a.px(x + o + w - 1, y + i, p.m); }
+    const o = curve[Math.min(n - 1, curve.length - 1)] || 0; a.hline(x + o, x + o + w - 1, y + n - 1, p.d);
+  },
+  // empuñadura de pistola inclinada hacia atrás
+  grip(a, x, y, len, p, w = 3) {
+    a.poly([[x, y], [x + w, y], [x + w - 2, y + len], [x - 2, y + len]], p.b);
+    a.line(x + w - 1, y, x + w - 3, y + len - 1, p.m); a.hline(x - 2, x + w - 3, y + len - 1, p.d);
+  },
+  // guardamonte y gatillo
+  guard(a, x0, x1, y, p) { a.hline(x0, x1, y + 2, p.d); a.vline(x1, y, y + 2, p.d); a.px(x0 + 1, y, p.m); a.px(x0 + 2, y + 1, '#8a9099'); },
+  // empuñadura delantera vertical
+  vgrip(a, x, y, len = 4, p = GP.black) { a.rect(x, y, 2, len, p.b); a.vline(x, y, y + len - 1, p.h); a.hline(x, x + 1, y + len - 1, p.d); },
+  // bípode plegado bajo el cañón
+  bipod(a, x, y, p = GP.black, open) {
+    if (open) { a.line(x, y, x - 3, y + 6, p.d); a.line(x + 1, y, x + 4, y + 6, p.d); a.px(x, y, p.m); }
+    else { a.hline(x, x + 7, y, p.d); a.hline(x + 1, x + 7, y + 1, p.m); }
+  },
+  // caja de láser / linterna bajo o sobre el raíl
+  laser(a, x, y, p = GP.tan) { a.rect(x, y, 5, 3, p.b); a.hline(x, x + 4, y, p.h); a.px(x + 4, y + 1, RED); a.px(x + 4, y + 2, '#3a3d42'); },
+  light(a, x, y, p = GP.black) { a.rect(x, y, 5, 2, p.b); a.vline(x + 5, y - 1, y + 2, p.m); a.vline(x + 5, y, y + 1, '#f4f0c8'); },
+  // vetas de madera en una zona
+  grain(a, x0, x1, y0, y1, p) { for (let y = y0; y <= y1; y += 2) for (let x = x0 + ((y * 3) % 4); x <= x1; x += 5) a.px(x, y, p.m); },
+  // culatas: el extremo en x=0, termina en X; y = fila de arriba del cajón
+  stock(a, type, X, y, F, P = GP.black) {
+    switch (type) {
+      case 'a2': a.poly([[0, y], [X, y + 1], [X, y + 3], [0, y + 6]], F.b); a.hline(0, X - 1, y, F.h); a.vline(0, y, y + 5, F.d); a.px(3, y + 4, F.m); break;
+      case 'a1': a.poly([[0, y], [X, y + 1], [X, y + 3], [0, y + 5]], F.b); a.hline(0, X - 1, y, F.h); a.vline(0, y, y + 4, F.d); break;
+      case 'm4': a.rect(6, y + 1, X - 6, 2, P.m); a.hline(6, X - 1, y + 1, P.h); a.poly([[0, y], [7, y], [7, y + 3], [2, y + 6], [0, y + 6]], F.b); a.hline(0, 6, y, F.h); a.vline(0, y, y + 5, F.d); a.px(3, y + 2, F.d); break;
+      case 'sop': a.rect(7, y + 1, X - 7, 2, P.m); a.hline(7, X - 1, y + 1, P.h); a.poly([[0, y - 1], [8, y - 1], [8, y + 3], [3, y + 6], [0, y + 6]], F.b); a.hline(0, 7, y - 1, F.h); a.vline(0, y - 1, y + 5, F.d); a.hline(2, 5, y + 1, F.m); break;
+      case 'side': a.poly([[0, y], [X, y], [X, y + 4], [2, y + 6], [0, y + 6]], F.b); a.hline(0, X - 1, y, F.h); a.vline(0, y, y + 5, F.d); a.rect(3, y + 2, 4, 2, [0, 0, 0, 0]); a.rect(2, y - 1, 5, 1, F.b); break;
+      case 'skel': a.hline(1, X - 1, y + 1, F.b); a.line(1, y + 5, X - 1, y + 3, F.b); a.rect(0, y, 2, 6, F.b); a.vline(0, y, y + 5, F.d); a.px(X - 1, y + 2, F.b); break;
+      case 'wire': a.hline(2, X - 1, y + 1, P.m); a.hline(2, X - 1, y + 3, P.m); a.rect(0, y, 2, 5, P.b); a.vline(0, y, y + 4, P.d); break;
+      case 'hk': a.poly([[0, y], [X, y + 1], [X, y + 3], [3, y + 6], [0, y + 6]], F.b); a.hline(0, X - 1, y, F.h); a.vline(0, y, y + 5, F.d); a.vline(1, y + 1, y + 4, F.m); a.px(X - 3, y + 3, F.d); break;
+      case 'wood': a.poly([[0, y], [X, y + 1], [X, y + 3], [Math.round(X * 0.45), y + 4], [0, y + 7]], F.b); a.hline(0, X - 1, y, F.h); a.vline(0, y, y + 6, '#2a1d12'); GK.grain(a, 1, X - 2, y + 1, y + 5, F); break;
+      case 'thumb': a.poly([[0, y - 1], [X, y], [X, y + 4], [X - 5, y + 4], [X - 9, y + 8], [0, y + 8]], F.b); a.line(0, y - 1, X - 1, y, F.h); a.vline(0, y - 1, y + 7, '#2a1d12'); a.poly([[4, y + 2], [X - 6, y + 2], [X - 9, y + 5], [4, y + 5]], [0, 0, 0, 0]); break;
+      default: break;
+    }
+  },
+};
+// borra en una sprite (para huecos)
+const CLR = [0, 0, 0, 0];
+
+/* ---------------- plantilla AR-15 / M16 / M4 ---------------- */
+// cuerpo: x desde X (fin de la culata); fila del cañón y = 6
+function arRifle(a, o) {
+  const P = o.p || GP.black, F = o.f || GP.black, X = o.X || 9, y = 4, B = 6;
+  GK.stock(a, o.stock || 'm4', X, y, F, P);
+  // cajón superior e inferior
+  GK.box(a, X, y, 12, 3, P); a.rect(X + 6, y + 1, 3, 1, P.d); a.px(X + 10, y + 1, P.m); a.px(X + 1, y, P.d);
+  GK.box(a, X + 1, y + 3, 9, 2, P);
+  if (o.top === 'carry' || o.top === 'carry2') GK.carry(a, X + 1, X + 9, y, P, o.top === 'carry2');
+  else GK.rail(a, X, X + 11, y - 1, P);
+  GK.grip(a, X + 3, y + 5, 5, o.gp || F);
+  a.hline(X + 4, X + 6, y + 6, P.d); a.px(X + 5, y + 5, '#9aa1a9');
+  GK.mag(a, o.mag || 'stanag', X + 7, y + 5, o.magN || 7, o.mp || P);
+  // guardamanos
+  const h0 = X + 12, L = o.hg || 8, h1 = h0 + L - 1;
+  switch (o.hgType || 'round') {
+    case 'round': GK.box(a, h0, y, L, 4, F); for (let x = h0 + 1; x < h1; x += 2) a.vline(x, y + 1, y + 2, F.d); break;
+    case 'tri': GK.box(a, h0, y, L, 4, F); for (let x = h0 + 2; x < h1; x += 3) a.px(x, y + 2, F.d); a.px(h1, y, CLR); a.px(h1, y + 3, CLR); break;
+    case 'quad': GK.box(a, h0, y, L, 4, F); GK.rail(a, h0, h1, y - 1, F); for (let x = h0 + 1; x < h1; x += 2) a.px(x, y + 2, F.d); break;
+    case 'mlok': GK.box(a, h0, y, L, 3, F); GK.rail(a, h0, h1, y - 1, F); for (let x = h0 + 2; x < h1 - 1; x += 4) a.hline(x, x + 1, y + 1, F.d); break;
+    case 'hk': GK.box(a, h0, y, L, 4, F); GK.rail(a, h0, h1, y - 1, F); a.px(h1, y + 3, CLR); for (let x = h0 + 2; x < h1; x += 3) a.hline(x, x + 1, y + 2, F.d); break;
+    default: break;
+  }
+  // cañón, punto de mira y bocacha
+  let x = h1 + 1;
+  if (o.fsb) { GK.fsb(a, x, B - 1, y - 4, P); x += 2; } else if (o.gasBlock !== false) { a.rect(x, B - 2, 2, 2, P.d); }
+  GK.barrel(a, x, x + (o.bl || 4) - 1, B - 1, P);
+  x += o.bl || 4;
+  const mz = GK.muzzle(a, o.muzzle || 'bird', x, B - 1, P, o.canLen);
+  if (o.irons) { a.rect(X + 1, y - 3, 2, 2, '#1d1e21'); if (!o.fsb) a.rect(h1 - 1, y - 3, 2, 2, '#1d1e21'); }
+  if (o.optic) GK.optic(a, o.optic, X + (o.opticX || 2), y - 1);
+  if (o.vg) GK.vgrip(a, h0 + (o.vgX || 3), y + 4, 4, o.vgP || F);
+  if (o.laser) GK.laser(a, h1 - 5, y - 4, o.laserP);
+  if (o.light) GK.light(a, h1 - 5, y + 4);
+  return { muzzle: [mz, B - 0.5], grip: [X + 2, y + 7], eject: [X + 7, y + 1], body: [0, y, mz, y + 4] };
+}
+
+/* ---------------- definición de un arma nueva ---------------- */
+// s: { name, sub, w, h, draw(a) -> {muzzle, grip, eject, body}, g: parámetros de disparo, mass, desc, twoHand, mods, optic }
+const V11_GUNS = [];
+function v11Gun(id, s) {
+  let geo = null;
+  const spr = drawGun(s.w, s.h, (a) => { geo = s.draw(a) || geo; });
+  const probe = spr(); // calcula la geometría al definirla
+  const G = geo || {};
+  const muzzle = s.muzzle || G.muzzle || [s.w, s.h / 2], grip = s.grip || G.grip || [4, s.h - 4], eject = s.eject || G.eject || [s.w / 2, 2];
+  const body = s.body || G.body || [0, 2, s.w, s.h - 4];
+  const shapes = s.shapes || [{ box: [body[0], body[1], body[2] - body[0], Math.max(2, body[3] - body[1])] }, { box: [grip[0] - 2, grip[1] - 2, 4, 5] }];
+  const g = Object.assign({ eject }, s.g);
+  const d = def(id, Object.assign({
+    name: s.name, cat: 'firearms', mat: s.mat || 'metal', mass: s.mass, desc: s.desc, twoHand: s.twoHand !== false && s.w > 26,
+    sprite: () => probe, muzzle, grip, eject, shapes, optic: s.optic || null, v11: true, sub: s.sub,
+  }, v11GunBehavior(g, s)));
+  V11_GUNS.push(d);
+  return d;
+}
+// disparo con el tono propio del arma
+function v11Shoot(it, g) {
+  if (!g.pitch) return shootGun(it, g);
+  const sp = Sound.play;
+  Sound.play = function (n, x, y, v, o) { return sp.call(this, n, x, y, v, Object.assign({}, o, { pitch: ((o && o.pitch) || 1) * g.pitch })); };
+  try { shootGun(it, g); } finally { Sound.play = sp; }
+}
+// comportamiento: semiautomática con cadencia real, ráfaga, cerrojo/corredera y accesorios de serie
+function v11GunBehavior(g, s) {
+  const base = gunBehavior(g);
+  const cycle = (it) => { if (g.cycle) it.vars.cycT = g.cycle === 'bolt' ? 0.45 : 0.3; };
+  return Object.assign({}, base, {
+    init(it) {
+      if (s.mods) { it.mods = Object.assign(it.mods || {}, s.mods); }
+      if (s.init) s.init(it);
+    },
+    activate(it) {
+      if (g.auto) return;
+      if ((it.vars.cool || 0) > 0 || (it.vars.burstN || 0) > 0) return;
+      if (g.burst) { it.vars.burstN = g.burst; it.vars.burstT = 0; return; }
+      v11Shoot(it, g); it.vars.cool = 1 / g.rate; cycle(it);
+    },
+    update(it, dt) {
+      it.vars.cool = Math.max(-0.05, (it.vars.cool || 0) - dt);
+      if (g.auto && it.using && it.vars.cool <= 0) { v11Shoot(it, g); it.vars.cool = Math.max(0, it.vars.cool + 1 / g.rate); }
+      if (it.vars.flashT > 0) it.vars.flashT -= dt;
+      if (it.vars.burstN > 0) {
+        it.vars.burstT -= dt;
+        if (it.vars.burstT <= 0) { v11Shoot(it, g); it.vars.burstN--; it.vars.burstT = 1 / g.rate; if (!it.vars.burstN) it.vars.cool = 0.32; }
+      }
+      if (it.vars.cycT > 0) { it.vars.cycT -= dt; if (it.vars.cycT <= 0) { const p = it.pos(); Sound.play('clunk', p.x, p.y, 0.45, { pitch: g.cycle === 'bolt' ? 1.3 : 1.05 }); } }
+      if (s.update) s.update(it, dt);
+    },
+    draw: s.drawFx,
+    light: s.lightFx,
+  });
+}
+
+/* =========================================================================
+   PISTOLAS
+   ========================================================================= */
+// corredera desde x0 (atrás), largo L, alto H, a partir de la fila y
+function pistolGun(a, o) {
+  const P = o.p || GP.black, F = o.f || P, GG = o.gp || F, x0 = o.x0 !== undefined ? o.x0 : 2, y = o.y !== undefined ? o.y : 1, L = o.L || 13, H = o.H || 3;
+  const x1 = x0 + L - 1, gy = y + H, gl = o.gl || 7;
+  // armazón bajo la corredera (y raíl)
+  a.rect(x0 + 2, gy, L - (o.longFrame ? 2 : 4), 1, F.b); a.hline(x0 + 2, x1 - (o.longFrame ? 0 : 2), gy, F.m);
+  if (o.rail) { a.rect(x1 - 6, gy, 5, 2, F.b); for (let x = x1 - 6; x < x1 - 1; x += 2) a.px(x, gy + 1, F.d); }
+  // empuñadura
+  const gw = o.gw || 5, sl = o.slant !== undefined ? o.slant : 2;
+  a.poly([[x0, gy], [x0 + gw, gy], [x0 + gw - sl, gy + gl], [x0 - sl, gy + gl]], GG.b);
+  a.line(x0, gy, x0 - sl, gy + gl - 1, GG.h); a.hline(x0 - sl, x0 + gw - sl - 1, gy + gl - 1, '#17181b');
+  if (o.wood) { a.px(x0 + 1, gy + 2, GG.d); a.px(x0 + 2, gy + 3, GG.h); a.px(x0, gy + 4, GG.d); a.px(x0 + 1, gy + 5, GG.h); }
+  else a.line(x0 + 2, gy + 2, x0 + 2 - sl, gy + gl - 2, GG.d);
+  // guardamonte y gatillo
+  const tg = x0 + gw;
+  if (o.squareGuard) { a.hline(tg, tg + 4, gy + 3, F.d); a.vline(tg + 4, gy + 1, gy + 3, F.d); }
+  else { a.hline(tg, tg + 3, gy + 3, F.d); a.vline(tg + 4, gy + 1, gy + 2, F.d); }
+  a.vline(tg + 1, gy + 1, gy + 2, '#8a9099');
+  // corredera
+  GK.box(a, x0, y, L, H, P);
+  for (let k = 0; k < (o.serr || 2); k++) a.vline(x0 + 1 + k * 2, y + 1, y + H - 1, P.d);
+  if (o.frontSerr) for (let k = 0; k < 2; k++) a.vline(x1 - 2 - k * 2, y + 1, y + H - 1, P.d);
+  a.px(x0 + 1, y - 1, '#1d1e21'); a.px(x1 - 1, y - 1, '#1d1e21');
+  a.rect(x0 + Math.round(L * 0.45), y + 1, 2, 1, P.d);
+  if (o.round) a.px(x1, y, CLR);
+  a.px(x1, y + 1, '#101113');
+  if (o.hammer) { a.rect(x0 - 2, y, 2, 2, F.d); a.px(x0 - 2, y, CLR); }
+  return { muzzle: [x1 + 1, y + Math.min(1.5, H / 2)], grip: [x0 + 2 - sl, gy + 3], eject: [x0 + Math.round(L * 0.45), y], body: [x0, y, x1 + 1, gy + 1] };
+}
+const DEBLACK = { b: '#484b52', h: '#757a83', d: '#26282c', m: '#3d4046' };
+v11Gun('deagle', {
+  name: 'Desert Eagle', sub: 'pistol', w: 21, h: 13, mass: 2, desc: 'Pistola enorme del calibre .50: cada disparo es un cañonazo, con un retroceso brutal.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 3, L: 17, H: 4, p: DEBLACK, f: DEBLACK, gp: GP.black, gl: 8, gw: 6, longFrame: true, hammer: true, serr: 3 });
+    a.hline(9, 19, 2, DEBLACK.m); a.px(19, 1, DEBLACK.d); a.rect(11, 6, 6, 1, DEBLACK.d);
+    return r;
+  },
+  g: { power: 2.8, rate: 2.2, recoil: 9, sound: 'shot_revolver', pitch: 0.9, spread: 0.01, closeGib: 0.7, tw: 1.3 },
+});
+v11Gun('deagle_gold', {
+  name: 'Desert Eagle dorada', sub: 'pistol', w: 21, h: 13, mass: 2, desc: 'La Desert Eagle chapada en oro: igual de bestia, mucho más llamativa.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 3, L: 17, H: 4, p: GP.gold, f: GP.gold, gp: GP.black, gl: 8, gw: 6, longFrame: true, hammer: true, serr: 3 });
+    a.hline(9, 19, 2, GP.gold.m); a.px(19, 1, GP.gold.d); a.rect(11, 6, 6, 1, GP.gold.d); a.px(6, 1, '#fff6c8'); a.px(14, 1, '#fff6c8');
+    return r;
+  },
+  g: { power: 2.8, rate: 2.2, recoil: 9, sound: 'shot_revolver', pitch: 0.9, spread: 0.01, closeGib: 0.7, tw: 1.3 },
+});
+const GLOCKF = { b: '#414449', h: '#5e626a', d: '#25272b', m: '#383b40' };
+v11Gun('glock17', {
+  name: 'Glock 17', sub: 'pistol', w: 17, h: 12, mass: 0.9, desc: 'La pistola de 9 mm más extendida: ligera, fiable y rápida de disparar.',
+  draw: (a) => pistolGun(a, { x0: 2, L: 14, H: 3, p: GP.black, f: GLOCKF, gp: GLOCKF, squareGuard: true, rail: true }),
+  g: { power: 1, rate: 9, recoil: 2.6, sound: 'shot_pistol', spread: 0.012 },
+});
+v11Gun('glock17_dot', {
+  name: 'Glock 17 con mira Red Dot', sub: 'pistol', w: 17, h: 14, mass: 0.95, optic: 'dot', desc: 'Glock 17 con un punto rojo sobre la corredera: se apunta mucho más rápido y preciso.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 2, y: 3, L: 14, H: 3, p: GP.black, f: GLOCKF, gp: GLOCKF, squareGuard: true, rail: true });
+    a.rect(4, 2, 6, 1, '#1d1e21'); a.poly([[4, 2], [6, 0], [10, 0], [10, 2]], '#2e3035'); a.vline(9, 0, 1, GLASS); a.px(5, 1, RED);
+    return r;
+  },
+  g: { power: 1, rate: 9, recoil: 2.6, sound: 'shot_pistol', spread: 0.007 },
+});
+v11Gun('p225', {
+  name: 'SIG Sauer P225', sub: 'pistol', w: 16, h: 12, mass: 0.85, desc: 'Pistola compacta de 9 mm, de corredera redondeada y muy precisa.',
+  draw: (a) => pistolGun(a, { x0: 2, L: 13, H: 3, p: GP.black, f: GP.black, gp: GP.black, round: true, hammer: true }),
+  g: { power: 1, rate: 7.5, recoil: 2.8, sound: 'shot_pistol', pitch: 1.04, spread: 0.011 },
+});
+v11Gun('p226', {
+  name: 'SIG Sauer P226', sub: 'pistol', w: 17, h: 12, mass: 0.95, desc: 'Pistola de servicio de 9 mm con raíl para accesorios. Precisa y robusta.',
+  draw: (a) => pistolGun(a, { x0: 2, L: 14, H: 3, p: GP.black, f: GP.black, gp: GP.black, round: true, rail: true, hammer: true, frontSerr: true }),
+  g: { power: 1.05, rate: 8, recoil: 2.8, sound: 'shot_pistol', spread: 0.011 },
+});
+v11Gun('p226_sd', {
+  name: 'SIG Sauer P226 con silenciador y mira', sub: 'pistol', w: 26, h: 14, mass: 1.25, optic: 'dot', mods: { silencer: true },
+  desc: 'P226 con silenciador y mira de punto rojo: casi no hace ruido y es muy precisa.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 2, y: 3, L: 14, H: 3, p: GP.black, f: GP.black, gp: GP.black, round: true, rail: true, hammer: true });
+    a.rect(4, 2, 6, 1, '#1d1e21'); a.poly([[4, 2], [6, 0], [10, 0], [10, 2]], '#2e3035'); a.vline(9, 0, 1, GLASS);
+    const e = GK.muzzle(a, 'can', 16, 4, GP.black, 10);
+    r.muzzle = [e, 4.5]; r.body[2] = e;
+    return r;
+  },
+  g: { power: 0.95, rate: 8, recoil: 2.2, sound: 'shot_silenced', spread: 0.007, tracer: [200, 200, 200] },
+});
+v11Gun('m9', {
+  name: 'Beretta M9', sub: 'pistol', w: 18, h: 12, mass: 0.95, desc: 'La pistola reglamentaria del ejército de EE. UU.: corredera abierta por arriba y cargador de 15.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 2, L: 15, H: 3, p: GP.black, f: GP.black, gp: { b: '#26272a', h: '#3a3c40', d: '#121314', m: '#2c2d30' }, hammer: true, serr: 3 });
+    // corredera abierta: se ve el cañón
+    a.hline(8, 14, 1, '#9aa1a9'); a.hline(8, 14, 2, '#6c737b'); a.px(16, 1, CLR); a.px(16, 3, DEBLACK.d);
+    return r;
+  },
+  g: { power: 1, rate: 8, recoil: 2.8, sound: 'shot_pistol', pitch: 0.97, spread: 0.011 },
+});
+v11Gun('m1911', {
+  name: 'M1911', sub: 'pistol', w: 17, h: 12, mass: 1.1, desc: 'La clásica del calibre .45: más lenta de disparar, pero cada bala pega fuerte.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 3, L: 13, H: 3, p: GP.blued, f: GP.blued, gp: GP.walnut, wood: true, gl: 7, gw: 4, hammer: true, serr: 3 });
+    a.px(1, 4, GP.blued.b); a.px(2, 4, GP.blued.b); // seguro de empuñadura
+    return r;
+  },
+  g: { power: 1.3, rate: 6, recoil: 4, sound: 'shot_pistol', pitch: 0.88, spread: 0.011 },
+});
+v11Gun('fiveseven', {
+  name: 'FN Five-seveN', sub: 'pistol', w: 18, h: 13, mass: 0.75, desc: 'Pistola ligera del calibre 5,7 mm: balas rápidas que atraviesan mejor y poco retroceso.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 2, L: 15, H: 3, p: GP.black, f: GLOCKF, gp: GLOCKF, gl: 8, rail: true, squareGuard: true });
+    a.px(16, 1, CLR); a.px(15, 1, GP.black.m);
+    return r;
+  },
+  g: { power: 1.15, rate: 9, recoil: 2.1, sound: 'shot_pistol', pitch: 1.12, spread: 0.011, tw: 1.4 },
+});
+v11Gun('usp', {
+  name: 'H&K USP', sub: 'pistol', w: 17, h: 12, mass: 0.9, desc: 'Pistola alemana del calibre .45: robusta, precisa y con raíl bajo el cañón.',
+  draw: (a) => {
+    const r = pistolGun(a, { x0: 2, L: 14, H: 3, p: GP.black, f: GLOCKF, gp: GLOCKF, rail: true, hammer: true, squareGuard: true });
+    a.px(15, 1, CLR); a.line(13, 1, 14, 2, GP.black.h);
+    return r;
+  },
+  g: { power: 1.15, rate: 7.5, recoil: 3.2, sound: 'shot_pistol', pitch: 0.93, spread: 0.011 },
+});
+
+/* =========================================================================
+   FAMILIA AR-15 / M16 / M4
+   ========================================================================= */
+const AR_AUTO = (o) => Object.assign({ auto: true, sound: 'shot_rifle', spread: 0.012, power: 1.45, rate: 12, recoil: 2.9 }, o);
+v11Gun('ar15', {
+  name: 'AR-15', sub: 'rifle', w: 42, h: 16, mass: 3, desc: 'Fusil semiautomático civil del calibre 5,56: un disparo por pulsación, muy preciso.',
+  draw: (a) => arRifle(a, { stock: 'a2', X: 10, hgType: 'mlok', hg: 13, bl: 4, muzzle: 'brake', canLen: 3, irons: true }),
+  g: { power: 1.5, rate: 6, recoil: 3, sound: 'shot_rifle', spread: 0.009 },
+});
+v11Gun('m4a1', {
+  name: 'M4A1', sub: 'rifle', w: 37, h: 16, mass: 3.1, desc: 'Carabina automática del ejército de EE. UU.: culata telescópica y raíles. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, hgType: 'quad', hg: 7, fsb: true, bl: 5, muzzle: 'bird', irons: true }),
+  g: AR_AUTO({}),
+});
+v11Gun('m4a1_holosun', {
+  name: 'M4A1 Holosun', sub: 'rifle', w: 37, h: 16, mass: 3.2, optic: 'dot', desc: 'M4A1 con mira réflex Holosun: apunta más rápido y con más precisión. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, hgType: 'quad', hg: 7, fsb: true, bl: 5, muzzle: 'bird', optic: 'holosun', opticX: 4 }),
+  g: AR_AUTO({ spread: 0.008 }),
+});
+v11Gun('m4a1_acog', {
+  name: 'M4A1 ACOG', sub: 'rifle', w: 37, h: 16, mass: 3.3, optic: 'acog', desc: 'M4A1 con visor ACOG de 4 aumentos: muy precisa a distancia. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, hgType: 'quad', hg: 7, fsb: true, bl: 5, muzzle: 'bird', optic: 'acog', opticX: 2 }),
+  g: AR_AUTO({ spread: 0.005 }),
+});
+v11Gun('m4a1_cqbr', {
+  name: 'M4A1 CQBR', sub: 'rifle', w: 33, h: 16, mass: 3, optic: 'dot', desc: 'M4A1 de cañón corto para combate en interiores, con empuñadura vertical y punto rojo. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, hgType: 'quad', hg: 8, fsb: false, bl: 1, muzzle: 'bird', optic: 'dot', opticX: 3, vg: true, vgX: 4 }),
+  g: AR_AUTO({ power: 1.35, rate: 13, spread: 0.013, recoil: 2.6 }),
+});
+const M4TAC_LASER = {
+  draw(it, ctx) {
+    const p = it.worldPt(31.5, 1.5), mz = it.muzzle(), ign = it.holder;
+    const h = rayFirst(p[0], p[1], p[0] + mz.dx * 40, p[1] + mz.dy * 40, (f) => { const o = thingOf(f); return o !== it && o !== ign && !f.isSensor(); });
+    const ex = h ? h.x : p[0] + mz.dx * 40, ey = h ? h.y : p[1] + mz.dy * 40;
+    ctx.strokeStyle = 'rgba(255,40,30,0.5)'; ctx.lineWidth = PX * 0.4; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.fillStyle = '#ff4a3a'; ctx.fillRect(ex - PX, ey - PX, PX * 2, PX * 2);
+  },
+  light(it) { const p = it.worldPt(33, 9), mz = it.muzzle(); return [{ x: p[0], y: p[1], r: 12, col: [255, 245, 220], intensity: 0.9, cone: 0.32, dx: mz.dx, dy: mz.dy }]; },
+};
+v11Gun('m4a1_tac', {
+  name: 'M4A1 Over Tactical', sub: 'rifle', w: 46, h: 16, mass: 4.2, optic: 'holo', mods: { silencer: true, laser: true, light: true },
+  desc: 'M4A1 cargada de accesorios: silenciador, mira holográfica con lupa, láser, linterna y empuñadura. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'sop', X: 9, f: GP.tan, gp: GP.tan, hgType: 'mlok', hg: 11, fsb: false, bl: 2, muzzle: 'can', canLen: 10, optic: 'holomag', opticX: 0, vg: true, vgX: 5, vgP: GP.tan, laser: true, laserP: GP.tan, light: true }),
+  g: AR_AUTO({ power: 1.4, spread: 0.006, sound: 'shot_silenced', tracer: [200, 200, 200] }),
+  drawFx: M4TAC_LASER.draw, lightFx: M4TAC_LASER.light,
+});
+v11Gun('m16a1', {
+  name: 'M16A1', sub: 'rifle', w: 44, h: 16, mass: 3.1, desc: 'El fusil de la guerra de Vietnam: guardamanos triangular, asa de transporte y apagallamas de tres puntas. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'a1', X: 10, top: 'carry', hgType: 'tri', hg: 11, fsb: true, bl: 6, muzzle: 'duck', magN: 6 }),
+  g: AR_AUTO({ power: 1.5, rate: 12, recoil: 3.2, spread: 0.011 }),
+});
+v11Gun('m16a2', {
+  name: 'M16A2', sub: 'rifle', w: 44, h: 17, mass: 3.4, desc: 'Fusil de asalto que dispara en ráfagas de tres balas (pulsa F). Guardamanos redondo y asa de transporte.',
+  draw: (a) => arRifle(a, { stock: 'a2', X: 10, top: 'carry2', hgType: 'round', hg: 11, fsb: true, bl: 6, muzzle: 'bird' }),
+  g: { power: 1.55, rate: 13, burst: 3, recoil: 3, sound: 'shot_rifle', spread: 0.01 },
+});
+v11Gun('hk416', {
+  name: 'H&K HK416', sub: 'rifle', w: 38, h: 16, mass: 3.5, desc: 'Fusil de asalto alemán de pistón: fiable y preciso, con guardamanos de raíles. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'sop', X: 9, hgType: 'hk', hg: 10, fsb: false, gasBlock: false, bl: 3, muzzle: 'bird', irons: true }),
+  g: AR_AUTO({ power: 1.5, rate: 12.5, recoil: 2.8, spread: 0.011 }),
+});
+v11Gun('hk416_eotech', {
+  name: 'H&K HK416 con EOTECH', sub: 'rifle', w: 38, h: 16, mass: 3.8, optic: 'holo', desc: 'HK416 con mira holográfica EOTECH: apuntado rápido y muy preciso. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'sop', X: 9, hgType: 'hk', hg: 10, fsb: false, gasBlock: false, bl: 3, muzzle: 'bird', optic: 'holo', opticX: 3 }),
+  g: AR_AUTO({ power: 1.5, rate: 12.5, recoil: 2.8, spread: 0.007 }),
+});
+v11Gun('c7a2', {
+  name: 'C7A2', sub: 'rifle', w: 44, h: 16, mass: 3.9, desc: 'Fusil de asalto canadiense con muebles verdes y culata telescópica. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, f: GP.green, gp: GP.green, hgType: 'round', hg: 11, fsb: true, bl: 6, muzzle: 'bird', irons: true }),
+  g: AR_AUTO({ power: 1.5, rate: 12, recoil: 3, spread: 0.011 }),
+});
+v11Gun('c7a2_c79', {
+  name: 'C7A2 con mira C79', sub: 'rifle', w: 44, h: 17, mass: 4.3, optic: 'c79', desc: 'C7A2 con el visor óptico C79 de 3,4 aumentos: muy preciso a media distancia. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, f: GP.green, gp: GP.green, hgType: 'round', hg: 11, fsb: true, bl: 6, muzzle: 'bird', optic: 'c79', opticX: 2 }),
+  g: AR_AUTO({ power: 1.5, rate: 12, recoil: 3, spread: 0.006 }),
+});
+v11Gun('wac47', {
+  name: 'M4-WAC-47', sub: 'rifle', w: 40, h: 17, mass: 3.4, desc: 'Fusil ucraniano basado en el AR-15 que usa el calibre 7,62 y los cargadores curvos del AK. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, hgType: 'mlok', hg: 11, fsb: false, bl: 4, muzzle: 'brake', canLen: 4, mag: 'ak', magN: 8, irons: true }),
+  g: AR_AUTO({ power: 1.8, rate: 11.5, recoil: 3.8, spread: 0.012 }),
+});
+
+/* =========================================================================
+   OTROS FUSILES DE ASALTO
+   ========================================================================= */
+// FN SCAR: cajón superior de una pieza con raíl a todo lo largo y culata plegable lateral
+function scarRifle(a, o) {
+  const T = o.p || GP.tan, K = GP.black, y = 4, X = 10, L = o.L || 22;
+  GK.stock(a, 'side', X, y, T, K);
+  GK.box(a, X, y, L, 3, T); GK.rail(a, X, X + L - 1, y - 1, T);
+  a.rect(X + 6, y + 1, 3, 1, T.d); a.px(X + 11, y + 1, K.b);
+  for (let x = X + 14; x < X + L - 1; x += 3) a.px(x, y + 2, T.d);
+  GK.box(a, X + 1, y + 3, 9, 2, T);
+  GK.grip(a, X + 3, y + 5, 5, o.gp || K);
+  a.hline(X + 4, X + 6, y + 6, K.d); a.px(X + 5, y + 5, '#9aa1a9');
+  GK.mag(a, o.mag || 'stanag', X + 7, y + 5, o.magN || 7, K);
+  let x = X + L; GK.barrel(a, x, x + (o.bl || 3) - 1, y + 1, K); x += o.bl || 3;
+  const mz = GK.muzzle(a, o.muzzle || 'bird', x, y + 1, K, o.canLen);
+  if (!o.optic) { a.rect(X + 1, y - 3, 2, 2, '#1d1e21'); a.rect(X + L - 2, y - 3, 2, 2, '#1d1e21'); }
+  else GK.optic(a, o.optic, X + (o.opticX || 3), y - 1);
+  if (o.vg) GK.vgrip(a, X + L - 7, y + 3, 4, K);
+  return { muzzle: [mz, y + 1.5], grip: [X + 2, y + 7], eject: [X + 7, y + 1], body: [0, y, mz, y + 4] };
+}
+v11Gun('scar_l', {
+  name: 'FN SCAR-L', sub: 'rifle', w: 39, h: 16, mass: 3.3, desc: 'Fusil de asalto modular del calibre 5,56, color arena, con raíl a lo largo de todo el cajón. Mantén F.',
+  draw: (a) => scarRifle(a, { L: 22, bl: 4 }),
+  g: AR_AUTO({ power: 1.5, rate: 10, recoil: 3, spread: 0.011 }),
+});
+v11Gun('scar_h', {
+  name: 'FN SCAR-H', sub: 'rifle', w: 41, h: 16, mass: 3.6, desc: 'La versión pesada del SCAR, del calibre 7,62: más potencia y más retroceso. Cargador recto de 20. Mantén F.',
+  draw: (a) => scarRifle(a, { L: 23, bl: 5, muzzle: 'brake', canLen: 3, mag: 'straight', magN: 6 }),
+  g: AR_AUTO({ power: 2.1, rate: 9, recoil: 4.4, spread: 0.012 }),
+});
+v11Gun('scar_h_sof', {
+  name: 'FN SCAR-H (Fuerzas Especiales)', sub: 'rifle', w: 44, h: 16, mass: 4.2, optic: 'holo', mods: { silencer: true },
+  desc: 'SCAR-H negro de fuerzas especiales: silenciador, mira holográfica y empuñadura vertical. Mantén F.',
+  draw: (a) => scarRifle(a, { p: GP.black, L: 23, bl: 2, muzzle: 'can', canLen: 9, mag: 'straight', magN: 6, optic: 'holo', opticX: 4, vg: true }),
+  g: AR_AUTO({ power: 2, rate: 9, recoil: 4, spread: 0.007, sound: 'shot_silenced', tracer: [200, 200, 200] }),
+});
+v11Gun('kn60', {
+  name: 'KN-60', sub: 'rifle', w: 41, h: 17, mass: 3.5, optic: 'dot', desc: 'Fusil de asalto moderno de cajón anguloso y cargador curvo, con punto rojo y freno de boca. Mantén F.',
+  draw: (a) => {
+    const r = arRifle(a, { stock: 'sop', X: 9, f: GP.tan, gp: GP.black, hgType: 'mlok', hg: 13, gasBlock: false, bl: 3, muzzle: 'brake', canLen: 4, mag: 'ak', magN: 8, optic: 'dot', opticX: 3 });
+    a.hline(9, 20, 6, GP.tan.m); a.px(33, 6, CLR); a.px(33, 5, GP.tan.d); a.px(32, 6, CLR);
+    return r;
+  },
+  g: AR_AUTO({ power: 1.7, rate: 11, recoil: 3.5, spread: 0.009 }),
+});
+v11Gun('qbz191', {
+  name: 'QBZ-191', sub: 'rifle', w: 40, h: 17, mass: 3.4, optic: 'acog', desc: 'El nuevo fusil de asalto chino, de diseño convencional, con visor de aumentos. Mantén F.',
+  draw: (a) => arRifle(a, { stock: 'm4', X: 9, p: GP.od, f: GP.od, gp: GP.od, mp: GP.black, hgType: 'mlok', hg: 12, gasBlock: false, bl: 4, muzzle: 'bird', optic: 'acog', opticX: 2 }),
+  g: AR_AUTO({ power: 1.55, rate: 12, recoil: 3, spread: 0.007 }),
+});
+// fusiles HK de cierre por rodillos (G3, MP5): cajón delgado, tubo de carga sobre el guardamanos y alza de tambor
+const G3F = { b: '#3c4139', h: '#5a6055', d: '#232720', m: '#474c43' };
+v11Gun('g3', {
+  name: 'H&K G3', sub: 'rifle', w: 47, h: 16, mass: 4.4, desc: 'Fusil de batalla alemán del calibre 7,62: largo, potente y con cargador recto. Mantén F.',
+  draw: (a) => {
+    const y = 4, P = GP.steel;
+    GK.stock(a, 'hk', 11, y, G3F);
+    GK.box(a, 11, y, 16, 3, P); a.rect(18, y + 1, 3, 1, P.d);
+    a.circle(13.5, y - 1.5, 1.6, P.b); a.px(13, y - 2, P.h); a.rect(12, y - 1, 4, 1, P.m);
+    GK.box(a, 12, y + 3, 9, 2, G3F);
+    GK.grip(a, 14, y + 5, 5, G3F); a.hline(15, 17, y + 6, P.d); a.px(16, y + 5, '#9aa1a9');
+    GK.mag(a, 'straight', 19, y + 5, 7, P);
+    a.hline(23, 35, y - 1, P.m); a.px(35, y - 1, P.d);
+    GK.box(a, 27, y, 9, 4, G3F); for (let x = 28; x < 35; x += 2) a.px(x, y + 2, G3F.d);
+    a.ring(35.5, y - 2.5, 1.6, 0.8, P.d); a.vline(35, y - 2, y - 1, P.d);
+    GK.barrel(a, 36, 43, y + 1, P);
+    const mz = GK.muzzle(a, 'hk', 44, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [13, y + 7], eject: [19, y + 1], body: [0, y, mz, y + 4] };
+  },
+  g: AR_AUTO({ power: 2.2, rate: 9.5, recoil: 4.6, spread: 0.011, pitch: 0.92 }),
+});
+const G36P = { b: '#3d4139', h: '#5b6156', d: '#24271f', m: '#484c43' };
+function g36Rifle(a, o) {
+  const y = o.y || 4, P = G36P, L = o.hg || 6;
+  GK.stock(a, 'skel', 8, y, P);
+  GK.box(a, 8, y, 14, 4, P); a.rect(15, y + 1, 3, 1, P.d); a.vline(8, y, y + 3, P.d);
+  if (o.optic) GK.optic(a, 'g36', 9, y);
+  else { a.hline(9, 20, y - 3, P.b); GK.rail(a, 9, 20, y - 3, P); a.vline(9, y - 2, y - 1, P.b); a.vline(20, y - 2, y - 1, P.b); }
+  GK.grip(a, 11, y + 4, 5, P); a.hline(12, 14, y + 5, P.d); a.px(13, y + 4, '#9aa1a9');
+  GK.mag(a, 'stanag', 15, y + 4, 7, GP.smoke);
+  GK.box(a, 22, y, L, 4, P); for (let x = 23; x < 22 + L - 1; x += 2) a.px(x, y + 2, P.d);
+  let x = 22 + L; a.rect(x, y - 2, 1, 2, P.d);
+  GK.barrel(a, x, x + (o.bl || 2) - 1, y + 1, GP.black); x += o.bl || 2;
+  const mz = GK.muzzle(a, 'bird', x, y + 1, GP.black);
+  return { muzzle: [mz, y + 1.5], grip: [10, y + 6], eject: [16, y + 1], body: [0, y, mz, y + 4] };
+}
+v11Gun('g36c', {
+  name: 'H&K G36C', sub: 'rifle', w: 33, h: 16, mass: 2.8, desc: 'Versión compacta del G36: cañón corto, culata plegable y cargador translúcido. Mantén F.',
+  draw: (a) => g36Rifle(a, { hg: 6, bl: 2 }),
+  g: AR_AUTO({ power: 1.35, rate: 12.5, recoil: 2.7, spread: 0.014 }),
+});
+v11Gun('g36k', {
+  name: 'H&K G36K', sub: 'rifle', w: 38, h: 17, mass: 3.3, optic: 'g36', desc: 'G36 corto con el asa de transporte con mira óptica integrada. Mantén F.',
+  draw: (a) => g36Rifle(a, { y: 5, hg: 9, bl: 4, optic: true }),
+  g: AR_AUTO({ power: 1.45, rate: 12.5, recoil: 2.8, spread: 0.008 }),
+});
+v11Gun('galil', {
+  name: 'IMI Galil', sub: 'rifle', w: 44, h: 16, mass: 4, desc: 'Fusil de asalto israelí de la familia del AK: guardamanos de madera, asa y culata plegable. Mantén F.',
+  draw: (a) => {
+    const y = 4, P = GP.steel;
+    GK.stock(a, 'skel', 10, y, P);
+    GK.box(a, 10, y, 16, 4, P); a.hline(11, 24, y, P.h); a.rect(17, y + 1, 4, 1, P.d); a.px(24, y - 1, P.b); a.px(25, y - 1, P.d); a.rect(22, y - 2, 2, 2, P.d);
+    GK.grip(a, 13, y + 4, 5, GP.black); a.hline(14, 17, y + 5, P.d); a.px(15, y + 4, '#9aa1a9');
+    GK.mag(a, 'ak', 18, y + 4, 8, P);
+    GK.box(a, 26, y, 8, 4, GP.wood); for (let x = 27; x < 33; x += 2) a.px(x, y + 2, GP.wood.d);
+    a.hline(27, 32, y - 3, P.b); a.vline(27, y - 2, y - 1, P.b); a.vline(32, y - 2, y - 1, P.b);
+    GK.bipod(a, 27, y + 4, GP.black);
+    GK.barrel(a, 34, 40, y + 1, P); a.rect(34, y - 1, 2, 2, P.d); a.vline(39, y - 3, y, P.d);
+    const mz = GK.muzzle(a, 'slant', 41, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [12, y + 6], eject: [18, y + 1], body: [0, y, mz, y + 4] };
+  },
+  g: AR_AUTO({ power: 1.5, rate: 11, recoil: 3.3, spread: 0.012, pitch: 0.97 }),
+});
+v11Gun('fal', {
+  name: 'FN FAL', sub: 'rifle', w: 48, h: 16, mass: 4.3, desc: 'El «brazo derecho del mundo libre»: fusil de batalla del calibre 7,62 con culata de madera. Mantén F.',
+  draw: (a) => {
+    const y = 4, P = GP.steel, W = GP.wood;
+    GK.stock(a, 'wood', 12, y, W);
+    GK.box(a, 12, y, 15, 4, P); a.rect(19, y + 1, 4, 1, P.d); a.rect(13, y - 2, 2, 2, P.d);
+    a.hline(16, 23, y - 2, P.m); a.vline(16, y - 1, y - 1, P.m); a.vline(23, y - 1, y - 1, P.m);
+    GK.grip(a, 15, y + 4, 5, W); a.hline(16, 19, y + 5, P.d); a.px(17, y + 4, '#9aa1a9');
+    GK.mag(a, 'straight', 20, y + 4, 7, P);
+    GK.box(a, 27, y, 9, 4, W); for (let x = 28; x < 35; x += 2) a.px(x, y + 1, W.d);
+    GK.barrel(a, 36, 44, y + 1, P); a.vline(42, y - 2, y, P.d); a.rect(36, y - 1, 2, 2, P.d);
+    const mz = GK.muzzle(a, 'brake', 45, y + 1, P, 3);
+    return { muzzle: [mz, y + 1.5], grip: [14, y + 6], eject: [20, y + 1], body: [0, y, mz, y + 4] };
+  },
+  g: AR_AUTO({ power: 2.2, rate: 11, recoil: 4.8, spread: 0.012, pitch: 0.9 }),
+});
+v11Gun('fal_para', {
+  name: 'FN FAL Paratrooper 50.63', sub: 'rifle', w: 43, h: 16, mass: 3.8, desc: 'FAL de paracaidista: culata plegable de tubo y cañón más corto. Mantén F.',
+  draw: (a) => {
+    const y = 4, P = GP.steel, K = GP.black;
+    GK.stock(a, 'skel', 11, y, P);
+    GK.box(a, 11, y, 15, 4, P); a.rect(18, y + 1, 4, 1, P.d); a.rect(12, y - 2, 2, 2, P.d);
+    GK.grip(a, 14, y + 4, 5, K); a.hline(15, 18, y + 5, P.d); a.px(16, y + 4, '#9aa1a9');
+    GK.mag(a, 'straight', 19, y + 4, 7, P);
+    GK.box(a, 26, y, 8, 4, K); for (let x = 27; x < 33; x += 2) a.px(x, y + 1, K.d);
+    GK.barrel(a, 34, 39, y + 1, P); a.vline(38, y - 2, y, P.d); a.rect(34, y - 1, 2, 2, P.d);
+    const mz = GK.muzzle(a, 'brake', 40, y + 1, P, 3);
+    return { muzzle: [mz, y + 1.5], grip: [13, y + 6], eject: [19, y + 1], body: [0, y, mz, y + 4] };
+  },
+  g: AR_AUTO({ power: 2.1, rate: 11, recoil: 5, spread: 0.014, pitch: 0.9 }),
+});
+
+/* ---------------- bullpups (el cargador detrás de la empuñadura) ---------------- */
+v11Gun('famas', {
+  name: 'FAMAS', sub: 'rifle', w: 35, h: 15, mass: 3.6, desc: 'El «clarín» francés: bullpup con asa de transporte larga y una cadencia altísima. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    a.poly([[0, y], [24, y], [24, y + 4], [18, y + 5], [1, y + 5], [0, y + 4]], P.b); a.hline(0, 23, y, P.h); a.vline(0, y, y + 4, P.d); a.hline(2, 8, y + 2, P.m);
+    a.hline(5, 23, y - 4, P.b); a.hline(6, 22, y - 4, P.h); a.vline(5, y - 3, y - 1, P.b); a.vline(23, y - 3, y - 1, P.b); a.rect(12, y - 2, 1, 2, P.d); a.px(23, y - 5, P.d);
+    GK.grip(a, 15, y + 5, 5, P); a.hline(17, 21, y + 7, P.d); a.vline(21, y + 5, y + 7, P.d); a.px(17, y + 5, '#9aa1a9');
+    GK.mag(a, 'stanag', 6, y + 5, 6, P);
+    a.poly([[24, y], [29, y], [29, y + 3], [24, y + 5]], P.b); a.hline(24, 28, y, P.h); a.hline(20, 28, y + 3, P.d);
+    GK.barrel(a, 29, 31, y + 1, P);
+    const mz = GK.muzzle(a, 'cone', 32, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [14, y + 7], eject: [9, y + 1], body: [0, y, mz, y + 5] };
+  },
+  g: AR_AUTO({ power: 1.4, rate: 15, recoil: 3, spread: 0.012, pitch: 1.05 }),
+});
+v11Gun('aug_a3', {
+  name: 'Steyr AUG A3', sub: 'rifle', w: 36, h: 16, mass: 3.6, optic: 'dot', desc: 'Bullpup austriaco de polímero verde con raíl, empuñadura delantera y cargador translúcido. Mantén F.',
+  draw: (a) => {
+    const G = GP.green, S = GP.steel, y = 5;
+    a.poly([[0, y], [2, y - 1], [16, y - 1], [22, y], [22, y + 3], [16, y + 4], [14, y + 6], [4, y + 6], [0, y + 4]], G.b); a.hline(2, 15, y - 1, G.h); a.vline(0, y, y + 4, G.d);
+    GK.box(a, 14, y - 1, 13, 3, S); GK.rail(a, 12, 26, y - 2, S);
+    a.poly([[13, y + 6], [23, y + 6], [23, y + 3]], G.b); a.hline(13, 23, y + 7, G.d); a.rect(15, y + 4, 6, 2, CLR);
+    GK.vgrip(a, 22, y + 3, 5, G);
+    GK.grip(a, 17, y + 4, 4, G); a.px(19, y + 4, '#9aa1a9');
+    GK.mag(a, 'stanag', 5, y + 6, 6, GP.smoke);
+    GK.barrel(a, 27, 32, y, S);
+    const mz = GK.muzzle(a, 'bird', 33, y, S);
+    GK.optic(a, 'dot', 15, y - 2);
+    return { muzzle: [mz, y + 0.5], grip: [16, y + 6], eject: [10, y + 1], body: [0, y - 1, mz, y + 4] };
+  },
+  g: AR_AUTO({ power: 1.5, rate: 11.5, recoil: 2.8, spread: 0.008 }),
+});
+v11Gun('f2000', {
+  name: 'FN F2000', sub: 'rifle', w: 32, h: 15, mass: 3.6, optic: 'dot', desc: 'Bullpup belga de líneas suaves con mira óptica integrada. Muy compacto. Mantén F.',
+  draw: (a) => {
+    const P = { b: '#454a42', h: '#636959', d: '#2b2e28', m: '#50554c' }, y = 4;
+    a.poly([[0, y + 2], [2, y], [6, y - 1], [21, y - 1], [27, y], [30, y + 2], [30, y + 4], [27, y + 6], [19, y + 7], [17, y + 9], [12, y + 9], [10, y + 7], [5, y + 7], [1, y + 6], [0, y + 4]], P.b);
+    a.hline(5, 21, y - 1, P.h); a.vline(0, y + 2, y + 4, P.d);
+    a.rect(17, y + 3, 7, 2, CLR); a.hline(17, 24, y + 5, P.d);
+    a.rect(12, y - 3, 8, 2, '#2e3035'); a.hline(12, 19, y - 3, '#4c5058'); a.px(19, y - 2, GLASS);
+    a.rect(4, y + 3, 5, 2, P.m);
+    const mz = GK.muzzle(a, 'bird', 30, y + 2, GP.black);
+    return { muzzle: [mz, y + 2.5], grip: [14, y + 7], eject: [8, y + 1], body: [0, y, mz, y + 6] };
+  },
+  g: AR_AUTO({ power: 1.45, rate: 14, recoil: 2.6, spread: 0.008, pitch: 1.04 }),
+});
+v11Gun('tavor', {
+  name: 'IWI Tavor TAR-21', sub: 'rifle', w: 32, h: 16, mass: 3.3, optic: 'dot', desc: 'Bullpup israelí con un gran guardamonte que protege toda la mano y punto rojo. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 5;
+    a.poly([[0, y - 1], [24, y - 1], [26, y + 1], [26, y + 3], [24, y + 5], [21, y + 8], [15, y + 8], [13, y + 5], [9, y + 5], [9, y + 6], [3, y + 6], [0, y + 4]], P.b);
+    a.hline(0, 23, y - 1, P.h); a.vline(0, y - 1, y + 4, P.d); a.rect(16, y + 4, 4, 2, CLR); a.px(17, y + 4, '#9aa1a9');
+    GK.rail(a, 6, 24, y - 2, P); GK.optic(a, 'dot', 10, y - 2);
+    GK.mag(a, 'stanag', 4, y + 6, 6, P);
+    GK.barrel(a, 26, 28, y + 1, P);
+    const mz = GK.muzzle(a, 'bird', 29, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [15, y + 6], eject: [8, y + 1], body: [0, y - 1, mz, y + 5] };
+  },
+  g: AR_AUTO({ power: 1.45, rate: 13, recoil: 2.8, spread: 0.008 }),
+});
+v11Gun('x95', {
+  name: 'IWI X95', sub: 'rifle', w: 28, h: 16, mass: 3, optic: 'dot', desc: 'Tavor de nueva generación, más corto y con guardamonte normal. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 5;
+    a.poly([[0, y - 1], [21, y - 1], [22, y + 3], [20, y + 4], [9, y + 5], [3, y + 6], [0, y + 4]], P.b);
+    a.hline(0, 20, y - 1, P.h); a.vline(0, y - 1, y + 4, P.d);
+    GK.rail(a, 5, 21, y - 2, P); GK.optic(a, 'dot', 9, y - 2);
+    GK.grip(a, 15, y + 4, 5, P); a.hline(16, 19, y + 5, P.d); a.px(17, y + 4, '#9aa1a9');
+    GK.mag(a, 'stanag', 4, y + 5, 6, P);
+    GK.barrel(a, 22, 24, y + 1, P);
+    const mz = GK.muzzle(a, 'bird', 25, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [14, y + 6], eject: [8, y + 1], body: [0, y - 1, mz, y + 5] };
+  },
+  g: AR_AUTO({ power: 1.4, rate: 13.5, recoil: 2.7, spread: 0.009 }),
+});
+v11Gun('sa80', {
+  name: 'SA80 (L85)', sub: 'rifle', w: 36, h: 16, mass: 4.9, optic: 'susat', desc: 'El bullpup británico con su visor SUSAT de 4 aumentos: pesado pero muy preciso. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 5;
+    a.poly([[0, y - 1], [23, y - 1], [23, y + 4], [9, y + 5], [3, y + 5], [0, y + 4]], P.b); a.hline(0, 22, y - 1, P.h); a.vline(0, y - 1, y + 4, P.d); a.hline(11, 20, y + 1, P.d);
+    GK.optic(a, 'susat', 10, y - 1);
+    GK.grip(a, 17, y + 4, 5, P); a.hline(18, 21, y + 5, P.d); a.px(19, y + 4, '#9aa1a9');
+    GK.mag(a, 'stanag', 5, y + 5, 6, P);
+    GK.box(a, 23, y - 1, 8, 4, P); for (let x = 24; x < 30; x += 2) a.px(x, y + 1, P.d);
+    GK.barrel(a, 31, 32, y + 1, P);
+    const mz = GK.muzzle(a, 'bird', 33, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [16, y + 6], eject: [9, y + 1], body: [0, y - 1, mz, y + 4] };
+  },
+  g: AR_AUTO({ power: 1.5, rate: 11.5, recoil: 2.7, spread: 0.007 }),
+});
+v11Gun('qbz95', {
+  name: 'QBZ-95', sub: 'rifle', w: 35, h: 16, mass: 3.3, desc: 'Bullpup chino con su característica asa de transporte alta. Mantén F.',
+  draw: (a) => {
+    const P = { b: '#3f4436', h: '#5c6250', d: '#262920', m: '#4a4f40' }, y = 5;
+    a.poly([[0, y - 1], [24, y - 1], [24, y + 4], [9, y + 5], [3, y + 5], [0, y + 4]], P.b); a.hline(0, 23, y - 1, P.h); a.vline(0, y - 1, y + 4, P.d);
+    a.hline(11, 23, y - 4, P.b); a.hline(12, 22, y - 4, P.h); a.vline(11, y - 3, y - 2, P.b); a.vline(23, y - 3, y - 2, P.b); a.px(23, y - 5, P.d); a.px(12, y - 5, P.d);
+    GK.grip(a, 17, y + 4, 5, P); a.hline(18, 21, y + 5, P.d); a.px(19, y + 4, '#9aa1a9');
+    GK.mag(a, 'ak', 5, y + 5, 7, P);
+    a.poly([[24, y - 1], [29, y], [29, y + 3], [24, y + 4]], P.b); a.hline(24, 28, y - 1, P.h);
+    GK.barrel(a, 29, 31, y + 1, GP.black);
+    const mz = GK.muzzle(a, 'bird', 32, y + 1, GP.black);
+    return { muzzle: [mz, y + 1.5], grip: [16, y + 6], eject: [9, y + 1], body: [0, y - 1, mz, y + 4] };
+  },
+  g: AR_AUTO({ power: 1.5, rate: 11, recoil: 3, spread: 0.012, pitch: 1.02 }),
+});
+
+/* =========================================================================
+   SUBFUSILES
+   ========================================================================= */
+const SMG = (o) => Object.assign({ auto: true, sound: 'shot_smg', power: 0.85, rate: 13, recoil: 1.7, spread: 0.026 }, o);
+function mp5(a, o) {
+  const y = 4, P = GP.black, S = GP.steel;
+  GK.stock(a, 'hk', 9, y, P);
+  GK.box(a, 9, y, 11, 3, S); a.rect(14, y + 1, 3, 1, S.d);
+  a.circle(10.5, y - 1.5, 1.4, S.b); a.px(10, y - 2, S.h);
+  GK.box(a, 10, y + 3, 7, 2, P);
+  GK.grip(a, 12, y + 5, 5, P); a.hline(13, 15, y + 6, P.d); a.px(14, y + 5, '#9aa1a9');
+  GK.mag(a, 'smg', 16, y + 3, 8, S);
+  if (o.sd) {
+    const L = 15; a.rect(18, y - 1, L, 5, '#1c1d20'); a.hline(18, 18 + L - 1, y - 1, '#3a3d42'); a.vline(18 + L - 1, y - 1, y + 3, '#111214');
+    a.vline(30, y - 3, y - 2, S.d); a.px(30, y - 3, S.m);
+    return { muzzle: [18 + L, y + 1.5], grip: [11, y + 7], eject: [15, y + 1], body: [0, y - 1, 18 + L, y + 4] };
+  }
+  a.hline(17, 24, y - 1, S.m);
+  GK.box(a, 18, y, 7, 4, P); a.px(24, y + 3, CLR);
+  a.ring(25.5, y - 1.5, 1.6, 0.8, S.d);
+  GK.barrel(a, 25, 28, y + 1, S); a.px(27, y, S.m); a.px(27, y + 2, S.m);
+  return { muzzle: [29, y + 1.5], grip: [11, y + 7], eject: [15, y + 1], body: [0, y, 29, y + 4] };
+}
+v11Gun('mp5a2', {
+  name: 'H&K MP5A2', sub: 'smg', w: 29, h: 16, mass: 2.6, desc: 'El subfusil más famoso del mundo, con culata fija: preciso y fácil de controlar. Mantén F.',
+  draw: (a) => mp5(a, {}), g: SMG({ power: 0.85, rate: 13, spread: 0.022 }),
+});
+v11Gun('mp5sd', {
+  name: 'H&K MP5SD', sub: 'smg', w: 33, h: 16, mass: 3.1, mods: { silencer: true }, desc: 'MP5 con silenciador integrado: casi no se oye. Mantén F.',
+  draw: (a) => mp5(a, { sd: true }), g: SMG({ power: 0.75, rate: 12, spread: 0.022, sound: 'shot_silenced', tracer: [200, 200, 200] }),
+});
+v11Gun('mp7', {
+  name: 'H&K MP7', sub: 'smg', w: 27, h: 17, mass: 1.9, desc: 'Arma de defensa personal compacta del calibre 4,6 mm: sus balas atraviesan chalecos. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    GK.stock(a, 'wire', 6, y, P);
+    a.poly([[6, y - 1], [19, y - 1], [21, y + 1], [21, y + 4], [6, y + 4]], P.b); a.hline(6, 18, y - 1, P.h); a.vline(6, y - 1, y + 4, P.d);
+    GK.rail(a, 7, 19, y - 2, P); a.rect(8, y - 4, 2, 2, '#1d1e21'); a.rect(18, y - 4, 1, 2, '#1d1e21');
+    a.poly([[9, y + 5], [12, y + 5], [11, y + 12], [7, y + 12]], P.b); a.line(11, y + 5, 10, y + 11, P.m); a.hline(7, 10, y + 12, P.d);
+    a.hline(12, 14, y + 7, P.d); a.vline(14, y + 5, y + 7, P.d); a.px(12, y + 5, '#9aa1a9');
+    GK.vgrip(a, 17, y + 5, 4, P);
+    GK.barrel(a, 22, 23, y + 1, P);
+    const mz = GK.muzzle(a, 'bird', 24, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [9, y + 8], eject: [13, y], body: [0, y - 1, mz, y + 4] };
+  },
+  g: SMG({ power: 0.85, rate: 15, recoil: 1.4, spread: 0.024, tw: 1.4, pitch: 1.12 }),
+});
+v11Gun('ump45', {
+  name: 'H&K UMP45', sub: 'smg', w: 30, h: 17, mass: 2.3, desc: 'Subfusil de polímero del calibre .45: más lento que el MP5 pero cada bala pega más. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    GK.stock(a, 'skel', 8, y, P);
+    GK.box(a, 8, y - 1, 17, 5, P); a.rect(16, y, 3, 1, P.d); for (let x = 19; x < 24; x += 2) a.px(x, y + 2, P.d);
+    GK.rail(a, 9, 24, y - 2, P); a.rect(9, y - 4, 2, 2, '#1d1e21'); a.rect(23, y - 4, 1, 2, '#1d1e21');
+    a.poly([[8, y + 4], [12, y + 4], [11, y + 9], [9, y + 9], [9, y + 6]], P.b); a.rect(9, y + 5, 2, 2, CLR);
+    GK.grip(a, 12, y + 4, 5, P); a.hline(13, 15, y + 5, P.d); a.px(14, y + 4, '#9aa1a9');
+    GK.mag(a, 'straight', 16, y + 4, 7, P);
+    GK.barrel(a, 25, 26, y + 1, P);
+    const mz = GK.muzzle(a, 'bird', 27, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [11, y + 6], eject: [16, y], body: [0, y - 1, mz, y + 4] };
+  },
+  g: SMG({ power: 1.05, rate: 10, recoil: 2.1, spread: 0.022, pitch: 0.94 }),
+});
+v11Gun('p90', {
+  name: 'FN P90', sub: 'smg', w: 24, h: 14, mass: 2.6, optic: 'dot', desc: 'Bullpup futurista con el cargador de 50 balas encima del arma y mira integrada. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    a.poly([[0, y + 1], [2, y - 1], [20, y - 1], [23, y + 1], [23, y + 3], [21, y + 6], [18, y + 8], [13, y + 8], [11, y + 6], [7, y + 6], [5, y + 8], [1, y + 8], [0, y + 6]], P.b);
+    a.vline(0, y + 1, y + 6, P.d); a.rect(13, y + 3, 4, 3, CLR); a.px(13, y + 3, '#9aa1a9');
+    a.rect(2, y - 3, 14, 2, [150, 140, 100, 255]); a.hline(2, 15, y - 3, '#c6b98a'); for (let x = 4; x < 15; x += 3) a.px(x, y - 2, '#8c8360');
+    a.rect(15, y - 4, 4, 3, '#2e3035'); a.vline(18, y - 4, y - 2, GLASS);
+    a.hline(2, 10, y + 2, P.m);
+    a.px(23, y + 2, P.d);
+    return { muzzle: [24, y + 2.5], grip: [13, y + 7], eject: [6, y + 6], body: [0, y - 1, 24, y + 6] };
+  },
+  g: SMG({ power: 0.9, rate: 15, recoil: 1.4, spread: 0.02, tw: 1.3, pitch: 1.1 }),
+});
+v11Gun('uzi', {
+  name: 'IMI Uzi', sub: 'smg', w: 28, h: 17, mass: 3.5, desc: 'El clásico subfusil israelí: cajón cuadrado y el cargador dentro de la empuñadura. Mantén F.',
+  draw: (a) => {
+    const P = GP.steel, y = 4;
+    GK.stock(a, 'wire', 9, y, P);
+    GK.box(a, 9, y - 1, 15, 5, P); for (let x = 11; x < 23; x += 2) a.px(x, y - 1, P.d); a.rect(16, y + 1, 4, 1, P.d);
+    a.rect(10, y - 2, 2, 1, P.d); a.rect(21, y - 2, 2, 1, P.d);
+    a.poly([[13, y + 4], [17, y + 4], [16, y + 11], [12, y + 11]], GP.black.b); a.hline(12, 16, y + 11, P.d); a.rect(12, y + 12, 4, 1, P.m);
+    a.hline(17, 20, y + 6, P.d); a.vline(20, y + 4, y + 6, P.d); a.px(18, y + 4, '#9aa1a9');
+    a.rect(24, y, 1, 3, P.d); GK.barrel(a, 25, 27, y + 1, P);
+    return { muzzle: [28, y + 1.5], grip: [14, y + 7], eject: [17, y], body: [0, y - 1, 28, y + 4] };
+  },
+  g: SMG({ power: 0.85, rate: 10, recoil: 1.9, spread: 0.034, pitch: 0.98 }),
+});
+v11Gun('vector', {
+  name: 'Kriss Vector', sub: 'smg', w: 28, h: 17, mass: 2.7, optic: 'holosun', desc: 'Subfusil del calibre .45 con un sistema que absorbe el retroceso: dispara rapidísimo sin levantarse. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    GK.stock(a, 'side', 7, y, P);
+    GK.box(a, 7, y - 1, 16, 3, P); GK.rail(a, 7, 22, y - 2, P);
+    a.poly([[8, y + 2], [22, y + 2], [23, y + 4], [23, y + 7], [19, y + 7], [17, y + 4], [8, y + 4]], P.b); a.hline(8, 22, y + 2, P.m);
+    GK.grip(a, 10, y + 4, 5, P); a.hline(11, 13, y + 5, P.d); a.px(12, y + 4, '#9aa1a9');
+    GK.mag(a, 'straight', 15, y + 5, 7, P);
+    GK.barrel(a, 23, 24, y, P);
+    const mz = GK.muzzle(a, 'bird', 25, y, P);
+    GK.optic(a, 'holosun', 10, y - 2);
+    return { muzzle: [mz, y + 0.5], grip: [9, y + 6], eject: [14, y], body: [0, y - 1, mz, y + 4] };
+  },
+  g: SMG({ power: 1, rate: 18, recoil: 1.1, spread: 0.022, climb: 0.4, pitch: 0.95 }),
+});
+
+/* =========================================================================
+   ESCOPETAS
+   ========================================================================= */
+const SHOT = (o) => Object.assign({ pellets: 8, power: 0.6, rate: 2, recoil: 9, sound: 'shot_shotgun', spread: 0.07, range: 60, closeGib: 1.8 }, o);
+v11Gun('spas12', {
+  name: 'Franchi SPAS-12', sub: 'shotgun', w: 46, h: 15, mass: 4.4, desc: 'Escopeta de combate italiana: protector de cañón perforado y culata plegable. 8 perdigones por disparo.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    a.hline(0, 12, y - 1, P.b); a.hline(0, 12, y, P.m); a.rect(0, y - 1, 2, 6, P.b); a.vline(0, y - 1, y + 4, P.d); a.line(2, y + 4, 4, y + 5, P.b); a.line(5, y + 1, 12, y + 3, P.m);
+    GK.box(a, 12, y - 1, 13, 5, P); a.rect(17, y, 4, 1, P.d);
+    GK.grip(a, 14, y + 4, 5, P); a.hline(16, 18, y + 5, P.d); a.vline(19, y + 4, y + 5, P.d); a.px(16, y + 4, '#9aa1a9');
+    a.rect(25, y - 1, 18, 2, P.b); a.hline(25, 42, y - 1, P.h); for (let x = 27; x < 42; x += 2) a.px(x, y, '#14151a');
+    a.rect(25, y + 1, 16, 2, P.m);
+    GK.box(a, 27, y + 1, 9, 3, P); for (let x = 28; x < 35; x += 2) a.vline(x, y + 2, y + 3, P.d);
+    a.rect(43, y - 1, 3, 2, P.d);
+    return { muzzle: [46, y], grip: [13, y + 6], eject: [19, y], body: [0, y - 1, 46, y + 3] };
+  },
+  g: SHOT({ power: 0.65, rate: 2.2, recoil: 9 }),
+});
+v11Gun('aa12', {
+  name: 'AA-12', sub: 'shotgun', w: 43, h: 17, mass: 5.2, desc: 'Escopeta automática con cargador de tambor: una lluvia de perdigones con muy poco retroceso. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    GK.box(a, 0, y, 9, 5, P); a.vline(0, y, y + 4, P.d); a.rect(2, y + 1, 4, 2, P.m);
+    GK.box(a, 9, y - 1, 21, 7, P); for (let x = 12; x < 28; x += 3) a.px(x, y + 1, P.d); a.rect(20, y, 4, 1, P.d);
+    a.hline(13, 26, y - 4, P.b); a.vline(13, y - 3, y - 2, P.b); a.vline(26, y - 3, y - 2, P.b); a.hline(14, 25, y - 4, P.h);
+    GK.grip(a, 11, y + 6, 4, P); a.px(13, y + 6, '#9aa1a9');
+    a.circle(20.5, y + 9.5, 4.2, P.b); a.circle(20.5, y + 9.5, 2.2, P.m); a.circle(20.5, y + 9.5, 0.9, P.d);
+    a.rect(30, y, 10, 3, P.m); a.hline(30, 39, y, P.h); for (let x = 31; x < 39; x += 2) a.px(x, y + 1, '#14151a');
+    a.rect(40, y, 3, 3, P.d);
+    return { muzzle: [43, y + 1.5], grip: [10, y + 8], eject: [22, y], body: [0, y - 1, 43, y + 6] };
+  },
+  g: SHOT({ auto: true, pellets: 7, power: 0.55, rate: 5, recoil: 6.5, spread: 0.075 }),
+});
+v11Gun('rem870', {
+  name: 'Remington 870', sub: 'shotgun', w: 47, h: 13, mass: 3.6, mat: 'wood', desc: 'Escopeta de corredera clásica con culata y guardamanos de madera. Tras cada disparo hay que bombear.',
+  draw: (a) => {
+    const P = GP.blued, W = GP.wood, y = 3;
+    GK.stock(a, 'wood', 14, y, W);
+    GK.box(a, 14, y, 11, 4, P); a.rect(18, y + 1, 4, 1, P.d);
+    a.hline(16, 19, y + 6, P.d); a.vline(19, y + 4, y + 6, P.d); a.px(17, y + 4, '#9aa1a9');
+    GK.barrel(a, 25, 46, y, P, 2); a.px(45, y - 1, '#d6d0b0');
+    a.rect(25, y + 2, 17, 2, P.m);
+    GK.box(a, 28, y + 2, 10, 3, W); for (let x = 29; x < 37; x += 2) a.vline(x, y + 3, y + 4, W.d);
+    return { muzzle: [47, y + 1], grip: [15, y + 5], eject: [20, y], body: [0, y, 47, y + 4] };
+  },
+  g: SHOT({ power: 0.7, rate: 1.2, recoil: 10, cycle: 'pump' }),
+});
+v11Gun('benelli_m4', {
+  name: 'Benelli M4', sub: 'shotgun', w: 45, h: 15, mass: 3.8, desc: 'Escopeta semiautomática de los marines: culata telescópica, miras de anillo y disparo rápido.',
+  draw: (a) => {
+    const P = GP.black, y = 4;
+    GK.stock(a, 'm4', 10, y, P);
+    GK.box(a, 10, y, 13, 4, P); GK.rail(a, 11, 22, y - 1, P); a.rect(16, y + 1, 4, 1, P.d);
+    a.rect(11, y - 3, 3, 2, '#1d1e21'); a.px(12, y - 3, CLR);
+    GK.grip(a, 12, y + 4, 5, P); a.hline(14, 16, y + 5, P.d); a.vline(17, y + 4, y + 5, P.d); a.px(14, y + 4, '#9aa1a9');
+    GK.barrel(a, 23, 44, y, P, 2); a.rect(42, y - 2, 2, 2, '#1d1e21');
+    a.rect(23, y + 2, 17, 2, P.m);
+    GK.box(a, 23, y + 1, 10, 3, P); for (let x = 25; x < 32; x += 3) a.px(x, y + 2, P.d);
+    return { muzzle: [45, y + 1], grip: [11, y + 6], eject: [17, y], body: [0, y, 45, y + 4] };
+  },
+  g: SHOT({ power: 0.62, rate: 3, recoil: 8.5 }),
+});
+
+/* =========================================================================
+   FRANCOTIRADORES Y FUSILES DE PRECISIÓN
+   ========================================================================= */
+v11Gun('svd', {
+  name: 'SVD Dragunov', sub: 'sniper', w: 57, h: 17, mass: 4.3, optic: 'pso', mat: 'wood', desc: 'Fusil de tirador soviético: culata de madera con agujero y visor PSO-1. Semiautomático y muy preciso.',
+  draw: (a) => {
+    const P = GP.steel, W = GP.wood, y = 6;
+    GK.stock(a, 'thumb', 18, y, W);
+    GK.box(a, 18, y, 13, 3, P); a.rect(24, y + 1, 3, 1, P.d);
+    GK.optic(a, 'pso', 18, y);
+    GK.grip(a, 21, y + 3, 4, W); a.hline(22, 24, y + 4, P.d); a.px(23, y + 3, '#9aa1a9');
+    GK.mag(a, 'straight', 25, y + 3, 5, P);
+    GK.box(a, 31, y - 1, 11, 4, W); for (let x = 33; x < 41; x += 3) a.px(x, y + 1, W.d);
+    GK.barrel(a, 42, 53, y + 1, P); a.vline(51, y - 2, y, P.d);
+    const mz = GK.muzzle(a, 'brake', 54, y + 1, P, 3);
+    return { muzzle: [mz, y + 1.5], grip: [20, y + 5], eject: [25, y], body: [0, y - 1, mz, y + 4] };
+  },
+  g: { power: 3.4, rate: 2.5, recoil: 8, sound: 'shot_sniper', spread: 0.0022, tw: 1.5, closeGib: 1, range: 200, pitch: 1.05 },
+});
+v11Gun('cheytac', {
+  name: 'CheyTac Intervention', sub: 'sniper', w: 65, h: 18, mass: 14, optic: 'longscope', desc: 'Fusil de cerrojo del calibre .408 para tiro a distancias enormes: atraviesa casi cualquier cosa.',
+  draw: (a) => {
+    const P = GP.black, y = 7;
+    a.hline(2, 16, y, P.b); a.line(2, y + 5, 16, y + 3, P.b); a.rect(0, y - 1, 3, 8, P.b); a.vline(0, y - 1, y + 6, P.d); a.rect(5, y + 6, 1, 3, P.m); a.hline(4, 7, y + 9, P.d);
+    a.rect(14, y - 1, 3, 5, P.b);
+    GK.box(a, 16, y - 1, 16, 5, P); a.rect(22, y, 4, 1, P.d); a.rect(28, y + 1, 2, 2, P.m); a.px(29, y + 3, '#7d848d');
+    GK.optic(a, 'longscope', 15, y - 1);
+    GK.grip(a, 19, y + 4, 5, P); a.hline(20, 22, y + 5, P.d); a.px(21, y + 4, '#9aa1a9');
+    GK.mag(a, 'box', 24, y + 4, 4, P);
+    GK.barrel(a, 32, 58, y, GP.steel, 3); for (let x = 36; x < 56; x += 3) a.px(x, y + 1, GP.steel.m);
+    a.line(36, y + 3, 33, y + 9, P.d); a.line(37, y + 3, 40, y + 9, P.d);
+    const mz = GK.muzzle(a, 'big', 59, y + 1, P, 6);
+    return { muzzle: [mz, y + 1.5], grip: [18, y + 6], eject: [24, y], body: [0, y - 1, mz, y + 4] };
+  },
+  g: { power: 5.5, rate: 0.6, recoil: 16, sound: 'shot_sniper', pitch: 0.8, spread: 0.0008, tw: 2.2, closeGib: 1.6, range: 320, cycle: 'bolt' },
+});
+v11Gun('mk14', {
+  name: 'Mk 14 EBR', sub: 'sniper', w: 43, h: 18, mass: 5.1, optic: 'scope', desc: 'Fusil de tirador designado del calibre 7,62: un M14 en chasis moderno con visor y bípode. Semiautomático.',
+  draw: (a) => {
+    const P = GP.black, T = GP.tan, y = 6;
+    GK.stock(a, 'sop', 10, y, P);
+    GK.box(a, 10, y, 18, 4, T); GK.rail(a, 10, 27, y - 1, T); a.rect(15, y + 1, 4, 1, T.d);
+    GK.optic(a, 'scope', 11, y - 1);
+    GK.grip(a, 13, y + 4, 5, P); a.hline(14, 16, y + 5, P.d); a.px(15, y + 4, '#9aa1a9');
+    GK.mag(a, 'straight', 18, y + 4, 6, P);
+    GK.barrel(a, 28, 37, y + 1, P); a.line(30, y + 3, 28, y + 9, P.d); a.line(31, y + 3, 33, y + 9, P.d);
+    const mz = GK.muzzle(a, 'brake', 38, y + 1, P, 4);
+    return { muzzle: [mz, y + 1.5], grip: [12, y + 6], eject: [18, y], body: [0, y - 1, mz, y + 4] };
+  },
+  g: { power: 2.6, rate: 4, recoil: 5.5, sound: 'shot_rifle', pitch: 0.85, spread: 0.0028, tw: 1.4, closeGib: 0.9, range: 200 },
+});
+
+/* =========================================================================
+   LAS GENÉRICAS QUE COINCIDEN CON LA LISTA PASAN A SER EL ARMA REAL
+   (mismo identificador: lo guardado con ellas sigue funcionando)
+   ========================================================================= */
+function v11Replace(id, mk) {
+  const i = DEF_LIST.indexOf(DEFS[id]); if (i >= 0) DEF_LIST.splice(i, 1);
+  return mk();
+}
+// Ametralladora → M249
+v11Replace('lmg', () => v11Gun('lmg', {
+  name: 'M249', sub: 'rifle', w: 49, h: 18, mass: 7.5, desc: 'Ametralladora ligera del calibre 5,56 con caja de 200 balas y bípode: fuego sostenido. Mantén F.',
+  draw: (a) => {
+    const P = GP.black, y = 5;
+    a.poly([[0, y], [10, y + 1], [10, y + 4], [2, y + 6], [0, y + 6]], P.b); a.hline(0, 9, y, P.h); a.vline(0, y, y + 5, P.d); a.rect(3, y + 2, 4, 2, CLR);
+    GK.box(a, 10, y - 1, 17, 6, P); a.hline(13, 25, y - 2, P.m); a.rect(13, y - 3, 2, 1, P.d); a.rect(22, y + 1, 4, 1, P.d); a.px(26, y + 3, P.h);
+    GK.grip(a, 13, y + 5, 5, P); a.hline(14, 16, y + 6, P.d); a.px(15, y + 5, '#9aa1a9');
+    GK.box(a, 17, y + 5, 8, 7, GP.od); a.hline(18, 24, y + 8, GP.od.d); a.px(24, y + 5, GP.od.d);
+    a.rect(27, y, 7, 3, P.m); a.hline(27, 33, y, P.h); for (let x = 28; x < 34; x += 2) a.px(x, y + 1, '#14151a');
+    a.hline(29, 35, y - 3, P.b); a.vline(29, y - 2, y - 1, P.b); a.vline(35, y - 2, y - 1, P.b);
+    GK.barrel(a, 34, 44, y, P, 2); a.vline(43, y - 3, y - 1, P.d);
+    GK.bipod(a, 38, y + 2, P, true);
+    const mz = GK.muzzle(a, 'bird', 45, y + 1, P);
+    return { muzzle: [mz, y + 1.5], grip: [12, y + 7], eject: [23, y], body: [0, y - 1, mz, y + 5] };
+  },
+  g: AR_AUTO({ power: 1.6, rate: 13, recoil: 3.2, spread: 0.026, pitch: 0.95 }),
+}));
+// Fusil de cerrojo → Kar98k
+v11Replace('bolt_rifle', () => v11Gun('bolt_rifle', {
+  name: 'Kar98k', sub: 'sniper', w: 51, h: 12, mass: 3.9, mat: 'wood', desc: 'El fusil de cerrojo alemán de la Segunda Guerra Mundial: preciso y potente, pero tras cada disparo hay que accionar el cerrojo.',
+  draw: (a) => {
+    const W = GP.wood, P = GP.blued, y = 2;
+    a.poly([[0, y + 1], [12, y + 2], [17, y + 3], [41, y + 3], [41, y + 5], [27, y + 5], [25, y + 6], [18, y + 6], [15, y + 5], [12, y + 5], [0, y + 8]], W.b);
+    a.hline(0, 11, y + 1, W.h); a.vline(0, y + 1, y + 7, '#2a1d12'); GK.grain(a, 2, 38, y + 3, y + 5, W);
+    a.rect(17, y + 1, 11, 2, P.b); a.hline(17, 27, y + 1, P.h); a.px(29, y, P.d);
+    GK.barrel(a, 28, 50, y + 1, P, 2);
+    a.px(22, y + 3, P.m); a.px(22, y + 4, P.m); a.px(21, y + 5, P.h);
+    a.hline(19, 23, y + 7, P.d); a.vline(23, y + 6, y + 7, P.d); a.px(20, y + 6, '#9aa1a9');
+    a.vline(33, y + 1, y + 4, P.m); a.vline(41, y + 1, y + 5, P.m); a.rect(48, y - 1, 2, 2, P.d); a.hline(42, 47, y + 3, P.d);
+    return { muzzle: [51, y + 1.5], grip: [17, y + 5], eject: [22, y + 1], body: [0, y + 1, 51, y + 5] };
+  },
+  g: { power: 4.5, rate: 0.9, recoil: 8, sound: 'shot_sniper', spread: 0.002, range: 220, tw: 1.5, closeGib: 1, cycle: 'bolt' },
+}));
+// Lanzacohetes → RPG-7 (se ve la cabeza del cohete cuando está cargado)
+function rpgSprite(loaded) {
+  return drawSprite(64, 16, (a) => {
+    const S = GP.steel, W = GP.wood, y = 6;
+    a.rect(6, y, 40, 3, S.b); a.hline(6, 45, y, S.h); a.hline(6, 45, y + 2, S.d);
+    a.poly([[0, y - 2], [7, y], [7, y + 3], [0, y + 5]], S.m); a.vline(0, y - 2, y + 4, S.d);
+    GK.box(a, 17, y - 1, 13, 5, W); GK.grain(a, 18, 29, y, y + 2, W);
+    GK.grip(a, 23, y + 4, 5, GP.black); a.hline(24, 26, y + 5, S.d); a.px(25, y + 4, '#9aa1a9');
+    a.rect(32, y + 3, 2, 4, GP.black.b); a.px(32, y + 6, GP.black.d);
+    a.rect(19, y - 4, 7, 3, '#2e3035'); a.hline(19, 25, y - 4, '#4c5058'); a.vline(25, y - 4, y - 2, GLASS); a.rect(18, y - 3, 1, 2, '#111214');
+    a.vline(43, y - 2, y - 1, S.d);
+    if (loaded) {
+      a.rect(46, y - 1, 3, 5, '#4d5a3c');
+      a.poly([[49, y - 3], [55, y - 3], [63, y + 1], [63, y + 2], [55, y + 6], [49, y + 6]], '#5a6844');
+      a.hline(49, 55, y - 3, '#748457'); a.vline(52, y - 3, y + 5, '#46522f'); a.px(63, y + 1, '#2a2d32');
+    }
+    a.edge(0.8);
+  });
+}
+const RPG_LOADED = rpgSprite(true), RPG_EMPTY = rpgSprite(false);
+v11Replace('rocket_launcher', () => {
+  const lb = launcherBehavior({ proj: 'rpg_round', speed: 20, cool: 2, recoil: 4, sound: 'rocket', backblast: true });
+  return def('rocket_launcher', Object.assign({}, lb, {
+    name: 'RPG-7', cat: 'firearms', sub: 'launcher', mat: 'metal', mass: 7, twoHand: true,
+    desc: 'Lanzacohetes antitanque soviético: dispara un cohete con cabeza explosiva que estalla al impactar. Se recarga solo en 2 segundos.',
+    sprite: () => RPG_LOADED, muzzle: [46, 7.5], grip: [22, 11],
+    shapes: [{ box: [0, 5, 46, 5] }, { box: [21, 10, 4, 5] }],
+    update(it, dt) {
+      lb.update(it, dt);
+      // con el cohete puesto o sin él (si estaba manchado, la mancha se pierde al recargar)
+      const loaded = !((it.vars.cool || 0) > 0), p = it.parts[0];
+      if (p && it.vars.ld !== loaded) { it.vars.ld = loaded; p.spr = loaded ? RPG_LOADED : RPG_EMPTY; p.ownSpr = false; }
+    },
+    info(it) { return [[(it.vars.cool || 0) > 0 ? 'Recargando…' : 'Cargado', (it.vars.cool || 0) > 0 ? '#e0b34f' : '#7ad48a']]; },
+  }));
+});
+def('rpg_round', Object.assign({}, DEFS.rocket, {
+  name: 'Cohete PG-7', cat: null,
+  sprite: () => drawSprite(22, 9, (a) => {
+    a.poly([[0, 1], [5, 3], [5, 6], [0, 8]], '#3c4148'); a.rect(5, 3, 6, 3, '#4d5a3c');
+    a.poly([[10, 0], [15, 0], [21, 4], [21, 5], [15, 9], [10, 9]], '#5a6844'); a.hline(10, 15, 0, '#748457'); a.px(21, 4, '#2a2d32'); a.edge(0.82);
+  }),
+  update(it, dt) {
+    it.vars.t = (it.vars.t || 0) + dt;
+    const [dx, dy] = it.dirWorld(1, 0);
+    // el motor cohete se enciende tras salir del tubo
+    if (it.vars.t > 0.08) it.main.applyForceToCenter(V(dx * 130, dy * 130), true);
+    const p = it.worldPt(0, 4.5);
+    if (it.vars.t > 0.08) { Effects.fire(p[0], p[1], 0.9, -dx * 4, -dy * 4); Effects.light(p[0], p[1], 2, [255, 170, 80], 0.8, 0.05); }
+    Effects.smoke(p[0], p[1], 1, [170, 170, 170], 0.4, 0.8);
+    if (it.vars.t > 8) detonateAt(it, 3.4);
+  },
+  onImpact(it, im, dv) { if ((it.vars.t || 0) > 0.05) Phys.later(() => detonateAt(it, 3.4)); },
+  bulletHit(it) { Phys.later(() => detonateAt(it, 3.4)); return 0; },
+}));
+// Lanzagranadas → Milkor MGL (tambor de 6 granadas)
+v11Replace('grenade_launcher', () => {
+  const lb = launcherBehavior({ proj: 'gl_round', speed: 16, cool: 0.45, recoil: 3, sound: 'shot_shotgun' });
+  return def('grenade_launcher', Object.assign({}, lb, {
+    name: 'Milkor MGL', cat: 'firearms', sub: 'launcher', mat: 'metal', mass: 5.3, twoHand: true,
+    desc: 'Lanzagranadas de 40 mm con tambor giratorio de 6 granadas que explotan al impactar. Al vaciarse, recarga en 3 segundos.',
+    sprite: () => drawSprite(40, 17, (a) => {
+      const P = GP.black, O = GP.od, y = 5;
+      GK.stock(a, 'skel', 10, y, P);
+      GK.box(a, 10, y, 6, 5, P);
+      a.rect(14, y - 2, 12, 10, O.b); a.hline(14, 25, y - 2, O.h); a.hline(14, 25, y + 7, O.d);
+      for (const yy of [y, y + 3]) a.hline(15, 24, yy, O.d);
+      a.vline(14, y - 1, y + 6, O.m); a.vline(25, y - 1, y + 6, O.d);
+      GK.box(a, 26, y, 12, 4, P); a.rect(37, y, 1, 4, '#141518');
+      a.rect(18, y - 5, 6, 3, '#2e3035'); a.hline(18, 23, y - 5, '#4c5058'); a.vline(23, y - 5, y - 3, GLASS); a.px(19, y - 4, RED);
+      GK.grip(a, 12, y + 5, 5, P); a.px(13, y + 5, '#9aa1a9');
+      GK.vgrip(a, 30, y + 4, 4, P);
+    }), muzzle: [38, 7], grip: [11, 12],
+    shapes: [{ box: [0, 3, 38, 8] }, { box: [10, 10, 4, 5] }],
+    init(it) { it.vars.shots = 6; },
+    activate(it) {
+      if (it.vars.shots === undefined) it.vars.shots = 6;
+      if (it.vars.shots <= 0 || (it.vars.cool || 0) > 0) { if (it.vars.shots <= 0) Sound.play('dryfire', it.pos().x, it.pos().y, 0.5); return; }
+      lb.activate(it); it.vars.shots--;
+      if (it.vars.shots <= 0) it.vars.reload = 3;
+    },
+    update(it, dt) {
+      lb.update(it, dt);
+      if (it.vars.reload > 0) { it.vars.reload -= dt; if (it.vars.reload <= 0) { it.vars.shots = 6; const p = it.pos(); Sound.play('clunk', p.x, p.y, 0.6); } }
+    },
+    info(it) { return [[it.vars.reload > 0 ? 'Recargando el tambor…' : `Granadas: ${it.vars.shots === undefined ? 6 : it.vars.shots}/6`, it.vars.reload > 0 ? '#e0b34f' : '#cfd5dc']]; },
+  }));
+});
+
+/* ---------------- las armas nuevas pueden dispararse solas si caen con fuerza (como las demás) ---------------- */
+for (const d of V11_GUNS) {
+  const oi = d.onImpact;
+  d.onImpact = function (it, im, dv, ...rest) {
+    if (oi) oi.call(this, it, im, dv, ...rest);
+    if (dv > 7 && !it.holder && !it.dead && Math.random() < 0.06 && (it.vars.adT || 0) < Phys.time) { it.vars.adT = Phys.time + 1; Phys.later(() => { if (!it.dead) activateThing(it); }); }
+  };
+}
+// un arma con mira de serie no admite otra mira encima
+{
+  const at = attachTo;
+  attachTo = function (att, gun) {
+    if (att && gun && att.def && att.def.attach && att.def.attach.slot === 'top' && gun.def && gun.def.optic) return;
+    return at(att, gun);
+  };
+}
+
+/* ---- 40_v11_catalogo.js ---- */
+/* =========================================================================
+   VERSIÓN 11 (3): Armas pesadas sólo con explosivos (bombas, granadas...) y
+   todas las armas en Armas de fuego, ordenadas por apartados
+   ========================================================================= */
+const FIREARM_SECTIONS = [
+  ['Pistolas', ['deagle', 'deagle_gold', 'glock17', 'glock17_dot', 'p225', 'p226', 'p226_sd', 'm9', 'm1911', 'fiveseven', 'usp',
+    'pistol', 'pistol9', 'silenced', 'revolver', 'magnum', 'hand_cannon', 'flintlock', 'taser', 'stunner', 'blaster']],
+  ['Escopetas', ['spas12', 'aa12', 'rem870', 'benelli_m4', 'shotgun']],
+  ['Subfusiles', ['mp5a2', 'mp5sd', 'mp7', 'ump45', 'p90', 'uzi', 'vector', 'smg', 'compact_smg', 'g1_smg', 'drum_smg']],
+  ['Fusiles de asalto / rifles', ['ar15', 'scar_h', 'scar_l', 'scar_h_sof', 'famas', 'm4a1', 'm4a1_holosun', 'm4a1_acog', 'm4a1_cqbr', 'm4a1_tac',
+    'm16a1', 'm16a2', 'hk416', 'hk416_eotech', 'g3', 'g36c', 'g36k', 'galil', 'wac47', 'aug_a3', 'c7a2', 'c7a2_c79', 'fal', 'fal_para',
+    'f2000', 'tavor', 'x95', 'sa80', 'kn60', 'qbz95', 'qbz191', 'lmg',
+    'rifle', 'ak_rifle', 'm1_rifle', 'heavy_mg', 'minigun', 'laser_rifle', 'beam_rifle', 'blaster_rifle', 'machine_blaster', 'beam_repeater', 'disintegrator', 'heat_ray', 'freeze_ray']],
+  ['Rifles de precisión / snipers', ['svd', 'cheytac', 'bolt_rifle', 'mk14', 'sniper', 'antimaterial']],
+  ['Armas explosivas y lanzadores', ['rocket_launcher', 'grenade_launcher', 'bazooka', 'missile_launcher', 'flamethrower', 'flare_gun', 'crossbow', 'harpoon_gun',
+    'spike_rifle', 'auto_spike_gun', 'shard_launcher', 'cannon', 'cannon_120', 'auto_cannon', 'accelerator', 'ion_cannon', 'ray_cannon', 'laser_cannon', 'beam_cannon',
+    'storm_gun', 'arc_caster', 'pulse_drum']],
+  ['Accesorios', ['att_scope', 'att_laser', 'att_light', 'att_silencer', 'att_explosive', 'att_incendiary']],
+];
+{
+  const order = new Map();
+  FIREARM_SECTIONS.forEach(([sub, ids], si) => ids.forEach((id, k) => {
+    const d = DEFS[id]; if (!d) { console.warn('Arma de la lista que no existe:', id); return; }
+    d.cat = 'firearms'; d.sub = sub; order.set(d, si * 100 + k);
+  }));
+  // en Armas pesadas sólo quedan explosivos; cualquier otra cosa que sea un arma se avisa
+  for (const d of DEF_LIST) {
+    if (d.cat === 'firearms' && !order.has(d)) console.warn('Arma sin apartado:', d.id);
+    if (d.cat === 'explosives' && (d.gun || d.holdUse)) console.warn('Arma en Armas pesadas:', d.id);
+  }
+  const guns = DEF_LIST.filter((d) => order.has(d)).sort((a, b) => order.get(a) - order.get(b));
+  let k = 0;
+  for (let i = 0; i < DEF_LIST.length; i++) if (order.has(DEF_LIST[i])) DEF_LIST[i] = guns[k++];
+}
+// los títulos de los apartados también en Armas de fuego (antes sólo en Maquinaria)
+{
+  const bi = UI.buildItems;
+  UI.buildItems = function () {
+    bi.call(this);
+    if (this.filter.trim() || this.cat !== 'firearms') return;
+    const grid = this.$('#igrid'); let last = null;
+    for (const b of [...grid.querySelectorAll('.item')]) {
+      const d = DEFS[b.dataset.id], s = d && d.sub;
+      if (s && s !== last) { last = s; grid.insertBefore(this.el('div', 'isub', s), b); }
+    }
+  };
+}
+
+/* ---------------- la IA con las armas nuevas ---------------- */
+{
+  // dispara balas (que pueden atravesar a quien no es el objetivo) o lanza proyectiles: sólo las de balas tienen «gun» con datos
+  AI.hitscan = function (it) { const g = it.def.gun; return !!(g && typeof g === 'object' && !this.EXPLOSIVE_SHOT.has(it.def.id)); };
+  const band = AI.band.bind(AI);
+  AI.band = function (it) {
+    const g = it.def.gun;
+    if (g && typeof g === 'object' && (g.pellets || 1) > 1) return [2, 7];
+    if (it.def.sub === 'Rifles de precisión / snipers') return [4, 16];
+    return band(it);
+  };
+  const fd = AI.fireDelay.bind(AI);
+  AI.fireDelay = function (it) {
+    const g = it.def.gun;
+    if (g && typeof g === 'object' && g.rate && (g.cycle || g.burst)) return Math.max(fd(it), 1 / g.rate + (g.burst ? 0.35 : 0.1));
+    return fd(it);
+  };
+}
+
+/* ---- 41_v11_cables.js ---- */
+/* =========================================================================
+   VERSIÓN 11 (4): los cables de activación (los de propagación verde, rojo y
+   azul, normales y destructibles) son invisibles. Sólo se ven, todos los
+   colores a la vez, mientras tienes equipada cualquiera de sus herramientas.
+   ========================================================================= */
+function sigWiresVisible() { return !!WIRE_CH[Input.tool]; }
+{
+  // mientras no se ven, no se dibujan ni se pueden señalar (ni borrar o abrir su menú sin querer)
+  const without = (fn) => {
+    const all = Connections.list;
+    Connections.list = all.filter((c) => !(CONN_TYPES[c.type] && CONN_TYPES[c.type].signal));
+    try { return fn(); } finally { Connections.list = all; }
+  };
+  const dr = Connections.draw;
+  Connections.draw = function (ctx, cam, hover) {
+    if (sigWiresVisible()) return dr.call(this, ctx, cam, hover);
+    return without(() => dr.call(this, ctx, cam, hover && CONN_TYPES[hover.type] && CONN_TYPES[hover.type].signal ? null : hover));
+  };
+  const nr = Connections.near;
+  Connections.near = function (x, y, r) {
+    if (sigWiresVisible()) return nr.call(this, x, y, r);
+    return without(() => nr.call(this, x, y, r));
+  };
+  for (const t of TOOLS) if (WIRE_CH[t.id]) t.hint += ' Los cables de activación sólo se ven (todos los colores) con una de estas herramientas equipada.';
 }
 
 /* ---- 99_main.js ---- */

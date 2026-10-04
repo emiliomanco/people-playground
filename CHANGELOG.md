@@ -1,5 +1,25 @@
 # Historial de cambios
 
+## Versión 11 (4 de octubre de 2026)
+
+- **Armas de fuego por apartados**: el catálogo de armas de fuego se divide en **Pistolas**, **Escopetas**, **Subfusiles**, **Fusiles de asalto / rifles**, **Rifles de precisión / snipers** y **Armas explosivas y lanzadores** (y, al final, los accesorios), con su título como en la maquinaria.
+- **Armas pesadas sólo con explosivos**: bombas, granadas, minas, dinamita, C4, molotov, bombonas y barriles explosivos, fuegos artificiales, EMP, singularidad... Los lanzacohetes, lanzagranadas, bazuca, lanzamisiles, lanzallamas, pistola de bengalas, ballesta, arpón, fusiles de clavos, lanzafragmentos y todos los cañones pasan a armas de fuego (armas explosivas y lanzadores).
+- **56 armas reales nuevas**, cada una con su aspecto, calibre, cadencia, retroceso y precisión:
+  - **Pistolas**: Desert Eagle y Desert Eagle dorada, Glock 17 y Glock 17 con mira Red Dot, SIG Sauer P225, P226 y P226 con silenciador y mira, Beretta M9, M1911, FN Five-seveN y H&K USP.
+  - **Escopetas**: Franchi SPAS-12, AA-12 (automática, con tambor), Remington 870 (de corredera: se bombea tras cada disparo) y Benelli M4.
+  - **Subfusiles**: H&K MP5A2 y MP5SD (silenciado), H&K MP7, H&K UMP45, FN P90, IMI Uzi y Kriss Vector.
+  - **Fusiles**: AR-15 (semiautomático), FN SCAR-H, SCAR-L y SCAR-H de Fuerzas Especiales (silenciador, mira holográfica y empuñadura), FAMAS, M4A1 (base, Holosun, ACOG, CQBR y Over Tactical, con silenciador, mira holográfica con lupa, láser, linterna y empuñadura), M16A1 y M16A2 (ráfagas de tres balas), H&K HK416 y HK416 con EOTECH, H&K G3, G36C y G36K, IMI Galil, M4-WAC-47, Steyr AUG A3, C7A2 y C7A2 con mira C79, FN FAL y FAL Paratrooper 50.63, FN F2000, IWI Tavor TAR-21 y X95, SA80, KN-60 y QBZ-95 y QBZ-191.
+  - **Francotiradores**: SVD Dragunov, CheyTac Intervention y Mk 14 EBR.
+  - Las armas que ya había y coincidían con la lista pasan a ser la real: la ametralladora es la **M249**, el fusil de cerrojo el **Kar98k**, el lanzacohetes el **RPG-7** (se ve el cohete puesto y desaparece al dispararlo hasta que se recarga) y el lanzagranadas el **Milkor MGL** (tambor de 6 granadas que se recarga al vaciarse). Lo guardado con ellas sigue cargando.
+  - Las semiautomáticas respetan su cadencia, las de cerrojo y corredera suenan al recargar cada disparo, y las que traen mira, silenciador, láser o linterna de serie no admiten otro accesorio igual. Las miras de serie mejoran la precisión según su tipo (punto rojo, holográfica, ACOG, visores...).
+  - La IA sabe usarlas todas (las escopetas de cerca, los francotiradores de lejos y los lanzadores sin acercarse demasiado).
+- **Vehículos nuevos**:
+  - **Bote**: lancha con motor fueraborda que flota de verdad (cabecea con el peso y levanta la proa al acelerar), lleva a dos personas sentadas y sólo avanza con la hélice en el agua. Si se rompe el casco, se inunda y se hunde poco a poco.
+  - **Helicóptero**: F arranca el motor; el rotor tarda en coger vueltas, despega solo y se queda suspendido. Desde el menú se sube, se baja, se avanza, se retrocede o se aterriza (con señales: rojo sube y azul baja). Compensa el peso de lo que lleva, el rotor corta lo que toca y se rompe contra algo duro, y si se apaga en el aire baja girando hasta el suelo. Lleva a dos personas.
+  - En los dos, el menú **«Subir a bordo a la persona más cercana»** la sienta en un asiento libre (con lo que lleve en las manos) y **«Bajar a todos»** los deja fuera, de pie junto al vehículo.
+- **Cables de activación invisibles**: los cables de propagación (verde, rojo y azul, normales y destructibles) no se ven salvo cuando tienes equipada cualquiera de sus herramientas, y entonces se ven todos los colores a la vez. Mientras no se ven tampoco se pueden señalar ni borrar sin querer; las señales pasan por ellos igual.
+- **Correcciones**: el agua que salpica ya no enfría los objetos por debajo de su temperatura (un bote al caer al mar llegaba a −140 °C y congelaba a quien se sentaba en él). La IA vuelve a distinguir bien las armas de balas de los lanzadores.
+
 ## Versión 10 (4 de octubre de 2026)
 
 - **Categorías nuevas del catálogo**: Seres vivos, Armas cuerpo a cuerpo, Armas de fuego, Armas pesadas, Vehículos, Maquinaria, Objetos y Decoración, y Materiales médicos y Químicos (más los artefactos guardados).
