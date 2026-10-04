@@ -1,5 +1,23 @@
 # Historial de cambios
 
+## Versión 9 (4 de octubre de 2026)
+
+- **Uniones rehechas**: las herramientas de unión son ahora exactamente estas (por grupos de teclas):
+  - **2 · Cables de propagación**: verde, rojo y azul, que no se rompen con tirones, y sus versiones **destructibles**, que se rompen si se estiran, con golpes o caídas de lo que unen, si las cruza algo rápido, con balas o con explosiones (se dibujan a trazos). Ahora la señal va **en un solo sentido**: del primer objeto que unes al segundo (una flecha en el cable lo indica).
+  - **3 · Cables rígidos**: **Cable rígido** (barra metálica que mantiene la distancia y deja girar los extremos; antes «Cable rígido articulado»; ya no se rompe), **Soporte de madera** (antes «Puntal»: se parte con mucha fuerza, balas o explosiones y arde) y **Tubo de calor** (ya no se rompe).
+  - **4 · Cables**: **Cable** (el de cobre: conduce la electricidad y se rompe si se dañan sus extremos: un golpe fuerte o una explosión en un extremo, o si se estira muchísimo), **Conductor de líquido** (ya no se rompe al estirarlo) y **Conductor de líquido destructible** (nuevo: se rompe fácilmente y derrama lo que lleva).
+  - **5 · Cables fijos**: **Cable fijo** (el cable rígido sin giro ni movimiento de la versión 8; prácticamente indestructible), **Atadura de acero** (como una soldadura; ya no se rompe) y **Atadura de madera** (se rompe con mucho peso, balas o explosiones y arde).
+  - **6 · Resortes y pines**: Resorte, Resorte fuerte (aguanta mucho más), **Vendaje**, **Pin** (la antigua bisagra; no se rompe) y **Pin de madera** (nuevo: se parte con mucha fuerza o explosiones y arde).
+  - **7 · Conexiones flexibles y mecánicas**: **Cuerda** (se rompe con un tirón muy fuerte o con demasiado peso colgado, más de tonelada y media), **Cadena** (aguanta cualquier tirón o peso), Correa mecánica y **Enlace de fase** (antes «Enlace sin colisión»).
+  - Se quitan **Soldar**, **Cable de acero**, **Elástico**, **Bisagra motorizada** y **Enlace de propagación**. Las escenas y construcciones guardadas que los usen siguen cargando: pasan a ser una atadura de acero, una cadena, un resorte, un pin y un cable de propagación verde.
+  - La madera (soportes, ataduras y pines) **arde**: si uno de sus extremos se quema o se calienta mucho, la unión se pone al rojo y al rato se parte.
+  - Lo que se une con ataduras, cable fijo o pines no choca entre sí (así no se empujan aunque se solapen) y, al quitar la unión, vuelven a chocar en cuanto se separan.
+  - Los tirones secos ya no pasan desapercibidos: la fuerza de las uniones que se pueden romper se comprueba en cada paso de la física.
+- **Arrancar partes del cuerpo tirando**: si tiras muy fuerte de alguien, se le arranca lo que tiras. Con el ratón, un tirón brusco y largo, o tirar de alguien que está sujeto, le arranca los brazos o la cabeza (las piernas cuestan más); también lo hacen las cuerdas, cadenas o vehículos que tiran de golpe. Sólo cuenta tirar: los golpes y las caídas no arrancan nada por esto. No pasa a los inmortales ni con el desmembramiento desactivado en Ajustes.
+- **Zombis muertos**: ya no siguen moviéndose como si se arrastraran.
+- **Arrastrarse con los brazos**: al arrastrarse, las personas y los zombis estiran un brazo, lo apoyan y tiran del cuerpo, alternando los dos, en lugar de deslizarse sin moverlos. Si están boca arriba, primero se dan la vuelta.
+- **Copias exactas**: copiar y pegar, duplicar, guardar escenas y deshacer un borrado conservan la escala, las colisiones activadas o desactivadas, el sonido silenciado, el congelado, la ingravidez y la fuerza de las máquinas; en las personas, también que sean inmortales, su IA y su pose.
+
 ## Versión 8.1 (3 de octubre de 2026)
 
 - **Desmayarse es mucho más difícil**: personas, zombis y androides sólo pierden el conocimiento con un golpe muy fuerte en la cabeza (un batazo o un mazazo, un choque de la cabeza a mucha velocidad, una explosión fuerte o un disparo en la cabeza), y cuanto más fuerte, más tiempo. Los puñetazos, las patadas y los golpes flojos ya no desmayan, y el dolor aturde (se mueven peor) pero no hace perder el conocimiento. Siguen desmayando la pérdida de mucha sangre, el daño cerebral, el ahogo, el frío extremo, los sedantes y las armas aturdidoras.

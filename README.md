@@ -31,7 +31,7 @@ Son los del juego original y se pueden cambiar en **Ajustes → Teclas**.
 | Mostrar u ocultar el catálogo y las herramientas | Tab |
 | Herramientas / poderes | Ctrl |
 | Herramientas | 1-9 (el mismo número otra vez pasa a la siguiente de su grupo) |
-| Bisagra en el centro de masa | Mantén M al clavarla |
+| Pin en el centro de masa | Mantén M al clavarlo |
 | Zoom / mover la cámara | Rueda / apretar la rueda y arrastrar (también mientras agarras algo) o flechas |
 | Ayuda con todos los controles | F1 |
 
@@ -41,19 +41,20 @@ Con el tiempo detenido, lo que arrastras se coloca directamente sin física y co
 
 ## Qué incluye
 
-- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento, consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua). Poses (tropezar, caminar, encogerse, sentarse, pose rígida) e IA que se puede activar en cada una: corren, buscan armas a las que se puede llegar, disparan (sin herir a los inocentes que haya en medio), pelean cuerpo a cuerpo con estocadas o golpes desde arriba según el arma, rematan a los zombis caídos, se apartan de explosivos y fuego, saltan obstáculos y se arrastran si tienen las piernas dañadas. Zombis variados (cada uno con su pelo y su ropa) que contagian al morder o arañar (algunos corren y otros saltan).
+- Personas con salud por extremidad: dolor, sangre, huesos rotos, desmembramiento (también tirando muy fuerte de ellas, con el ratón o con cuerdas, cadenas y vehículos), consciencia, pulso, temperatura corporal y respiración (se ahogan bajo el agua). Poses (tropezar, caminar, encogerse, sentarse, pose rígida) e IA que se puede activar en cada una: corren, buscan armas a las que se puede llegar, disparan (sin herir a los inocentes que haya en medio), pelean cuerpo a cuerpo con estocadas o golpes desde arriba según el arma, rematan a los zombis caídos, se apartan de explosivos y fuego, saltan obstáculos y se arrastran con los brazos si tienen las piernas dañadas. Zombis variados (cada uno con su pelo y su ropa) que contagian al morder o arañar (algunos corren y otros saltan).
 - 330 objetos: armas blancas y de fuego, accesorios para armas, explosivos, lanzadores, armas de energía, electrónica, biológico, química y líquidos, maquinaria, vehículos, iluminación y objetos.
-- Electricidad con cable de cobre y señales con cables de activación verde, rojo y azul (botones, interruptores, detectores, contadores, compuertas, radios...).
+- Electricidad con cable y señales con cables de propagación verde, rojo y azul, normales o destructibles, que llevan la señal del primer objeto al segundo (botones, interruptores, detectores, contadores, compuertas, radios...).
 - Temperatura: fuego, metal al rojo, congelación, calefactores y refrigerantes.
 - Líquidos: matraces que vierten y recogen, jeringas que inyectan y extraen, mezclas, y conductos con presurizadores y válvulas.
 - Agua y lava con flotación. 21 mapas: los del original (Abismo, Híbrido, Gigante, Reactor A5, Inclinado, Pequeño, Nevado, Subestructura con ascensor, Diminuto, Vacío y Valle, más Mar y Foso de lava) y otros extra (Explanada, Piscina, Foso de pinchos, Plataformas, Arena cerrada, Torre, Bloques y Escaleras).
 - Editor de mapas: dibuja bloques, rampas, agua y lava, y guarda tus propios mapas.
 - Entorno: temperatura ambiente, lluvia, nieve, niebla, tormenta eléctrica y colisiones entre seres (humanos, zombis y androides).
 - El fuego consume lo que arde: los objetos acaban en ceniza y las personas, como esqueletos carbonizados.
-- Herramientas de unión (soldar, cable rígido que une dos cosas como una sola pieza, cable rígido articulado, bisagras, resortes, cuerdas, cadenas, vendas, ataduras de acero y madera, correas, conductos...) y poderes (empujar, atraer, levantar, rayo, fuego, frío...).
+- Herramientas de unión, por grupos: cables de propagación (verde, rojo y azul, y sus versiones destructibles); cables rígidos (cable rígido, soporte de madera y tubo de calor); cables (cable eléctrico, conductor de líquido y conductor de líquido destructible); cables fijos (cable fijo, que une dos cosas como una sola pieza, y ataduras de acero y de madera); resortes y pines (resorte, resorte fuerte, vendaje, pin y pin de madera), y conexiones flexibles y mecánicas (cuerda, cadena, correa mecánica y enlace de fase). Las de madera se parten y arden; la cuerda se rompe con demasiado peso; la cadena, el cable fijo, las ataduras de acero y los pines metálicos aguantan cualquier esfuerzo normal.
+- Poderes: empujar, atraer, levantar, rayo, fuego, frío...
 - Máquinas con fuerza ajustable (servomotores, rotores, pistones, propulsores, vehículos...) desde el menú contextual.
 - Menú contextual como el del original (congelar por partes, inspeccionar, editar capa, poses, IA...), además de redimensionar, fijar ángulo y temperatura, hacer indestructible, silenciar y más.
-- Guardar escenas y guardar construcciones como artefactos en el catálogo.
+- Guardar escenas y guardar construcciones como artefactos en el catálogo. Copiar, pegar, duplicar y guardar conservan la escala, las colisiones, el sonido, el congelado, la ingravidez y la fuerza de cada cosa.
 
 ## Notas
 

@@ -1479,6 +1479,7 @@ function beginContact(contact) {
 function processImpacts() {
   const list = Phys.impacts; if (!list.length) return;
   Phys.impacts = [];
+  Connections.impacts(list);
   for (const im of list) {
     const dA = im.fA.getUserData() || {}, dB = im.fB.getUserData() || {};
     const tA = dA.thing, tB = dB.thing;
@@ -2662,17 +2663,8 @@ class Human extends Thing {
     this.updateWounds(dt);
     if (this.fire > 0) this.updateHumanFire(dt);
     if (this.zombie && this.alive) this.zombieAI(dt);
-    // tensión en articulaciones (desmembramiento por tirones)
+    // (el desmembramiento por tirones se comprueba en cada subpaso de la física: Human.tearCheck)
     for (const L of this.limbList) if (L.blastAcc) L.blastAcc = Math.max(0, L.blastAcc - dt * 1.5);
-    if (Settings.gore && !this.dragged) {
-      for (const L of this.limbList) {
-        if (!L.joint || L.destroyed) continue;
-        const F = L.joint.getReactionForce(1 / (dt / Phys.substeps)).length();
-        const lim = (L.id === 'head' ? 13000 : L.def.leg ? 22000 : L.id === 'middleBody' || L.id === 'lowerBody' ? 30000 : 13000) * (this.kind === 'android' ? 2 : 1) * (0.35 + 0.65 * L.integrity);
-        if (F > lim) { L.stress += dt; if (L.stress > 0.05) this.sever(L, 'tear'); }
-        else L.stress = Math.max(0, L.stress - dt);
-      }
-    }
     for (const L of this.limbList) if (L.dirty && !L.destroyed) L.compose();
     // caída al vacío
     const p = this.root.body.getPosition();
@@ -3443,6 +3435,14 @@ const Stuck = {
   stuckIn(item) { return this.list.filter((r) => r.item === item); },
   unstickAll(item) { for (let i = this.list.length - 1; i >= 0; i--) if (this.list[i].item === item) this.drop(this.list[i], i); },
 };
+// un extremo de una unión arde o está muy caliente
+function connEndHot(t) { return !!t && !t.dead && ((t.fire || 0) > 0.3 || (!t.isHuman && !t.isTerrain && typeof Heat !== 'undefined' && Heat.tempOf(t) > 250)); }
+// ¿se cruzan los segmentos p1-p2 y p3-p4?
+function segsCross(x1, y1, x2, y2, x3, y3, x4, y4) {
+  const d = (x2 - x1) * (y4 - y3) - (y2 - y1) * (x4 - x3); if (Math.abs(d) < 1e-9) return false;
+  const u = ((x3 - x1) * (y4 - y3) - (y3 - y1) * (x4 - x3)) / d, v = ((x3 - x1) * (y2 - y1) - (y3 - y1) * (x2 - x1)) / d;
+  return u >= 0 && u <= 1 && v >= 0 && v <= 1;
+}
 function overlapBodies(a, b) {
   try {
     const A = bodyAABB(a), B = bodyAABB(b);
@@ -3513,35 +3513,48 @@ const Holding = {
 /* -------------------------------------------------------------------------
    CONEXIONES (herramientas: soldar, bisagra, resorte, cuerda...)
    ------------------------------------------------------------------------- */
+// dest: 'ends' se rompe si se dañan sus extremos; 'wire' se rompe fácilmente (tirones, golpes, caídas, balas,
+// explosiones). wood: de madera (se parte con golpes o explosiones y arde). Lo demás no se rompe con tirones.
 const CONN_TYPES = {
-  weld: { name: 'Soldadura', col: '#9aa3ad' },
-  fixed: { name: 'Cable rígido', col: '#3c4148' },
-  hinge: { name: 'Bisagra', col: '#c9ced4' },
+  // cables
+  copper: { name: 'Cable', col: '#d08a4a', power: true, dest: 'ends' },
+  conduit: { name: 'Conductor de líquido', col: '#9a2a2a', liquid: true },
+  conduitD: { name: 'Conductor de líquido destructible', col: '#9a2a2a', liquid: true, dest: 'wire' },
+  // cables de propagación (llevan la activación del primer objeto al segundo)
+  wire: { name: 'Cable de propagación verde', col: '#6fcf7f', signal: true },
+  wireR: { name: 'Cable de propagación rojo', col: '#e0605a', signal: true },
+  wireB: { name: 'Cable de propagación azul', col: '#5a9be0', signal: true },
+  wireD: { name: 'Cable de propagación verde destructible', col: '#6fcf7f', signal: true, dest: 'wire' },
+  wireRD: { name: 'Cable de propagación rojo destructible', col: '#e0605a', signal: true, dest: 'wire' },
+  wireBD: { name: 'Cable de propagación azul destructible', col: '#5a9be0', signal: true, dest: 'wire' },
+  // cables rígidos
+  rod: { name: 'Cable rígido', col: '#8a9099' },
+  strut: { name: 'Soporte de madera', col: '#a07a4e', wood: true },
+  heatpipe: { name: 'Tubo de calor', col: '#c86a3a', heat: true },
+  // cables fijos
+  fixed: { name: 'Cable fijo', col: '#3c4148' },
+  steel: { name: 'Atadura de acero', col: '#6e757e' },
+  woodbind: { name: 'Atadura de madera', col: '#a07a4e', wood: true },
+  // conexiones flexibles y mecánicas
+  rope: { name: 'Cuerda', col: '#a07a4a' },
+  chain: { name: 'Cadena', col: '#8a9099' },
+  belt: { name: 'Correa mecánica', col: '#2a2d32' },
+  phase: { name: 'Enlace de fase', col: '#b07ad8', hidden: true },
+  // resortes y pines
   spring: { name: 'Resorte', col: '#d9d2c2' },
   springStrong: { name: 'Resorte fuerte', col: '#8a9099' },
-  bandage: { name: 'Venda', col: '#eeeae0' },
-  rope: { name: 'Cuerda', col: '#a07a4a' },
-  cable: { name: 'Cable de acero', col: '#5b616a' },
-  chain: { name: 'Cadena', col: '#8a9099' },
-  rod: { name: 'Cable rígido articulado', col: '#8a9099' },
-  strut: { name: 'Puntal de madera', col: '#a07a4e' },
-  heatpipe: { name: 'Tubo de calor', col: '#c86a3a', heat: true },
-  elastic: { name: 'Elástico', col: '#c94a3a' },
-  copper: { name: 'Cable de cobre', col: '#d08a4a', power: true },
-  wire: { name: 'Cable de activación', col: '#6fcf7f', signal: true },
-  wireR: { name: 'Cable de activación rojo', col: '#e0605a', signal: true },
-  wireB: { name: 'Cable de activación azul', col: '#5a9be0', signal: true },
-  motor: { name: 'Motor', col: '#f0b23c' },
-  steel: { name: 'Atadura de acero', col: '#6e757e' },
-  woodbind: { name: 'Atadura de madera', col: '#a07a4e' },
-  phase: { name: 'Enlace sin colisión', col: '#b07ad8', hidden: true },
-  conduit: { name: 'Conducto de líquido', col: '#9a2a2a', liquid: true },
-  belt: { name: 'Correa mecánica', col: '#2a2d32' },
-  link: { name: 'Enlace de propagación', col: '#6fcf7f', signal: true, hidden: true },
+  bandage: { name: 'Vendaje', col: '#eeeae0' },
+  hinge: { name: 'Pin', col: '#c9ced4' },
+  woodpin: { name: 'Pin de madera', col: '#8a6038', wood: true },
 };
+// uniones que ya no existen (escenas y planos guardados con versiones anteriores): pasan a la más parecida
+const CONN_ALIAS = { weld: 'steel', cable: 'chain', elastic: 'spring', motor: 'hinge', link: 'wire' };
+const WOOD_RGB = [160, 122, 78];
 const Connections = {
   list: [],
   create(type, bA, pA, bB, pB) {
+    if (!CONN_TYPES[type]) type = CONN_ALIAS[type];
+    if (!type) return null;
     const w = Phys.world;
     const A = bA || Phys.ground, B = bB || Phys.ground;
     if (A === B) return null;
@@ -3558,29 +3571,20 @@ const Connections = {
       for (const a of tA.bodies) for (const b of tB.bodies) setNoCollide(a, b, true);
     } else if (type === 'belt') {
       if (!bA || !bB) return null;
-    } else if (type === 'steel' || type === 'woodbind') {
-      c.joint = w.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: true }, A, B, V((pA[0] + pB[0]) / 2, (pA[1] + pB[1]) / 2)));
-    } else if (type === 'weld') {
-      c.joint = w.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0 }, A, B, V(pA[0], pA[1])));
-    } else if (type === 'fixed') {
-      c.joint = w.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: true }, A, B, V((pA[0] + pB[0]) / 2, (pA[1] + pB[1]) / 2)));
+    } else if (type === 'steel' || type === 'woodbind' || type === 'fixed') {
+      // como una soldadura: lo unido no choca entre sí (así, aunque se solapen, no se empujan)
+      c.joint = w.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0 }, A, B, V((pA[0] + pB[0]) / 2, (pA[1] + pB[1]) / 2)));
     } else if (type === 'springStrong' || type === 'bandage') {
       c.joint = w.createJoint(pl.DistanceJoint({ frequencyHz: type === 'bandage' ? 1.2 : 6, dampingRatio: type === 'bandage' ? 0.15 : 0.4, collideConnected: true }, A, B, V(pA[0], pA[1]), V(pB[0], pB[1])));
       if (type === 'bandage') for (const t of [tA, tB]) if (t && t.isHuman) { const L = bodyData(t === tA ? A : B).part; if (L) { L.wounds.length = 0; L.bandaged = true; } }
-    } else if (type === 'strut' || type === 'heatpipe') {
+    } else if (type === 'strut' || type === 'heatpipe' || type === 'rod') {
       c.joint = w.createJoint(pl.DistanceJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: true }, A, B, V(pA[0], pA[1]), V(pB[0], pB[1])));
-    } else if (type === 'cable' || type === 'chain') {
+    } else if (type === 'rope' || type === 'chain') {
       c.joint = w.createJoint(pl.RopeJoint({ bodyA: A, bodyB: B, localAnchorA: c.la, localAnchorB: c.lb, maxLength: Math.max(0.05, c.len), collideConnected: true }));
-    } else if (type === 'hinge' || type === 'motor') {
-      c.joint = w.createJoint(pl.RevoluteJoint({ enableMotor: type === 'motor', maxMotorTorque: 400, motorSpeed: 4 }, A, B, V(pA[0], pA[1])));
+    } else if (type === 'hinge' || type === 'woodpin') {
+      c.joint = w.createJoint(pl.RevoluteJoint({}, A, B, V(pA[0], pA[1])));
     } else if (type === 'spring') {
       c.joint = w.createJoint(pl.DistanceJoint({ frequencyHz: 2.5, dampingRatio: 0.25, collideConnected: true }, A, B, V(pA[0], pA[1]), V(pB[0], pB[1])));
-    } else if (type === 'rod') {
-      c.joint = w.createJoint(pl.DistanceJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: true }, A, B, V(pA[0], pA[1]), V(pB[0], pB[1])));
-    } else if (type === 'rope') {
-      c.joint = w.createJoint(pl.RopeJoint({ bodyA: A, bodyB: B, localAnchorA: c.la, localAnchorB: c.lb, maxLength: Math.max(0.05, c.len), collideConnected: true }));
-    } else if (type === 'elastic') {
-      c.rest = Math.max(0.05, c.len);
     }
     if (bA) bA.setAwake(true); if (bB) bB.setAwake(true);
     if (tA) tA.conns.add(c); if (tB) tB.conns.add(c);
@@ -3590,6 +3594,10 @@ const Connections = {
   remove(c) {
     const i = this.list.indexOf(c); if (i < 0) return;
     this.list.splice(i, 1);
+    // lo que estaba unido sin chocar entre sí (ataduras, cable fijo, pines) vuelve a chocar cuando deja de
+    // solaparse: así no sale disparado al quitar la unión
+    const live = (b) => b && b !== Phys.ground && !b.m_destroyed && b.getWorld && b.getWorld();
+    if (c.joint && !c.joint.getCollideConnected() && live(c.bA) && live(c.bB) && overlapBodies(c.bA, c.bB)) { setNoCollide(c.bA, c.bB, true); Stuck.pend.push({ a: c.bA, b: c.bB, t: 0.05 }); }
     if (c.joint) { try { Phys.world.destroyJoint(c.joint); } catch (e) {} }
     if (c.type === 'phase' && c.tA && c.tB) {
       const still = this.list.some((o) => o.type === 'phase' && ((o.tA === c.tA && o.tB === c.tB) || (o.tA === c.tB && o.tB === c.tA)));
@@ -3617,87 +3625,161 @@ const Connections = {
         const I = Math.min(Ia || Ib, Ib || Ia); if (!I) continue;
         const tq = clamp((B.getAngularVelocity() - A.getAngularVelocity()) * I * 40, -40000, 40000);
         if (Ia) A.applyTorque(tq, true); if (Ib) B.applyTorque(-tq, true);
-        continue;
       }
-      if (c.type !== 'elastic') continue;
-      const [ax, ay, bx, by] = this.ends(c);
-      const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
-      if (d <= c.rest) continue;
-      const ext = d - c.rest;
-      const ma = c.bA.getMass() || 0, mb = c.bB.getMass() || 0;
-      const m = Math.max(1, Math.min(ma || mb, mb || ma));
-      const F = Math.min(ext * 60 * m, 9000);
-      const ux = dx / d, uy = dy / d;
-      // amortiguación
-      const va = c.bA.getLinearVelocityFromWorldPoint(V(ax, ay)), vb = c.bB.getLinearVelocityFromWorldPoint(V(bx, by));
-      const rv = (vb.x - va.x) * ux + (vb.y - va.y) * uy;
-      const Ft = F + rv * m * 2;
-      if (c.bA.getType() === 'dynamic') c.bA.applyForce(V(ux * Ft, uy * Ft), V(ax, ay), true);
-      if (c.bB.getType() === 'dynamic') c.bB.applyForce(V(-ux * Ft, -uy * Ft), V(bx, by), true);
     }
   },
   update(dt) {
     for (const c of [...this.list]) {
       c.t += dt;
-      if (c.type === 'motor' && c.joint) c.joint.setMotorSpeed(c.dir || 4);
       if (c.flash > 0) c.flash -= dt;
-      // ataduras destructibles: el límite depende de la masa unida (la de madera también se quema)
-      if ((c.type === 'steel' || c.type === 'woodbind') && c.joint) {
-        const m = Math.min(400, (c.bA.getMass() || 50) + (c.bB.getMass() || 50));
-        const F = c.joint.getReactionForce(120).length();
-        const burnt = c.type === 'woodbind' && [c.tA, c.tB].some((t) => t && (t.fire > 0.5 || (t.temp || 0) > 280));
-        if (F > m * (c.type === 'steel' ? 2600 : 900) + 3000 || burnt) {
-          const [ax, ay] = this.ends(c);
-          Sound.play(c.type === 'steel' ? 'snap' : 'impact_wood', ax, ay, 1);
-          if (c.type === 'woodbind') Effects.debris(ax, ay, 0, -1, 6, [160, 122, 78]); else Effects.sparks(ax, ay, 0, 0, 6, 2);
-          this.remove(c); continue;
-        }
+      const T = CONN_TYPES[c.type];
+      // la madera arde si uno de sus extremos se quema (o se calienta mucho) y al rato se parte
+      if (T.wood) {
+        if (connEndHot(c.tA) || connEndHot(c.tB)) c.burn = (c.burn || 0) + dt;
+        else if (c.burn) c.burn = Math.max(0, c.burn - dt * 0.3);
+        if (c.burn > 0.4 && Math.random() < dt * 14) { const [ax, ay, bx, by] = this.ends(c), k = Math.random(); Effects.flame(ax + (bx - ax) * k, ay + (by - ay) * k, gauss() * 0.3, -rand(0.5, 1.5), null); }
+        if (c.burn > 2.5) { this.breakConn(c, 'burn'); continue; }
       }
-      // roturas por fuerza excesiva
-      if (c.joint && c.type !== 'weld' && c.type !== 'hinge' && c.type !== 'motor' && c.type !== 'fixed') {
-        const F = c.joint.getReactionForce(120).length();
-        const lim = c.type === 'strut' ? 9000 : c.type === 'bandage' ? 3000 : c.type === 'cable' || c.type === 'chain' ? 200000 : c.type === 'rod' || c.type === 'heatpipe' ? 400000 : 60000;
-        if (F > lim) {
-          const [ax, ay, bx, by] = this.ends(c);
-          Sound.play(c.type === 'strut' ? 'impact_wood' : 'snap', ax, ay, 1);
-          if (c.type === 'strut') Effects.debris((ax + bx) / 2, (ay + by) / 2, 0, -1, 8, [160, 122, 78]);
-          this.remove(c); continue;
-        }
+      // tirones: sólo se rompen las uniones destructibles (las demás aguantan cualquier esfuerzo normal)
+      let lim = this.limit(c);
+      if (lim && c.joint) {
+        // la fuerza más alta de los subpasos de este paso (ver sampleStress)
+        const F = c.fPeak || 0; c.fPeak = 0;
+        // la cuerda aguanta un tirón seco fuerte, pero no un peso enorme durante un rato
+        if (c.type === 'rope') { c.fAvg = (c.fAvg || 0) + (F - (c.fAvg || 0)) * Math.min(1, dt * 4); if (c.fAvg > 15000) lim = 1; }
+        if (F > lim) { this.breakConn(c, 'snap'); continue; }
+      }
+      // cables destructibles: se rompen si se estiran demasiado o si los cruza algo rápido
+      if (T.dest && c.t > 0.3) {
+        const [ax, ay, bx, by] = this.ends(c), d = Math.hypot(bx - ax, by - ay);
+        const maxD = T.dest === 'ends' ? Math.max(c.len * 3, c.len + 4) : Math.max(c.len * 1.6, c.len + 1);
+        if (d > maxD) { this.breakConn(c, 'snap'); continue; }
+        if (T.dest === 'wire' && this.crossed(c, ax, ay, bx, by)) { this.breakConn(c, 'cut'); continue; }
       }
       // las vendas curan poco a poco
       if (c.type === 'bandage') for (const t of [c.tA, c.tB]) if (t && t.isHuman && !t.dead) { const L = bodyData(t === c.tA ? c.bA : c.bB).part; if (L && !L.destroyed) { for (const w of L.wounds) w.rate *= 1 - dt * 0.8; L.health = Math.min(1, L.health + dt * 0.01); } }
+    }
+  },
+  // fuerza a partir de la cual se rompe (0: no se rompe con tirones)
+  limit(c) {
+    switch (c.type) {
+      case 'woodbind': case 'woodpin': return Math.min(400, (c.bA.getMass() || 50) + (c.bB.getMass() || 50)) * 900 + 3000;
+      case 'strut': return 9000;
+      case 'bandage': return 3000;
+      case 'spring': case 'rope': return 60000;
+      case 'springStrong': return 200000;
+    }
+    return 0;
+  },
+  // en cada subpaso se guarda la fuerza más alta de las uniones que se pueden romper (así un tirón seco no
+  // pasa desapercibido); una unión entre dos cosas fijas nunca se ha calculado y no tiene fuerza
+  sampleStress() {
+    for (const c of this.list) {
+      if (!c.joint || !this.limit(c)) continue;
+      let F = 0; try { F = c.joint.getReactionForce(120).length(); } catch (e) {}
+      if (!(F <= c.fPeak)) c.fPeak = F;
+    }
+  },
+  // una unión se rompe: efectos según el material (x, y: dónde, si no es en medio)
+  breakConn(c, why, x, y) {
+    if (!this.list.includes(c)) return;
+    const T = CONN_TYPES[c.type], [ax, ay, bx, by] = this.ends(c);
+    const mx = x === undefined ? (ax + bx) / 2 : x, my = y === undefined ? (ay + by) / 2 : y;
+    if (T.wood) {
+      Sound.play('impact_wood', mx, my, 1);
+      Effects.debris(mx, my, 0, -1, 8, why === 'burn' ? [58, 48, 42] : WOOD_RGB);
+      if (why === 'burn') Effects.smoke(mx, my, 4);
+    } else if (T.liquid) {
+      Sound.play('snap', mx, my, 0.6);
+      if (c.col) for (let i = 0; i < 8; i++) Effects.add(PT.LIQ, mx, my, gauss() * 2, gauss() * 2 - 1, 1.5, 1.2, c.col);
+    } else {
+      Sound.play('snap', mx, my, T.signal || T.power ? 0.5 : 1);
+      if (T.signal || T.power) Effects.sparks(mx, my, 0, 0, 6, 1.5);
+    }
+    this.remove(c);
+  },
+  // algo rápido (o afilado) atraviesa el cable
+  crossed(c, ax, ay, bx, by) {
+    for (const h of rayAll(ax, ay, bx, by)) {
+      const b = h.b;
+      if (b === c.bA || b === c.bB || b.getType() !== 'dynamic' || h.f.isSensor() || h.d.ghost) continue;
+      if (h.d.thing && (h.d.thing === c.tA || h.d.thing === c.tB)) continue;
+      const v = b.getLinearVelocityFromWorldPoint(V(h.x, h.y)), sp = Math.hypot(v.x, v.y);
+      if (sp > 7 || (h.d.sharp && sp > 2.5)) return true;
+    }
+    return false;
+  },
+  // golpes: los cables destructibles se rompen si lo que unen recibe un golpe fuerte (el cable normal, sólo
+  // si el golpe le da en un extremo)
+  impacts(list) {
+    let by = null;
+    for (const c of this.list) {
+      if (!CONN_TYPES[c.type].dest || c.t < 0.3) continue;
+      by = by || new Map();
+      for (const b of [c.bA, c.bB]) { const l = by.get(b); if (l) l.push(c); else by.set(b, [c]); }
+    }
+    if (!by) return;
+    for (const im of list) for (const [b, dv] of [[im.bA, im.dvA], [im.bB, im.dvB]]) {
+      if (!(dv >= 5) || !by.has(b)) continue;
+      for (const c of by.get(b)) {
+        if (!this.list.includes(c)) continue;
+        if (CONN_TYPES[c.type].dest === 'wire') { this.breakConn(c, 'snap'); continue; }
+        if (dv < 8) continue;
+        const p = c.bA === b ? c.bA.getWorldPoint(c.la) : c.bB.getWorldPoint(c.lb);
+        if (Math.hypot(p.x - im.x, p.y - im.y) < 0.4) this.breakConn(c, 'snap', p.x, p.y);
+      }
+    }
+  },
+  // explosiones: rompen los cables destructibles cercanos (el normal, si le alcanza un extremo) y la madera
+  blast(x, y, R, power) {
+    for (const c of [...this.list]) {
+      const T = CONN_TYPES[c.type]; if (!T.dest && !T.wood) continue;
+      const [ax, ay, bx, by] = this.ends(c);
+      const d = T.dest === 'ends' ? Math.min(Math.hypot(ax - x, ay - y), Math.hypot(bx - x, by - y)) : segDist(x, y, ax, ay, bx, by);
+      if (d < R * (T.wood ? 0.6 : 1) && power * (1 - d / R) > (T.wood ? 0.6 : T.dest === 'wire' ? 0.08 : 0.25)) this.breakConn(c, 'blast');
+    }
+  },
+  // balas: cortan los cables destructibles y parten la madera que atraviesan
+  shot(x1, y1, x2, y2) {
+    for (const c of [...this.list]) {
+      const T = CONN_TYPES[c.type]; if (T.dest !== 'wire' && !T.wood) continue;
+      const [ax, ay, bx, by] = this.ends(c);
+      if (segsCross(x1, y1, x2, y2, ax, ay, bx, by)) this.breakConn(c, 'shot');
     }
   },
   near(x, y, r) {
     let best = null, bd = r;
     for (const c of this.list) {
       const [ax, ay, bx, by] = this.ends(c);
-      const d = c.type === 'weld' || c.type === 'hinge' || c.type === 'motor' ? Math.hypot(x - ax, y - ay) : segDist(x, y, ax, ay, bx, by);
+      const d = c.type === 'hinge' || c.type === 'woodpin' ? Math.hypot(x - ax, y - ay) : segDist(x, y, ax, ay, bx, by);
       if (!isFinite(d)) continue;
       if (d < bd) { bd = d; best = c; }
     }
     return best;
   },
   draw(ctx, cam, hover) {
+    const curve = (ax, ay, bx, by, sag) => { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); ctx.stroke(); };
     for (const c of this.list) {
       const T = CONN_TYPES[c.type];
       if (T.hidden && !Settings.showInfo && c !== hover) continue;
       const [ax, ay, bx, by] = this.ends(c);
       const hi = c === hover;
       ctx.strokeStyle = hi ? '#ffd36e' : T.col;
-      if (c.type === 'phase' || c.type === 'link') {
+      if (c.type === 'phase') {
         ctx.lineWidth = 1.2 / Cam.zoom; ctx.setLineDash([5 / Cam.zoom, 4 / Cam.zoom]);
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); ctx.setLineDash([]);
       } else if (c.type === 'steel' || c.type === 'woodbind') {
         ctx.lineWidth = (c.type === 'steel' ? 1.1 : 1.8) * PX; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
         ctx.fillStyle = hi ? '#ffd36e' : c.type === 'steel' ? '#4b5058' : '#7a5232';
         ctx.fillRect(ax - 1.4 * PX, ay - 1.4 * PX, 2.8 * PX, 2.8 * PX); ctx.fillRect(bx - 1.4 * PX, by - 1.4 * PX, 2.8 * PX, 2.8 * PX);
-      } else if (c.type === 'conduit') {
+      } else if (T.liquid) {
+        // el destructible es una manguera (a trozos); el normal, un tubo
         const d = Math.hypot(bx - ax, by - ay), sag = d * 0.1 + 0.04;
-        ctx.lineWidth = 1.6 * PX; ctx.strokeStyle = hi ? '#ffd36e' : '#3c4148';
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); ctx.stroke();
+        ctx.lineWidth = 1.6 * PX; ctx.strokeStyle = hi ? '#ffd36e' : T.dest ? '#6b4a3c' : '#3c4148';
+        if (T.dest) ctx.setLineDash([3 * PX, 1 * PX]);
+        curve(ax, ay, bx, by, sag); ctx.setLineDash([]);
         ctx.lineWidth = 0.8 * PX; ctx.strokeStyle = c.col ? rgbStr(c.col, 0.95) : 'rgba(180,200,210,0.35)';
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); ctx.stroke();
+        curve(ax, ay, bx, by, sag);
       } else if (c.type === 'belt') {
         const d = Math.hypot(bx - ax, by - ay) || 1e-3, nx = -(by - ay) / d * 4 * PX, ny = (bx - ax) / d * 4 * PX;
         ctx.lineWidth = 1.2 * PX; ctx.beginPath(); ctx.moveTo(ax + nx, ay + ny); ctx.lineTo(bx + nx, by + ny); ctx.moveTo(ax - nx, ay - ny); ctx.lineTo(bx - nx, by - ny); ctx.stroke();
@@ -3707,54 +3789,56 @@ const Connections = {
       } else if (c.type === 'strut' || c.type === 'heatpipe') {
         ctx.lineWidth = (c.type === 'strut' ? 2.2 : 1.8) * PX; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
         if (c.type === 'heatpipe' && typeof Heat !== 'undefined') { const tt = ((c.tA ? Heat.tempOf(c.tA) : 18) + (c.tB ? Heat.tempOf(c.tB) : 18)) / 2; if (tt > 80) { ctx.strokeStyle = `rgba(255,${Math.max(60, 200 - tt / 3) | 0},40,${Math.min(0.8, (tt - 80) / 400)})`; ctx.lineWidth = 1 * PX; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); } }
-      } else if (c.type === 'chain' || c.type === 'cable') {
+      } else if (c.type === 'chain') {
         const d = Math.hypot(bx - ax, by - ay);
         const L = c.joint ? c.joint.getMaxLength() : c.len;
         const sag = d < L ? Math.sqrt(Math.max(0, L * L - d * d)) * 0.5 : 0;
-        if (c.type === 'cable') { ctx.lineWidth = 1.2 * PX; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); ctx.stroke(); }
-        else {
-          const n = Math.max(2, Math.round(L / (5 * PX)));
-          ctx.fillStyle = hi ? '#ffd36e' : '#8a9099';
-          for (let i = 0; i <= n; i++) { const t = i / n, x = (1 - t) * (1 - t) * ax + 2 * (1 - t) * t * ((ax + bx) / 2) + t * t * bx, y = (1 - t) * (1 - t) * ay + 2 * (1 - t) * t * ((ay + by) / 2 + sag) + t * t * by; if (i % 2) ctx.fillRect(x - 1.6 * PX, y - 0.8 * PX, 3.2 * PX, 1.6 * PX); else ctx.fillRect(x - 0.8 * PX, y - 1.6 * PX, 1.6 * PX, 3.2 * PX); }
-        }
-      } else if (c.type === 'copper' || c.type === 'wireR' || c.type === 'wireB') {
+        const n = Math.max(2, Math.round(L / (5 * PX)));
+        ctx.fillStyle = hi ? '#ffd36e' : '#8a9099';
+        for (let i = 0; i <= n; i++) { const t = i / n, x = (1 - t) * (1 - t) * ax + 2 * (1 - t) * t * ((ax + bx) / 2) + t * t * bx, y = (1 - t) * (1 - t) * ay + 2 * (1 - t) * t * ((ay + by) / 2 + sag) + t * t * by; if (i % 2) ctx.fillRect(x - 1.6 * PX, y - 0.8 * PX, 3.2 * PX, 1.6 * PX); else ctx.fillRect(x - 0.8 * PX, y - 1.6 * PX, 1.6 * PX, 3.2 * PX); }
+      } else if (c.type === 'copper') {
         const d = Math.hypot(bx - ax, by - ay), sag = d * 0.12 + 0.05;
-        ctx.strokeStyle = hi ? '#ffd36e' : T.col; ctx.lineWidth = 0.7 * PX;
-        if (c.type === 'copper' && Power.isLit(c)) { ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 0.9 * PX; }
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); ctx.stroke();
+        ctx.lineWidth = 0.7 * PX;
+        if (Power.isLit(c)) { ctx.strokeStyle = '#ffd27a'; ctx.lineWidth = 0.9 * PX; }
+        curve(ax, ay, bx, by, sag);
         ctx.fillStyle = T.col; ctx.fillRect(ax - PX, ay - PX, PX * 2, PX * 2); ctx.fillRect(bx - PX, by - PX, PX * 2, PX * 2);
+      } else if (T.signal) {
+        // cables de propagación: la flecha indica el sentido de la señal (del primer objeto al segundo); el
+        // destructible va a trazos
+        const d = Math.hypot(bx - ax, by - ay), sag = d * 0.1 + 0.05, cx = (ax + bx) / 2, cy = (ay + by) / 2 + sag;
+        ctx.lineWidth = 0.6 * PX;
+        if (T.dest) ctx.setLineDash([2.4 * PX, 1.4 * PX]);
+        curve(ax, ay, bx, by, sag); ctx.setLineDash([]);
+        const px = (ax + bx) / 4 + cx / 2, py = (ay + by) / 4 + cy / 2, dl = d || 1e-3, ux = (bx - ax) / dl, uy = (by - ay) / dl, s = 1.8 * PX;
+        ctx.lineWidth = 0.7 * PX; ctx.beginPath(); ctx.moveTo(px - ux * s - uy * s, py - uy * s + ux * s); ctx.lineTo(px, py); ctx.lineTo(px - ux * s + uy * s, py - uy * s - ux * s); ctx.stroke();
+        ctx.fillStyle = hi ? '#ffd36e' : T.col; ctx.fillRect(ax - PX, ay - PX, PX * 2, PX * 2); ctx.fillRect(bx - PX, by - PX, PX * 2, PX * 2);
+        if (c.flash > 0) { ctx.strokeStyle = `rgba(235,255,235,${Math.min(1, c.flash * 4)})`; ctx.lineWidth = 1.1 * PX; curve(ax, ay, bx, by, sag); }
       } else if (c.type === 'springStrong' || c.type === 'bandage') {
         const d = Math.hypot(bx - ax, by - ay) || 1e-3, ux = (bx - ax) / d, uy = (by - ay) / d, nx = -uy, ny = ux;
         if (c.type === 'bandage') { ctx.lineWidth = 2.2 * PX; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); ctx.strokeStyle = 'rgba(200,190,170,0.8)'; ctx.lineWidth = 0.5 * PX; for (let s = 0; s < d; s += 3 * PX) { ctx.beginPath(); ctx.moveTo(ax + ux * s + nx * PX, ay + uy * s + ny * PX); ctx.lineTo(ax + ux * (s + 1.5 * PX) - nx * PX, ay + uy * (s + 1.5 * PX) - ny * PX); ctx.stroke(); } }
         else { const coils = Math.max(4, Math.round(c.len / 0.05)), amp = 2.6 * PX; ctx.lineWidth = 1.4 * PX; ctx.beginPath(); ctx.moveTo(ax, ay); for (let i = 1; i < coils * 2; i++) { const t = i / (coils * 2), s = (i % 2 ? 1 : -1) * amp; ctx.lineTo(ax + ux * d * t + nx * s, ay + uy * d * t + ny * s); } ctx.lineTo(bx, by); ctx.stroke(); }
-      } else if (c.type === 'weld') {
-        const s = 2.2 * PX;
-        ctx.fillStyle = hi ? '#ffd36e' : '#5b616a'; ctx.fillRect(ax - s, ay - s, s * 2, s * 2);
-        ctx.fillStyle = hi ? '#fff3c4' : '#b9bfc7'; ctx.fillRect(ax - s / 2, ay - s / 2, s, s);
-      } else if (c.type === 'hinge' || c.type === 'motor') {
-        ctx.fillStyle = hi ? '#ffd36e' : (c.type === 'motor' ? '#c88a20' : '#7f8691');
+      } else if (c.type === 'hinge' || c.type === 'woodpin') {
+        ctx.fillStyle = hi ? '#ffd36e' : c.type === 'woodpin' ? '#8a6038' : '#7f8691';
         ctx.beginPath(); ctx.arc(ax, ay, 2.6 * PX, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#1b1c1f'; ctx.beginPath(); ctx.arc(ax, ay, 1.1 * PX, 0, TAU); ctx.fill();
+        ctx.fillStyle = c.type === 'woodpin' ? '#4a321c' : '#1b1c1f'; ctx.beginPath(); ctx.arc(ax, ay, 1.1 * PX, 0, TAU); ctx.fill();
       } else if (c.type === 'spring') {
         const d = Math.hypot(bx - ax, by - ay) || 1e-3, ux = (bx - ax) / d, uy = (by - ay) / d, nx = -uy, ny = ux;
         const coils = Math.max(4, Math.round(c.len / 0.06)), amp = 2.2 * PX;
         ctx.lineWidth = 0.9 * PX; ctx.beginPath(); ctx.moveTo(ax, ay);
         for (let i = 1; i < coils * 2; i++) { const t = i / (coils * 2), s = (i % 2 ? 1 : -1) * amp; ctx.lineTo(ax + ux * d * t + nx * s, ay + uy * d * t + ny * s); }
         ctx.lineTo(bx, by); ctx.stroke();
-      } else if (c.type === 'rope' || c.type === 'elastic' || c.type === 'wire') {
-        if (c.type === 'wire') ctx.strokeStyle = hi ? '#ffd36e' : T.col;
-        const d = Math.hypot(bx - ax, by - ay);
-        const L = c.type === 'rope' ? c.joint ? c.joint.getMaxLength() : c.len : c.type === 'elastic' ? c.rest : d * 1.04 + 0.05;
-        const sag = d < L ? Math.sqrt(Math.max(0, L * L - d * d)) * 0.5 : 0;
-        ctx.lineWidth = (c.type === 'wire' ? 0.6 : c.type === 'elastic' ? 0.9 : 1.1) * PX;
-        if (c.type === 'wire') ctx.strokeStyle = hi ? '#ffd36e' : '#6fcf7f';
-        ctx.beginPath(); ctx.moveTo(ax, ay);
-        ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); ctx.stroke();
-        if (c.type === 'wire') { ctx.fillStyle = '#6fcf7f'; ctx.fillRect(ax - PX, ay - PX, PX * 2, PX * 2); ctx.fillRect(bx - PX, by - PX, PX * 2, PX * 2); }
-        if (c.type === 'wire' && c.flash > 0) { ctx.strokeStyle = `rgba(200,255,200,${c.flash * 4})`; ctx.lineWidth = 1.2 * PX; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.quadraticCurveTo((ax + bx) / 2, (ay + by) / 2 + sag, bx, by); ctx.stroke(); }
+      } else if (c.type === 'rope') {
+        const d = Math.hypot(bx - ax, by - ay), L = c.joint ? c.joint.getMaxLength() : c.len;
+        ctx.lineWidth = 1.1 * PX; curve(ax, ay, bx, by, d < L ? Math.sqrt(Math.max(0, L * L - d * d)) * 0.5 : 0);
       } else if (c.type === 'rod') {
         ctx.lineWidth = 1.6 * PX; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
         ctx.fillStyle = '#5b616a'; ctx.beginPath(); ctx.arc(ax, ay, 1.4 * PX, 0, TAU); ctx.arc(bx, by, 1.4 * PX, 0, TAU); ctx.fill();
+      }
+      // la madera que arde brilla
+      if (T.wood && c.burn > 0.3) {
+        ctx.strokeStyle = `rgba(255,${(150 - c.burn * 30) | 0},40,${Math.min(0.85, c.burn * 0.35)})`; ctx.lineWidth = 1.3 * PX;
+        if (c.type === 'woodpin') { ctx.beginPath(); ctx.arc(ax, ay, 2.2 * PX, 0, TAU); ctx.stroke(); }
+        else { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); }
       }
     }
   },
@@ -3763,14 +3847,15 @@ const Connections = {
 /* -------------------------------------------------------------------------
    ACTIVACIÓN (tecla F y cables)
    ------------------------------------------------------------------------- */
-const WIRE_CH = { wire: 'g', wireR: 'r', wireB: 'b', link: 'g' };
+const WIRE_CH = { wire: 'g', wireR: 'r', wireB: 'b', wireD: 'g', wireRD: 'r', wireBD: 'b' };
 const CH_NAME = { g: 'verde', r: 'rojo', b: 'azul' };
 const Sig = { n: 0, frame: -1, warned: 0 };
-// propaga la señal por los cables de activación de t (opcionalmente sólo un color)
+// propaga la señal por los cables de propagación que salen de t (opcionalmente sólo un color): van en un
+// solo sentido, del primer objeto que se unió al segundo
 function propagate(t, visited, only) {
   visited = visited || new Set([t]);
   const outs = [];
-  for (const c of t.conns) { const ch = WIRE_CH[c.type]; if (!ch || (only && ch !== only)) continue; const o = c.tA === t ? c.tB : c.tA; if (o) outs.push([o, ch, c]); }
+  for (const c of t.conns) { const ch = WIRE_CH[c.type]; if (!ch || (only && ch !== only) || c.tA !== t) continue; const o = c.tB; if (o) outs.push([o, ch, c]); }
   for (const [o, ch, c] of outs) { c.flash = 0.25; activateThing(o, t, visited, ch); }
 }
 function activateThing(t, src, visited, ch = 'g') {
@@ -3789,6 +3874,7 @@ function activateThing(t, src, visited, ch = 'g') {
    ------------------------------------------------------------------------- */
 function explode(x, y, power, o = {}) {
   const R = 1.9 * Math.sqrt(power) * (o.radiusMul || 1);
+  Connections.blast(x, y, R, power);
   const nuke = power >= 20;
   // efectos visuales
   Effects.flash(x, y, R * 1.6, nuke ? [255, 240, 200] : [255, 190, 110], nuke ? 1.2 : 0.22, 1);
@@ -3907,6 +3993,7 @@ function fireBullet(x, y, dx, dy, o = {}) {
     if (energy <= 0.02) { ex = h.x; ey = h.y; break; }
   }
   if (o.tracer !== false) Effects.tracer(x, y, ex, ey, o.tracer || [255, 236, 170], o.tw || 1.1, o.tl || 0.06);
+  Connections.shot(x, y, ex, ey);
   return [ex, ey];
 }
 function genericBulletHit(t, h, dx, dy, energy) {
@@ -5261,7 +5348,7 @@ function wheelSprite(r, hub, tire = '#26272a') {
   });
 }
 def('wheel', Object.assign({
-  name: 'Rueda motorizada', cat: 'machinery', mat: 'rubber', mass: 6, desc: 'Actívala para que gire. Úsala con bisagras.',
+  name: 'Rueda motorizada', cat: 'machinery', mat: 'rubber', mass: 6, desc: 'Actívala para que gire. Úsala con pines.',
   sprite: () => wheelSprite(9, '#9aa1a9'), shapes: [{ circle: [9, 9, 9] }],
   init(it) { it.vars.dir = 1; },
 }, toggleBehavior({
@@ -5571,7 +5658,7 @@ def('extinguisher', {
   menu(it) { return [{ label: it.using ? 'Dejar de rociar' : 'Rociar espuma', fn: () => it.use(!it.using) }]; },
 });
 def('anchor', {
-  name: 'Punto de anclaje', cat: 'machinery', mat: 'metal', mass: 1, static: true, desc: 'Punto fijo en el aire para atar cuerdas o bisagras.',
+  name: 'Punto de anclaje', cat: 'machinery', mat: 'metal', mass: 1, static: true, desc: 'Punto fijo en el aire para atar cuerdas o pines.',
   sprite: () => drawSprite(8, 8, (a) => { a.circle(4, 4, 4, '#565c65'); a.circle(4, 4, 2.5, '#8a9099'); a.circle(4, 4, 1, '#2a2d32'); }), shapes: [{ circle: [4, 4, 4] }],
 });
 def('trampoline', {
@@ -6415,31 +6502,37 @@ const TOOLS = [
   { id: 'drag', grp: 1, name: 'Arrastrar', hint: 'Arrastra objetos. {rot}: girar lo que arrastras (mantiene el ángulo hasta que lo sueltes) · Mayús: girar más rápido · Alt: ajustar · Mayús+clic: seleccionar · Arrastrar en vacío: seleccionar varios' },
   { id: 'gentle', grp: 1, name: 'Arrastre preciso', hint: 'Lo que agarras va justo al cursor (como Mover) pero con física y girando libremente (como Arrastrar); al girarlo con {rot} se queda en ese ángulo hasta que lo sueltes.' },
   { id: 'move', grp: 1, name: 'Mover', hint: 'Coloca objetos con precisión, sin física. {rot}: girar · Alt: ajustar a la cuadrícula.' },
-  { id: 'wire', grp: 2, name: 'Cable de activación', hint: 'Conecta dos objetos: al activar uno (F) se activa el otro.' },
-  { id: 'wireR', grp: 2, name: 'Cable de activación rojo', hint: 'Igual que el cable de activación, por el canal rojo.' },
-  { id: 'wireB', grp: 2, name: 'Cable de activación azul', hint: 'Igual que el cable de activación, por el canal azul.' },
-  { id: 'link', grp: 2, name: 'Enlace de propagación', hint: 'Como el cable de activación, pero invisible.' },
-  { id: 'fixed', grp: 3, name: 'Cable rígido', hint: 'Arrastra de un objeto a otro: quedan unidos por un cable que no se dobla, sin poder moverse ni girar entre sí (como si fueran una sola pieza).' },
-  { id: 'rod', grp: 3, name: 'Cable rígido articulado', hint: 'Une dos puntos a una distancia fija; los extremos pueden girar.' },
-  { id: 'strut', grp: 3, name: 'Puntal de madera', hint: 'Barra rígida de madera que se rompe si soporta demasiada fuerza.' },
-  { id: 'heatpipe', grp: 3, name: 'Tubo de calor', hint: 'Barra rígida que transmite el calor entre los dos objetos.' },
-  { id: 'copper', grp: 4, name: 'Cable de cobre', hint: 'Conduce la electricidad entre dos objetos (baterías, generadores, lámparas...).' },
-  { id: 'conduit', grp: 4, name: 'Conducto de líquido', hint: 'Une recipientes (o personas) para que el líquido pase de uno a otro. Úsalo con presurizadores y válvulas.' },
-  { id: 'steel', grp: 5, name: 'Atadura de acero', hint: 'Arrastra de un objeto a otro: quedan unidos rígidamente. Aguanta muchísimo.' },
-  { id: 'woodbind', grp: 5, name: 'Atadura de madera', hint: 'Une rígidamente dos objetos. Se parte con mucha fuerza o si se quema.' },
-  { id: 'weld', grp: 5, name: 'Soldar', hint: 'Clic donde se tocan dos objetos para soldarlos. Sobre uno solo, lo fija al fondo.' },
-  { id: 'spring', grp: 6, name: 'Resorte', hint: 'Arrastra de un objeto a otro (o al vacío) para unirlos con un resorte.' },
-  { id: 'springStrong', grp: 6, name: 'Resorte fuerte', hint: 'Como el resorte, pero mucho más duro.' },
-  { id: 'elastic', grp: 6, name: 'Elástico', hint: 'Une dos puntos con una goma que sólo tira cuando se estira.' },
-  { id: 'bandage', grp: 6, name: 'Venda', hint: 'Une dos puntos con una venda elástica. Si toca una extremidad, detiene su sangrado.' },
-  { id: 'rope', grp: 7, name: 'Cuerda', hint: 'Arrastra de un objeto a otro (o al vacío) para atarlos con una cuerda.' },
-  { id: 'cable', grp: 7, name: 'Cable de acero', hint: 'Cuerda muy resistente que no conduce la electricidad.' },
-  { id: 'chain', grp: 7, name: 'Cadena', hint: 'Une dos puntos con una cadena.' },
-  { id: 'belt', grp: 7, name: 'Correa mecánica', hint: 'Une dos ruedas, rotores o engranajes para que giren a la vez.' },
-  { id: 'hinge', grp: 8, name: 'Bisagra', hint: 'Clic sobre un objeto para clavarlo al fondo (o a lo que tenga detrás) con un eje que gira. Mantén {pin}: al centro de masa.' },
-  { id: 'motor', grp: 8, name: 'Bisagra motorizada', hint: 'Como la bisagra, pero gira sola. Clic derecho sobre ella para invertirla. Mantén {pin}: al centro de masa.' },
+  // cables de propagación (la señal va del primer objeto al segundo)
+  { id: 'wire', grp: 2, name: 'Cable de propagación verde', hint: 'Arrastra de un objeto a otro: al activar el primero (F) se activa el segundo, en un solo sentido (lo indica la flecha). No se rompe con tirones.' },
+  { id: 'wireR', grp: 2, name: 'Cable de propagación rojo', hint: 'Como el verde, por el canal rojo: lleva la activación del primer objeto al segundo. No se rompe con tirones.' },
+  { id: 'wireB', grp: 2, name: 'Cable de propagación azul', hint: 'Como el verde, por el canal azul: lleva la activación del primer objeto al segundo. No se rompe con tirones.' },
+  { id: 'wireD', grp: 2, name: 'Cable de propagación verde destructible', hint: 'Lleva la activación del primer objeto al segundo, pero se rompe si se estira, con golpes o caídas, si lo cruza algo rápido, con balas o con explosiones.' },
+  { id: 'wireRD', grp: 2, name: 'Cable de propagación rojo destructible', hint: 'Como el rojo, pero se corta fácilmente con cualquier daño: tirones, golpes, balas o explosiones.' },
+  { id: 'wireBD', grp: 2, name: 'Cable de propagación azul destructible', hint: 'Como el azul, pero se destruye con facilidad con golpes, caídas, tirones o explosiones.' },
+  // cables rígidos
+  { id: 'rod', grp: 3, name: 'Cable rígido', hint: 'Barra metálica que mantiene fija la distancia entre dos objetos (los extremos pueden girar). No se rompe con el esfuerzo normal.' },
+  { id: 'strut', grp: 3, name: 'Soporte de madera', hint: 'Barra de madera que mantiene la distancia entre dos objetos. Se parte con mucha fuerza, con balas o explosiones, y arde con el fuego.' },
+  { id: 'heatpipe', grp: 3, name: 'Tubo de calor', hint: 'Barra rígida que transmite el calor (o el frío) entre los dos objetos. No se rompe con el esfuerzo normal.' },
+  // cables
+  { id: 'copper', grp: 4, name: 'Cable', hint: 'Conduce la electricidad entre dos objetos (baterías, generadores, lámparas, motores...). Se rompe si se dañan sus extremos.' },
+  { id: 'conduit', grp: 4, name: 'Conductor de líquido', hint: 'Une recipientes (o personas) para que el líquido pase de uno a otro. Úsalo con presurizadores y válvulas. No se rompe con tirones ni golpes.' },
+  { id: 'conduitD', grp: 4, name: 'Conductor de líquido destructible', hint: 'Como el conductor de líquido, pero se rompe fácilmente con golpes, tirones, balas o explosiones (y derrama lo que lleva).' },
+  // cables fijos
+  { id: 'fixed', grp: 5, name: 'Cable fijo', hint: 'Arrastra de un objeto a otro: quedan unidos sin poder moverse ni girar entre sí (como si fueran una sola pieza). Prácticamente indestructible.' },
+  { id: 'steel', grp: 5, name: 'Atadura de acero', hint: 'Arrastra de un objeto a otro (o al fondo): quedan fijados como con una soldadura. No se rompe con el esfuerzo.' },
+  { id: 'woodbind', grp: 5, name: 'Atadura de madera', hint: 'Une rígidamente dos objetos. Se parte con mucho peso o fuerza, con balas o explosiones, y arde con el fuego.' },
+  // resortes y pines
+  { id: 'spring', grp: 6, name: 'Resorte', hint: 'Arrastra de un objeto a otro (o al vacío) para unirlos con un resorte que amortigua golpes y movimientos.' },
+  { id: 'springStrong', grp: 6, name: 'Resorte fuerte', hint: 'Resorte reforzado, mucho más duro, para maquinaria pesada.' },
+  { id: 'bandage', grp: 6, name: 'Vendaje', hint: 'Unión elástica débil para sujetar extremidades. Si toca una extremidad, detiene su sangrado.' },
+  { id: 'hinge', grp: 6, name: 'Pin', hint: 'Clic sobre un objeto para clavarlo al fondo (o a lo que tenga detrás) con un eje metálico que gira libremente. No se rompe. Mantén {pin}: al centro de masa.' },
+  { id: 'woodpin', grp: 6, name: 'Pin de madera', hint: 'Como el pin, pero de madera: se parte con mucha fuerza o con explosiones y arde con el fuego. Mantén {pin}: al centro de masa.' },
+  // conexiones flexibles y mecánicas
+  { id: 'rope', grp: 7, name: 'Cuerda', hint: 'Arrastra de un objeto a otro (o al vacío) para atarlos. No conduce la electricidad; se rompe con demasiado peso o con un tirón muy fuerte.' },
+  { id: 'chain', grp: 7, name: 'Cadena', hint: 'Como la cuerda, pero de eslabones de acero: aguanta cualquier tirón o peso sin romperse.' },
+  { id: 'belt', grp: 7, name: 'Correa mecánica', hint: 'Une dos ruedas, ejes, motores o engranajes para que giren a la vez.' },
+  { id: 'phase', grp: 7, name: 'Enlace de fase', hint: 'Arrastra de un objeto a otro: dejan de chocar entre ellos (sin unirlos). Es invisible (se ve con la información activada o al pasar el ratón).' },
   { id: 'nocollide', grp: 8, name: 'Sin colisión', hint: 'Clic en un objeto para que atraviese a los demás (o vuelva a chocar).' },
-  { id: 'phase', grp: 8, name: 'Enlace sin colisión', hint: 'Arrastra de un objeto a otro: dejan de chocar entre ellos (sin unirlos).' },
   { id: 'freeze', grp: 9, name: 'Congelar', hint: 'Clic para congelar o descongelar un objeto en el aire.' },
   { id: 'delete', grp: 9, name: 'Borrar', hint: 'Clic para borrar objetos o uniones.' },
   { id: 'fire', grp: 9, name: 'Fuego', hint: 'Clic para prender fuego. Clic derecho en un objeto para apagarlo.' },
@@ -6627,8 +6720,8 @@ const Input = {
         } else this.startSel(wx, wy, ctrl || shift);
         break;
       case 'move': if (hit && shift) { this.toggleSelect(hit.thing); break; } if (hit) this.startMove(hit, wx, wy); else this.startSel(wx, wy, ctrl || shift); break;
-      case 'weld': case 'hinge': case 'motor': { const pt = this.pinPoint(wx, wy); this.pointJoint(this.tool, pt[0], pt[1]); break; }
-      case 'spring': case 'rope': case 'rod': case 'elastic': case 'wire': case 'fixed': case 'springStrong': case 'bandage': case 'strut': case 'heatpipe': case 'cable': case 'chain': case 'copper': case 'wireR': case 'wireB': case 'steel': case 'woodbind': case 'phase': case 'conduit': case 'belt': case 'link':
+      case 'hinge': case 'woodpin': { const pt = this.pinPoint(wx, wy); this.pointJoint(this.tool, pt[0], pt[1]); break; }
+      case 'spring': case 'springStrong': case 'bandage': case 'rope': case 'chain': case 'belt': case 'phase': case 'rod': case 'strut': case 'heatpipe': case 'fixed': case 'steel': case 'woodbind': case 'copper': case 'conduit': case 'conduitD': case 'wire': case 'wireR': case 'wireB': case 'wireD': case 'wireRD': case 'wireBD':
         if (!this.pending) { const b = hit ? hit.body : null; if (CONN_TYPES[this.tool].signal && !b) { UI.toast('Haz clic sobre un objeto'); return; } this.pending = { type: this.tool, body: b, pt: [wx, wy], sx: this.sx, sy: this.sy, fresh: true }; }
         else this.finishPending(wx, wy);
         break;
@@ -6952,7 +7045,7 @@ const Input = {
     if (!p.body && !bB) { UI.toast('Al menos un extremo debe ir a un objeto'); return; }
     if (p.body && !p.body.getWorld) return;
     const c = Connections.create(p.type, p.body, p.pt, bB, [wx, wy]);
-    if (c) { Undo.push({ type: 'conn', conn: c }); Sound.play(p.type === 'wire' ? 'click' : 'clunk', wx, wy, 0.6); }
+    if (c) { Undo.push({ type: 'conn', conn: c }); Sound.play(CONN_TYPES[p.type].signal ? 'click' : 'clunk', wx, wy, 0.6); }
   },
   deleteThing(t, silent) {
     if (t.isTerrain) return;
@@ -7142,7 +7235,7 @@ const Input = {
       if (this.pasteHold && this.clip) drawBlueprintGhost(ctx, this.clip, px, py);
     }
     // punto de herramienta
-    if ((this.tool === 'weld' || this.tool === 'hinge' || this.tool === 'motor') && !this.spawnDef) {
+    if ((this.tool === 'hinge' || this.tool === 'woodpin') && !this.spawnDef) {
       ctx.strokeStyle = CONN_TYPES[this.tool].col; ctx.lineWidth = 1.5 / z;
       ctx.beginPath(); ctx.arc(this.wx, this.wy, 5 / z, 0, TAU); ctx.stroke();
     }
@@ -7191,13 +7284,10 @@ function flipThing(t) {
 const ICONS = {
   drag: ['....ww......', '...wWWw.....', '...wWWw.....', '...wWWwww...', '...wWWwWWww.', '.wwwWWwWWwWw', 'wWWwWWWWWWWw', 'wWWWWWWWWWWw', '.wWWWWWWWWw.', '..wWWWWWWWw.', '...wWWWWWw..', '....wwwwww..'],
   move: ['.....WW.....', '....WWWW....', '.....WW.....', '.....WW.....', '.W...WW...W.', 'WWWWWWWWWWWW', 'WWWWWWWWWWWW', '.W...WW...W.', '.....WW.....', '.....WW.....', '....WWWW....', '.....WW.....'],
-  weld: ['............', '.gggggg.....', '.gGGGGg.....', '.gGGGGg.....', '.gGGaaaaaa..', '.gGGaYYYYa..', '.gggaYaaYa..', '....aYaaYa..', '....aYYYYa..', '....aaaaaa..', '............', '............'],
   hinge: ['............', '..gggggggg..', '..gGGGGGGg..', '..gGGWWGGg..', '..gGWkkWGg..', '..gGWkkWGg..', '..gGGWWGGg..', '..gGGGGGGg..', '..gggggggg..', '............', '............', '............'],
-  motor: ['....aaaa....', '..aa....aa..', '.a..gggg..a.', '.a.gGWWGg.a.', 'a.gGWkkWGg.a', 'a.gGWkkWGg.a', 'a.gGGWWGGgaa', '.a.gGGGGgaaa', '.a..ggggaaaa', '..aa........', '....aaaa....', '............'],
   spring: ['.....WW.....', '....W..W....', '...WWWWWW...', '..W......W..', '...WWWWWW...', '..W......W..', '...WWWWWW...', '..W......W..', '...WWWWWW...', '....W..W....', '.....WW.....', '............'],
   rope: ['.........bb.', '........bnb.', '.......bnb..', '......bnb...', '.....bnb....', '....bnb.....', '...bnb......', '..bnb.......', '.bnb........', 'bnb.........', 'bb..........', '............'],
   rod: ['..........gg', '.........gWg', '........gWg.', '.......gWg..', '......gWg...', '.....gWg....', '....gWg.....', '...gWg......', '..gWg.......', '.gWg........', 'gWg.........', 'gg..........'],
-  elastic: ['..........rr', '.........r.r', '........r...', '.......r....', '......r.....', '.....r......', '....r.......', '...r........', '..r.........', '.r..........', 'r.r.........', 'rr..........'],
   wire: ['.........GG.', '........GjjG', '.......GjjG.', '......Gj....', '.....G......', '....G.......', '...G........', '..G.........', 'GjjG........', 'GjjG........', '.GG.........', '............'],
   freeze: ['.....cc.....', '..c..cc..c..', '...c.cc.c...', '....cccc....', 'c...cccc...c', 'cccccccccccc', 'cccccccccccc', 'c...cccc...c', '....cccc....', '...c.cc.c...', '..c..cc..c..', '.....cc.....'],
   delete: ['....gggg....', '.gggggggggg.', '............', '.gWWWWWWWWg.', '.gWgWgWgWWg.', '.gWgWgWgWWg.', '.gWgWgWgWWg.', '.gWgWgWgWWg.', '.gWgWgWgWWg.', '.gWWWWWWWWg.', '..gggggggg..', '............'],
@@ -7221,11 +7311,15 @@ const ICONS = {
   bandage: ['........WWW.', '.......WWWWW', '......WWwWWW', '.....WWwWWW.', '....WWwWWW..', '...WWwWWW...', '..WWwWWW....', '.WWwWWW.....', 'WWWWWW......', 'WWWWW.......', '.WWW........', '............'],
   strut: ['.........bnn', '........bnnb', '.......bnnb.', '......bnnb..', '.....bnnb...', '....bnnb....', '...bnnb.....', '..bnnb......', '.bnnb.......', 'bnnb........', 'nnb.........', '............'],
   heatpipe: ['.........oyy', '........oyyo', '.......oyyo.', '......oyyo..', '.....oyyo...', '....oyyo....', '...oyyo.....', '..oyyo......', '.oyyo.......', 'oyyo........', 'yyo.........', '............'],
-  cable: ['..........kk', '.........kgk', '........kg..', '.......kg...', '......kg....', '.....kg.....', '....kg......', '...kg.......', '..kg........', '.kgk........', 'kk..........', '............'],
   chain: ['.........ww.', '........w..w', '.........ww.', '.......w....', '......w.w...', '.......w....', '.....w......', '....w.w.....', '.ww..w......', 'w..w........', '.ww.........', '............'],
   copper: ['........kk..', '.......kook.', '......kook..', '.....oo.....', '....o.......', '...o........', '..o.........', '.oo.........', 'kook........', 'kook........', '.kk.........', '............'],
   wireR: ['.........rr.', '........rRRr', '.......rRRr.', '......rR....', '.....r......', '....r.......', '...r........', '..r.........', 'rRRr........', 'rRRr........', '.rr.........', '............'],
   wireB: ['.........uu.', '........uccu', '.......uccu.', '......uc....', '.....u......', '....u.......', '...u........', '..u.........', 'uccu........', 'uccu........', '.uu.........', '............'],
+  conduitD: ['.........nnn', '........nRRn', '.......nRRn.', '......n..n..', '.....nRRn...', '....nRRn....', '...n..n.....', '..nRRn......', '.nRRn.......', 'n..n........', 'nnn.........', '............'],
+  wireD: ['.........GG.', '........GjjG', '.......GjjG.', '......Gj....', '............', '....G.......', '............', '..G.........', 'GjjG........', 'GjjG........', '.GG.........', '............'],
+  wireRD: ['.........rr.', '........rRRr', '.......rRRr.', '......rR....', '............', '....r.......', '............', '..r.........', 'rRRr........', 'rRRr........', '.rr.........', '............'],
+  wireBD: ['.........uu.', '........uccu', '.......uccu.', '......uc....', '............', '....u.......', '............', '..u.........', 'uccu........', 'uccu........', '.uu.........', '............'],
+  woodpin: ['............', '..bbbbbbbb..', '..bnnnnnnb..', '..bnnWWnnb..', '..bnWkkWnb..', '..bnWkkWnb..', '..bnnWWnnb..', '..bnnnnnnb..', '..bbbbbbbb..', '............', '............', '............'],
   nocollide: ['............', '.WWWWWW.....', '.W....W.....', '.W..ggggggg.', '.W..g.W...g.', '.WWWgWW...g.', '....g.....g.', '....g.....g.', '....g.....g.', '....ggggggg.', '............', '............'],
   push: ['.....WW.....', '....WWWW....', '.....WW.....', '.W...WW...W.', 'WW........WW', 'WWWW.yy.WWWW', 'WWWW.yy.WWWW', 'WW........WW', '.W...WW...W.', '.....WW.....', '....WWWW....', '.....WW.....'],
   pull: ['....WWWW....', '.....WW.....', '.....WW.....', 'W....WW....W', 'WW........WW', '.WWW.yy.WWW.', '.WWW.yy.WWW.', 'WW........WW', 'W....WW....W', '.....WW.....', '.....WW.....', '....WWWW....'],
@@ -7239,7 +7333,6 @@ const ICONS = {
   phase: ['............', '.pppppp.....', '.p....p.....', '.p..ppppppp.', '.p..p.p...p.', '.ppppppp..p.', '....p.....p.', '....p.....p.', '....p.....p.', '....ppppppp.', '............', '............'],
   conduit: ['.........rrr', '........rRRr', '.......rRRr.', '......rRRr..', '.....rRRr...', '....rRRr....', '...rRRr.....', '..rRRr......', '.rRRr.......', 'rRRr........', 'rrr.........', '............'],
   belt: ['............', '............', '............', '............', '..kkkkkkkk..', '.kgg.kk.ggk.', 'kgWWgkkgWWgk', 'kgWWgkkgWWgk', '.kgg.kk.ggk.', '..kkkkkkkk..', '............', '............'],
-  link: ['..........jj', '.........jj.', '............', '.......jj...', '......jj....', '............', '....jj......', '...jj.......', '............', '.jj.........', 'jj..........', '............'],
   env: ['.Y...Y......', '..Y.YYY.....', '...YYYYY....', 'YYYYYYYYY...', '...YYYWWWW..', '..Y.YWWWWWW.', '.Y..WWWWWWWW', '...WWWWWWWWW', '..WWWWWWWWWW', '..WWWWWWWWW.', '............', '............'],
   debris: ['............', '.gg.........', '.gWg....gg..', '..gg...gWWg.', '.......gWWg.', '....g...gg..', '...gWg......', '...gWWg..g..', '....gg..gWg.', '.gg......g..', 'gWWg........', '.gg.........'],
   skull: ['...WWWWWW...', '..WWWWWWWW..', '.WWWWWWWWWW.', '.WWkkWWkkWW.', '.WkkkWWkkkW.', '.WWkkWWkkWW.', '..WWWkkWWW..', '..WWWWWWWW..', '...WkWWkW...', '...WWWWWW...', '............', '............'],
@@ -7734,8 +7827,7 @@ const UI = {
       const c = Connections.near(wx, wy, 8 / Cam.zoom);
       if (c) {
         add('Eliminar', () => Connections.remove(c));
-        if (c.type === 'motor') add('Invertir giro', () => { c.dir = -(c.dir || 4); });
-        if ((c.type === 'rope' || c.type === 'cable' || c.type === 'chain') && c.joint) { add('Acortar', () => c.joint.setMaxLength(Math.max(0.1, c.joint.getMaxLength() * 0.8))); add('Alargar', () => c.joint.setMaxLength(c.joint.getMaxLength() * 1.25)); }
+        if ((c.type === 'rope' || c.type === 'chain') && c.joint) { add('Acortar', () => c.joint.setMaxLength(Math.max(0.1, c.joint.getMaxLength() * 0.8))); add('Alargar', () => c.joint.setMaxLength(c.joint.getMaxLength() * 1.25)); }
       } else {
         add('Pegar', pasteHere, { off: !hasClip });
         if (Input.lastDef) add(`Colocar aquí: ${Input.lastDef.name}`, () => { const d = Input.spawnDef; Input.spawnDef = Input.lastDef; Input.spawnAt(wx, wy); Input.spawnDef = d; });
@@ -7988,11 +8080,12 @@ const UI = {
       <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA, fuerza de las máquinas...); con varias cosas seleccionadas, cada opción se aplica a todas las que la admiten · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
       <div><b>${K('delete')}</b> borrar · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar · <b>Alt</b> ajustar a la cuadrícula</div>
       <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas)</div>
-      <div><b>${K('toggleUI')}</b> ocultar la interfaz · <b>${K('pinSnap')}</b> con la bisagra: al centro de masa · <b>Esc</b> menú</div>
+      <div><b>${K('toggleUI')}</b> ocultar la interfaz · <b>${K('pinSnap')}</b> con el pin: al centro de masa · <b>Esc</b> menú</div>
       <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
       <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan sin herir a quien esté en medio, pelean cuerpo a cuerpo (estocadas con las armas de punta, golpes desde arriba con las demás) y rematan a los zombis caídos, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
-      <div class="sub">Electricidad: une baterías o generadores con el cable de cobre a lámparas, motores, máquinas... o a una persona. Señales: botones, detectores, contadores y retardadores se unen con el cable de activación.</div>
+      <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, detectores, contadores y retardadores se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones).</div>
+      <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
@@ -8200,7 +8293,7 @@ const Powers = {
 
 /* ---- 18_power.js ---- */
 /* =========================================================================
-   ELECTRICIDAD: fuentes (baterías, generadores) conectadas con cable de cobre
+   ELECTRICIDAD: fuentes (baterías, generadores) conectadas con cable
    ========================================================================= */
 const Power = {
   t: 0, lit: new Set(),
@@ -8998,7 +9091,7 @@ function castLaser(x, y, dx, dy, self, maxB = 8, len = 45) {
 
 /* ------------------------------ ELECTRÓNICA ----------------------------- */
 def('battery', Object.assign({
-  name: 'Batería', cat: 'electronics', mat: 'metal', mass: 0.6, desc: 'Fuente de energía pequeña (5). Únela con cable de cobre a lámparas, motores o personas.',
+  name: 'Batería', cat: 'electronics', mat: 'metal', mass: 0.6, desc: 'Fuente de energía pequeña (5). Únela con un cable a lámparas, motores o personas.',
   sprite: () => drawSprite(10, 16, (a) => { a.rect(0, 2, 10, 14, '#2a2d32'); a.rect(1, 3, 2, 12, '#3c4148'); a.rect(3, 0, 4, 2, '#c9a23a'); a.rect(0, 6, 10, 4, '#c9a23a'); a.hline(3, 6, 8, '#2a2d32'); a.vline(4, 7, 9, '#2a2d32'); a.vline(5, 7, 9, '#2a2d32'); a.edge(0.8); }),
   init(it) { it.on = true; },
 }, sourceBehavior(5)));
@@ -9187,7 +9280,7 @@ const DETECTORS = [
 ];
 for (const [id, name, col, range, desc, check] of DETECTORS) {
   def(id, Object.assign({
-    name, cat: 'electronics', mat: 'plastic', mass: 0.5, desc: desc + ' Conéctalo con cable de activación o de cobre.', laserRecv: id === 'laser_recv',
+    name, cat: 'electronics', mat: 'plastic', mass: 0.5, desc: desc + ' Conéctalo con un cable de propagación o con un cable eléctrico.', laserRecv: id === 'laser_recv',
     sprite: () => detectorSprite(col),
     onImpact: id === 'det_impact' ? (it, im, dv) => { if (dv > 2.5) it.vars.hitT = Phys.time; } : undefined,
   }, detectorBehavior({ col, range, eye: [7, 1], check })));
@@ -9312,7 +9405,7 @@ function weldedInertia(b) {
   return Math.max(I, 0.01);
 }
 def('gyro', Object.assign({
-  name: 'Estabilizador giroscópico', cat: 'machinery', mat: 'metal', mass: 3, usesPower: true, desc: 'Encendido, mantiene derecho (o con el ángulo inicial) lo que tenga soldado.',
+  name: 'Estabilizador giroscópico', cat: 'machinery', mat: 'metal', mass: 3, usesPower: true, desc: 'Encendido, mantiene derecho (o con el ángulo inicial) lo que tenga unido.',
   sprite: () => drawSprite(16, 16, (a) => { a.rect(0, 0, 16, 16, '#3c4148'); a.ring(8, 8, 6, 1.5, '#f0b23c'); a.circle(8, 8, 2, '#8a9099'); a.edge(0.8); }),
 }, toggleBehavior({
   onToggle(it) { if (it.on) { it.vars.tgt = 0; it.vars.It = 0; } },
@@ -9391,7 +9484,7 @@ def('immob_field', Object.assign({
   },
 })));
 def('decoupler', {
-  name: 'Desacoplador', cat: 'machinery', mat: 'metal', mass: 1, desc: 'Al activarlo rompe todas las uniones (soldaduras, cuerdas...) que tenga.',
+  name: 'Desacoplador', cat: 'machinery', mat: 'metal', mass: 1, desc: 'Al activarlo rompe todas las uniones (ataduras, cuerdas, cables...) que tenga.',
   sprite: () => drawSprite(12, 12, (a) => { a.rect(0, 0, 12, 12, '#c33a2e'); a.rect(1, 1, 10, 2, '#e5554a'); a.rect(3, 4, 6, 6, '#2a2d32'); a.line(4, 5, 8, 9, '#f0b23c'); a.edge(0.8); }),
   activate(it) { let n = 0; for (const c of [...it.conns]) if (!CONN_TYPES[c.type].signal) { Connections.remove(c); n++; } const p = it.pos(); Sound.play('pop', p.x, p.y, 0.8); Effects.sparks(p.x, p.y, 0, 0, 8, 2); Effects.smoke(p.x, p.y, 3); },
   menu(it) { return [{ label: 'Desacoplar', fn: () => it.activate() }]; },
@@ -9991,7 +10084,7 @@ const Contraptions = {
 const Conduits = {
   t: 0,
   pressured(t) {
-    for (const c of t.conns) { if (c.type !== 'conduit') continue; const o = c.tA === t ? c.tB : c.tA; if (o && !o.dead && o.def && o.def.pressuriser && o.on) return true; }
+    for (const c of t.conns) { if (!CONN_TYPES[c.type].liquid) continue; const o = c.tA === t ? c.tB : c.tA; if (o && !o.dead && o.def && o.def.pressuriser && o.on) return true; }
     return false;
   },
   // extremo de un conducto: nivel de presión y de dónde sale o entra el líquido
@@ -10007,7 +10100,7 @@ const Conduits = {
     let lvl = tot / cap;
     if (d.pvalve) {
       // la válvula de presión sólo se abre si llega presión desde algún lado
-      let up = 0; for (const c of t.conns) { if (c.type !== 'conduit') continue; const o = c.tA === t ? c.tB : c.tA; if (o && o.liq && o !== t) { const e = Liquids.total(o) / o.liq.cap + (this.pressured(o) ? 2 : 0) + (o.def.tankMode && o.vars.mode === 'push' ? 2 : 0); up = Math.max(up, e); } }
+      let up = 0; for (const c of t.conns) { if (!CONN_TYPES[c.type].liquid) continue; const o = c.tA === t ? c.tB : c.tA; if (o && o.liq && o !== t) { const e = Liquids.total(o) / o.liq.cap + (this.pressured(o) ? 2 : 0) + (o.def.tankMode && o.vars.mode === 'push' ? 2 : 0); up = Math.max(up, e); } }
       if (up < 1.5) return null;
     }
     if (this.pressured(t)) lvl += 2;
@@ -10019,7 +10112,7 @@ const Conduits = {
     this.t -= dt; if (this.t > 0) return;
     this.t = 0.1;
     for (const c of Connections.list) {
-      if (c.type !== 'conduit') continue;
+      if (!CONN_TYPES[c.type].liquid) continue;
       const A = this.endpoint(c.tA, c.bA), B = this.endpoint(c.tB, c.bB);
       if (!A || !B) { c.col = null; continue; }
       let from = A, to = B; if (B.lvl > A.lvl) { from = B; to = A; }
@@ -10859,7 +10952,7 @@ def('torch', {
 
 /* ------------------------------ MAQUINARIA ------------------------------ */
 def('dampening_box', Object.assign({
-  name: 'Caja amortiguadora', cat: 'machinery', mat: 'metal', mass: 8, desc: 'Encendida, frena en seco el movimiento de sí misma y de lo que tenga soldado.',
+  name: 'Caja amortiguadora', cat: 'machinery', mat: 'metal', mass: 8, desc: 'Encendida, frena en seco el movimiento de sí misma y de lo que tenga unido.',
   sprite: boxSpr(22, 22, '#4b5058', '#626871', (a) => { a.rect(4, 4, 14, 14, '#2a2d32'); a.circle(11, 11, 4, '#7fa8ff'); }),
 }, toggleBehavior({
   forces(it) {
@@ -10905,7 +10998,7 @@ function decimate(t) {
   for (const o of linked) if (!o.dead && !(o.def && o.def.id === 'decimator')) decimate(o);
 }
 def('industrial_gyro', Object.assign({}, DEFS.gyro, {
-  name: 'Giroestabilizador industrial', mass: 30, desc: 'Versión enorme del estabilizador: mantiene derecho lo que tenga soldado, por pesado que sea.',
+  name: 'Giroestabilizador industrial', mass: 30, desc: 'Versión enorme del estabilizador: mantiene derecho lo que tenga unido, por pesado que sea.',
   sprite: () => drawSprite(30, 30, (a) => { a.rect(0, 0, 30, 30, '#3c4148'); a.rect(2, 2, 26, 26, '#4b5058'); a.ring(15, 15, 11, 2, '#f0b23c'); a.circle(15, 15, 4, '#8a9099'); a.edge(0.8); }),
 }));
 def('pointer', {
@@ -11033,7 +11126,7 @@ def('winch', Object.assign({
     if (!run) { if (it.vars.loop) { it.vars.loop.stop(); it.vars.loop = null; } return; }
     if (!it.vars.loop) { it.vars.loop = Sound.loop('engine'); it.loops.push(it.vars.loop); }
     const p = it.pos(); it.vars.loop.set(0.08, p.x, p.y, 2);
-    for (const c of it.conns) { if ((c.type === 'rope' || c.type === 'cable' || c.type === 'chain') && c.joint) { const L = c.joint.getMaxLength(); c.joint.setMaxLength(clamp(L + it.vars.dir * dt * (1 + (it.powerIn || 0) * 0.05), 0.15, 40)); c.bA.setAwake(true); c.bB.setAwake(true); } }
+    for (const c of it.conns) { if ((c.type === 'rope' || c.type === 'chain') && c.joint) { const L = c.joint.getMaxLength(); c.joint.setMaxLength(clamp(L + it.vars.dir * dt * (1 + (it.powerIn || 0) * 0.05), 0.15, 40)); c.bA.setAwake(true); c.bB.setAwake(true); } }
   },
   draw(it, ctx) { const c = it.worldPt(11, 8), a = it.vars.rot || 0; ctx.strokeStyle = '#c9a23a'; ctx.lineWidth = PX; ctx.beginPath(); ctx.moveTo(c[0] + Math.cos(a) * 5 * PX, c[1] + Math.sin(a) * 5 * PX); ctx.lineTo(c[0] - Math.cos(a) * 5 * PX, c[1] - Math.sin(a) * 5 * PX); ctx.stroke(); },
   menu(it) { return [{ label: it.on ? 'Apagar' : 'Encender', fn: () => it.activate() }, { label: it.vars.dir < 0 ? 'Sentido: enrollar' : 'Sentido: soltar', fn: () => { it.vars.dir *= -1; } }]; },
@@ -11069,7 +11162,7 @@ def('wing', {
   },
 });
 const plainWheel = (r, tire, hub) => () => wheelSprite(r, hub, tire);
-def('wood_wheel', { name: 'Rueda de madera', cat: 'machinery', mat: 'wood', mass: 4, desc: 'Rueda sin motor. Únela con una bisagra.', sprite: () => drawSprite(20, 20, (a) => { a.circle(10, 10, 10, '#7a5232'); a.ring(10, 10, 10, 2, '#5a3b22'); for (let k = 0; k < 6; k++) { const an = (k / 6) * Math.PI; a.line(10 - Math.cos(an) * 8, 10 - Math.sin(an) * 8, 10 + Math.cos(an) * 8, 10 + Math.sin(an) * 8, '#5a3b22'); } a.circle(10, 10, 2.5, '#3c4148'); }), shapes: [{ circle: [10, 10, 10] }] });
+def('wood_wheel', { name: 'Rueda de madera', cat: 'machinery', mat: 'wood', mass: 4, desc: 'Rueda sin motor. Únela con un pin.', sprite: () => drawSprite(20, 20, (a) => { a.circle(10, 10, 10, '#7a5232'); a.ring(10, 10, 10, 2, '#5a3b22'); for (let k = 0; k < 6; k++) { const an = (k / 6) * Math.PI; a.line(10 - Math.cos(an) * 8, 10 - Math.sin(an) * 8, 10 + Math.cos(an) * 8, 10 + Math.sin(an) * 8, '#5a3b22'); } a.circle(10, 10, 2.5, '#3c4148'); }), shapes: [{ circle: [10, 10, 10] }] });
 def('metal_wheel', { name: 'Rueda metálica', cat: 'machinery', mat: 'metal', mass: 8, desc: 'Rueda de acero sin motor.', sprite: plainWheel(10, '#4b5058', '#b9bfc7'), shapes: [{ circle: [10, 10, 10] }] });
 def('toggle_mirror', Object.assign({}, DEFS.mirror, {
   name: 'Espejo conmutable', toggleMirror: true, desc: 'Espejo que se puede encender (refleja) o apagar (deja pasar los láseres).',
@@ -11946,25 +12039,6 @@ for (const d of DEF_LIST) {
 
 /* --- límite de propagación de señales configurable (Ajustes) --- */
 if (!Settings.sigLimit) Settings.sigLimit = 1500;
-
-/* --- el conducto de líquido se rompe si se estira demasiado --- */
-{
-  const cu = Conduits.update.bind(Conduits);
-  Conduits.update = (dt) => {
-    for (const c of [...Connections.list]) {
-      if (c.type !== 'conduit' || !c.bA.getWorld || !c.bB.getWorld) continue;
-      const a = c.bA.getWorldPoint(c.la), b = c.bB.getWorldPoint(c.lb);
-      const d = Math.hypot(b.x - a.x, b.y - a.y);
-      if (d > Math.max(4, c.len * 3)) {
-        Connections.remove(c);
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        Sound.play('snap', mx, my, 0.6);
-        if (c.col) for (let i = 0; i < 8; i++) Effects.add(PT.LIQ, mx, my, gauss() * 2, gauss() * 2 - 1, 1.5, 1.2, c.col);
-      }
-    }
-    cu(dt);
-  };
-}
 
 /* =========================================================================
    EDITOR DE MAPAS: dibuja bloques, rampas, agua y lava; guarda tus mapas
@@ -12891,7 +12965,7 @@ Human.prototype.aiMove = function (dir, speed, backward) {
   // con las piernas dañadas no puede andar: se arrastra con los brazos
   if (this.state === 'lying' && !this.dragged && this.legsOut() && this.canCrawl()) {
     this.walking = false; this.crawling = true; this.crawlDir = dir; this.crawlSpeed = 0.5;
-    this.crawlLead(dir);
+    this.crawlPrep(dir);
     return true;
   }
   if (this.state !== 'stand' || this.dragged) { this.walking = false; return this.state !== 'stand'; }
@@ -13434,7 +13508,7 @@ Human.prototype.zombieAI = function (dt) {
   let nd = 9, nside = 'F';
   for (const sd of sides) { const v = near(V(...this.handPoint(sd))); if (v < nd) { nd = v; nside = sd; } }
   if (!this.zAtk && (crawl ? Math.min(hd, nd) > 0.45 : Math.abs(dx) > 0.5)) {
-    if (crawl) { this.crawling = true; this.crawlDir = Math.sign(dx); this.crawlSpeed = 0.35; this.crawlLead(this.crawlDir); }
+    if (crawl) { this.crawling = true; this.crawlDir = Math.sign(dx); this.crawlSpeed = 0.35; this.crawlPrep(this.crawlDir); }
     else {
       const dir = Math.sign(dx);
       this.walking = true; this.walkDir = dir;
@@ -13487,13 +13561,19 @@ Human.prototype.updateZombieAttack = function (dt) {
   Human.prototype.computePose = function (dt) {
     const r = cp.call(this, dt), P = r.P;
     if (this.dragged || this.shock > 0 || this.forcedPose) return r;
-    if (this.crawling && this.state === 'lying') {
-      // arrastrarse: los brazos se estiran por encima de la cabeza y tiran; las piernas se arrastran
-      this.crawlT = (this.crawlT || 0) + dt * 5;
-      const c = Math.sin(this.crawlT), c2 = Math.cos(this.crawlT);
-      Object.assign(P, { head: 0.35, middleBody: -0.1, lowerBody: 0, upperLegF: -0.15, lowerLegF: 0.25, upperLegB: -0.1, lowerLegB: 0.2,
-        upperArmF: -2.45 + c * 0.85, lowerArmF: -0.35 - Math.max(0, c2) * 0.9, upperArmB: -2.45 - c * 0.85, lowerArmB: -0.35 - Math.max(0, -c2) * 0.9 });
-      r.str = Math.max(r.str, 0.5);
+    if (this.crawling && this.state === 'lying' && this.alive) {
+      // arrastrarse: cada brazo, por turnos, se estira hacia delante, apoya la mano y tira del cuerpo (el codo se
+      // dobla mientras el cuerpo pasa por encima de la mano); las piernas se arrastran
+      this.crawlT = (this.crawlT || 0) + dt * TAU * 0.8;
+      Object.assign(P, { head: 0.45, middleBody: -0.05, lowerBody: 0, upperLegF: -0.1, lowerLegF: 0.2, upperLegB: -0.05, lowerLegB: 0.15 });
+      for (const sd of ['F', 'B']) {
+        const u = this.crawlPhase(sd);
+        let pu, pl;
+        if (u < CRAWL_PULL) { const k = u / CRAWL_PULL; pu = lerp(-2.8, -1.65, k); pl = lerp(-0.2, -1.95, Math.pow(k, 0.8)); }
+        else { const k = (u - CRAWL_PULL) / (1 - CRAWL_PULL); pu = lerp(-1.65, -2.8, k) - Math.sin(k * Math.PI) * 0.4; pl = lerp(-1.95, -0.2, k); }
+        P['upperArm' + sd] = pu; P['lowerArm' + sd] = pl;
+      }
+      r.str = Math.max(r.str, 1);
       return r;
     }
     if (this.zombie) {
@@ -13637,7 +13717,7 @@ Human.prototype.attackForces = function () {
     if (this.dragged) this._dragT = Phys.time;
     const on = this.aiOn();
     if (!on || this.zombie || !this.alive || this.consc < 0.5 || this.frozenSolid || this.kind === 'dummy' || this.kind === 'skeleton') {
-      if (!this.zombie) this.crawling = false;
+      if (!this.zombie || !this.alive || this.consc < 0.5) this.crawling = false;
       if (this.aiGoal || this._aiUsing || this._ncPairs || this._soPairs || this.atk) this.aiStop();
       if (this.consc < 0.35) this.aggressor = null; // quien queda inconsciente pierde la pelea y no la retoma
       return;
@@ -13663,6 +13743,31 @@ Human.prototype.crawlLead = function (dir) {
   if (h.destroyed || m.destroyed || !dir) return;
   if (Math.sign(h.body.getPosition().x - m.body.getPosition().x) !== dir && (!this._flipT || this.t - this._flipT > 1.5)) { this._flipT = this.t; this.flipFacing(); }
 };
+// fase de cada brazo al arrastrarse (0-1): primero tira (la mano apoyada) y luego se estira hacia delante
+const CRAWL_PULL = 0.6;
+Human.prototype.crawlPhase = function (side) { const t = (this.crawlT || 0) / TAU + (side === 'B' ? 0.5 : 0); return t - Math.floor(t); };
+// boca arriba no puede tirar con los brazos: se da la vuelta (boca abajo, con la cabeza en el mismo sitio)
+Human.prototype.supine = function () {
+  const a = this.root.body.getAngle();
+  if (Math.sin(a) * this.facing > -0.75) return false;
+  // tumbado de verdad (la cabeza a la altura del pecho y en el suelo), no mientras cae
+  const r = this.root.body.getPosition(), h = this.limbs.head, hp = h.destroyed ? r : h.body.getPosition();
+  return Math.abs(hp.y - r.y) < 0.3 && this.grounded() && Math.abs(this.root.body.getLinearVelocity().y) < 0.5;
+};
+Human.prototype.rollOver = function () {
+  if (this.held.F || this.held.B || (this.grabs && (this.grabs.F || this.grabs.B)) || this.dragged || this.anyFrozen()) return false;
+  if (this.flipFacing() === false) return false;
+  const live = this.limbList.filter((L) => !L.destroyed && L.body);
+  let cx = 0, cy = 0;
+  for (const L of live) { const c = L.body.getWorldCenter(); cx += c.x; cy += c.y; }
+  cx /= live.length; cy /= live.length;
+  for (const L of live) { const b = L.body, p = b.getPosition(), v = b.getLinearVelocity(); b.setTransform(V(2 * cx - p.x, 2 * cy - p.y), b.getAngle() + Math.PI); b.setLinearVelocity(V(-v.x, -v.y)); b.setAwake(true); }
+  return true;
+};
+Human.prototype.crawlPrep = function (dir) {
+  if (this.supine() && (!this._rollT || this.t - this._rollT > 1.5)) { this._rollT = this.t; this.rollOver(); }
+  this.crawlLead(dir);
+};
 Human.prototype.legsOut = function () {
   for (const id of ['upperLegB', 'lowerLegB', 'upperLegF', 'lowerLegF']) { const l = this.limbs[id]; if (l.destroyed || l.severed || l.broken || !l.connected || l.health < 0.15) return true; }
   return false;
@@ -13673,29 +13778,36 @@ Human.prototype.canCrawl = function () {
   return ['F', 'B'].some((s) => { const u = this.limbs['upperArm' + s], l = this.limbs['lowerArm' + s]; return !u.destroyed && u.connected && !u.broken && !l.destroyed && l.connected; });
 };
 {
-  // al arrastrarse, el cuerpo apenas roza el suelo (los brazos sí agarran) y avanza a tirones
+  // al arrastrarse, el cuerpo apenas roza el suelo y avanza a tirones, cada vez que un brazo tira: su mano se
+  // agarra al suelo mientras tira y resbala mientras se estira hacia delante. Sólo vivo y consciente (un cuerpo
+  // muerto o desmayado no se arrastra aunque lo estuviera haciendo)
   const ARMS = new Set(ARM_IDS);
   const fo = Human.prototype.forces;
+  const setFr = (L, fr) => {
+    for (let f = L.body.getFixtureList(); f; f = f.getNext()) { if (f._f0 === undefined) f._f0 = f.getFriction(); f.setFriction(fr === null ? f._f0 : fr); }
+    for (let ce = L.body.getContactList(); ce; ce = ce.next) ce.contact.resetFriction();
+  };
   Human.prototype.forces = function (dt) {
     fo.call(this, dt);
     if (this.dead) return;
-    const crawl = !!(this.crawling && this.state === 'lying');
+    const crawl = !!(this.crawling && this.state === 'lying' && this.alive && this.consc >= 0.5 && !this.frozenSolid && !this.dragged);
     if (crawl !== !!this._crawlFr) {
       this._crawlFr = crawl;
-      for (const L of this.limbList) {
-        if (L.destroyed) continue;
-        for (let f = L.body.getFixtureList(); f; f = f.getNext()) { if (f._f0 === undefined) f._f0 = f.getFriction(); f.setFriction(crawl ? (ARMS.has(L.id) ? 0.3 : 0.1) : f._f0); }
-        for (let ce = L.body.getContactList(); ce; ce = ce.next) ce.contact.resetFriction();
-      }
+      for (const L of this.limbList) { if (L.destroyed) continue; L._crawlF = undefined; setFr(L, crawl ? (ARMS.has(L.id) ? 0.2 : 0.1) : null); }
     }
     if (!crawl) return;
+    let pull = 0;
+    for (const sd of ['F', 'B']) {
+      const L = this.limbs['lowerArm' + sd]; if (L.destroyed || !L.connected) continue;
+      const u = this.crawlPhase(sd), pulling = u < CRAWL_PULL, fr = pulling ? 1.6 : 0.15;
+      if (L._crawlF !== fr) { L._crawlF = fr; setFr(L, fr); }
+      if (pulling && !this.limbs['upperArm' + sd].destroyed) pull = Math.max(pull, Math.sin(Math.PI * u / CRAWL_PULL));
+    }
     let M = 0, vx = 0;
-    for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const m = L.body.getMass(); M += m; vx += L.body.getLinearVelocity().x * m; }
+    for (const L of this.limbList) { if (L.destroyed || !L.connected || ARMS.has(L.id)) continue; const m = L.body.getMass(); M += m; vx += L.body.getLinearVelocity().x * m; }
     vx /= M || 1;
-    // avanza a tirones (cuando los brazos tiran): se lleva la velocidad del cuerpo hacia la de arrastrarse
-    const pulse = 0.45 + 0.55 * Math.max(0, Math.sin((this.crawlT || 0) + 1));
-    const dv = clamp(this.crawlDir * (this.crawlSpeed || 0.45) * pulse * 1.4 - vx, -0.5, 0.5) * 0.35;
-    for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const b = L.body, v = b.getLinearVelocity(); b.setLinearVelocity(V(v.x + dv, v.y)); }
+    const dv = clamp(this.crawlDir * (this.crawlSpeed || 0.45) * (0.2 + 1.2 * pull) - vx, -0.5, 0.5) * 0.35;
+    for (const L of this.limbList) { if (L.destroyed || !L.connected || ARMS.has(L.id)) continue; const b = L.body, v = b.getLinearVelocity(); b.setLinearVelocity(V(v.x + dv, v.y)); }
   };
 }
 // colisiones entre seres (configurables en Entorno para humanos, zombis y androides):
@@ -13891,7 +14003,7 @@ const RigidCables = {
   weld(c) {
     if (!this.alive(c.bA) || !this.alive(c.bB)) return;
     const [ax, ay, bx, by] = Connections.ends(c);
-    c.joint = Phys.world.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0, collideConnected: true }, c.bA, c.bB, V((ax + bx) / 2, (ay + by) / 2)));
+    c.joint = Phys.world.createJoint(pl.WeldJoint({ frequencyHz: 0, dampingRatio: 0 }, c.bA, c.bB, V((ax + bx) / 2, (ay + by) / 2)));
     c.joint._rigidCable = true;
   },
   preStep() {
@@ -13972,6 +14084,7 @@ Phys.step = function (dt) {
     RigidCables.preStep();
     this.world.step(sub, this.velIters, this.posIters);
     RigidCables.postStep();
+    Connections.sampleStress();
     this.time += sub; this.stepCount++;
     processImpacts();
     this.runDeferred();
@@ -14129,6 +14242,120 @@ function cleanStains(t) {
 {
   const cd = Clear.debris.bind(Clear);
   Clear.debris = function () { cd(); for (const t of World.things) cleanStains(t); };
+}
+
+/* ---- 35_v9.js ---- */
+/* =========================================================================
+   VERSIÓN 9: copias exactas y partes del cuerpo que se arrancan tirando.
+   Copiar y pegar, duplicar, guardar escenas y deshacer un borrado conservan
+   la escala, las colisiones, el sonido, el congelado, la ingravidez, la fuerza
+   y, en las personas, que sean inmortales, su IA, la electrocución y la pose.
+   (Los tipos de unión nuevos están en 08_systems.js.)
+   ========================================================================= */
+function thingExtras(t) {
+  const e = {};
+  if (!t.isHuman && t.scale && Math.abs(t.scale - 1) > 1e-3) e.sc = t.scale;
+  if (t.noCollide) e.nc = 1;
+  if (t.muted) e.mu = 1;
+  if (t.weightless) e.wl = 1;
+  if (t.indestructible) e.ind = 1;
+  if (t.forceMul && t.forceMul !== 1) e.fm = t.forceMul;
+  if (t.isHuman) {
+    if (t.immortal) e.im = 1;
+    if (t.ai !== undefined) e.ai = t.ai ? 1 : 0;
+    if (t.noShock) e.ns = 1;
+    if (t.forcedPose) e.pose = t.forcedPose;
+  }
+  return Object.keys(e).length ? e : null;
+}
+{
+  // al guardar (copiar, duplicar, escenas) se apuntan sus características
+  const cap = Blueprint.capture.bind(Blueprint);
+  Blueprint.capture = function (things) {
+    const bp = cap(things);
+    if (bp) { const list = things.filter((t) => this.usable(t)); bp.things.forEach((r, i) => { const e = list[i] && thingExtras(list[i]); if (e) r.ex = e; }); }
+    return bp;
+  };
+  const ser = SaveSys.serialize.bind(SaveSys);
+  SaveSys.serialize = function () {
+    const out = ser();
+    const things = World.things.filter((t) => !t.isTerrain && !t.dead && !t.mapObj && (t.isHuman || (t.def && t.def.id && DEFS[t.def.id])));
+    out.things.forEach((r, i) => { const e = things[i] && thingExtras(things[i]); if (e) r.ex = e; });
+    return out;
+  };
+  // y al volver a crearlo se le devuelven (el tamaño antes de congelarlo; lo demás, después)
+  const rf = restoreFrozen;
+  restoreFrozen = function (t, r) {
+    const e = r && r.ex;
+    if (e && e.sc && !t.isHuman && t.setScale) t.setScale(e.sc);
+    rf(t, r);
+    if (!e) return;
+    if (e.nc) t.setCollide(false);
+    if (e.mu) { t.muted = true; for (const l of t.loops) if (l) l.muted = true; }
+    if (e.wl) t.setWeightless(true);
+    if (e.ind) t.indestructible = true;
+    if (e.fm && forceAdjustable(t)) setForceMul(t, e.fm);
+    if (t.isHuman) {
+      if (e.im) t.immortal = true;
+      if (e.ai !== undefined) t.ai = !!e.ai;
+      if (e.ns) t.noShock = true;
+      if (e.pose) { t.forcedPose = e.pose; if ((e.pose === 'cower' || e.pose === 'sit') && (t.state === 'stand' || t.state === 'getup')) t.setState('lying'); }
+    }
+  };
+}
+// duplicar es copiar y pegar al lado, con todo (también la postura y lo que lleve dentro)
+duplicateThing = function (t) {
+  if (!t || t.isTerrain || t.dead) return;
+  const b = t.isHuman ? t.root.body : t.main, p = b.getPosition();
+  const bp = Blueprint.capture([t]);
+  if (!bp) return;
+  const made = Blueprint.spawn(bp, p.x + (t.isHuman ? 0.6 : 0.4), p.y - (t.isHuman ? 0.2 : 0.3));
+  for (const n of made) Undo.push({ type: 'spawn', thing: n });
+  Sound.play('spawn', p.x, p.y);
+  return made[0];
+};
+
+/* ---------------- arrancar partes del cuerpo tirando muy fuerte ---------------- */
+// En cada subpaso se mira cuánto tira cada articulación de su parte (sólo la tracción: los golpes y las caídas
+// la empujan contra el cuerpo y no cuentan). Lo que pase del límite se acumula y, si es mucho, la arranca, y
+// también un tirón tan violento (un vehículo, una explosión) que la articulación no puede sujetarla y se separa.
+// Arrastrándola con el ratón, el límite depende de la fuerza del ratón: tirando muy fuerte (un tirón brusco y
+// largo, o de alguien que está sujeto) se le arrancan los brazos o la cabeza, y con más esfuerzo, las piernas.
+const TEAR_LIM = { head: 13000, arm: 13000, leg: 22000, torso: 30000 };
+const TEAR_DRAG = { head: 0.62, arm: 0.6, leg: 0.75, torso: 0.95 };
+Human.prototype.tearCheck = function (sub) {
+  if (!Settings.gore || this.immortal || this.frozenSolid || this.t < 0.5 || !(sub > 0)) return;
+  const d = Input.drag && Input.drag.kind === 'drag' && Input.drag.thing === this ? Input.drag : null;
+  const k = (this.kind === 'android' ? 2 : 1);
+  for (const L of this.limbList) {
+    const j = L.joint; if (!j || L.destroyed || L.severed) continue;
+    const F = j.getReactionForce(1 / sub), a = j.getAnchorB(), c = L.body.getWorldCenter();
+    const ux = a.x - c.x, uy = a.y - c.y, ul = Math.hypot(ux, uy);
+    const pull = ul > 1e-3 ? (F.x * ux + F.y * uy) / ul : Math.hypot(F.x, F.y);
+    const kind = L.id === 'head' ? 'head' : L.def.leg ? 'leg' : L.id === 'middleBody' || L.id === 'lowerBody' ? 'torso' : 'arm';
+    const wear = 0.35 + 0.65 * L.integrity;
+    let lim = TEAR_LIM[kind] * k * wear;
+    // (con el ratón cuenta lo que sigue unido al cuerpo: un trozo ya arrancado no se sigue deshaciendo)
+    if (d && d.maxF && L.connected) lim = Math.min(lim, TEAR_DRAG[kind] * d.maxF * (k > 1 ? 1.3 : 1) * wear);
+    if (pull > lim) {
+      L.tearE = (L.tearE || 0) + (pull - lim) * sub;
+      if (L.tearE > lim * (d ? 0.08 : 0.04)) { L.tearE = 0; this.tearOff(L, d); continue; }
+    } else if (L.tearE) L.tearE = Math.max(0, L.tearE - lim * 0.5 * sub);
+    // un tirón tan brusco que la articulación no puede sujetar la parte (se separa del cuerpo) la arranca
+    const A = j.getAnchorA(), sep = ul > 1e-3 ? ((A.x - a.x) * ux + (A.y - a.y) * uy) / ul : 0;
+    if (sep > 0.15 * (k > 1 ? 1.5 : 1)) { L.tearS = (L.tearS || 0) + sub; if (L.tearS > 0.02) { L.tearS = 0; this.tearOff(L, d); } }
+    else if (L.tearS) L.tearS = Math.max(0, L.tearS - sub);
+  }
+};
+// al arrancarle algo mientras se arrastra, la fuerza del ratón pasa enseguida a ser la de lo que queda agarrado
+// (si no, el trozo arrancado, mucho más ligero, saldría disparado y se le arrancaría todo lo demás)
+Human.prototype.tearOff = function (L, drag) {
+  this.sever(L, 'tear');
+  if (drag) drag.islT = 0;
+};
+{
+  const hf = Human.prototype.forces;
+  Human.prototype.forces = function (dt) { this.tearCheck(dt); return hf.call(this, dt); };
 }
 
 /* ---- 99_main.js ---- */
