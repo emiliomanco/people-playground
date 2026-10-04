@@ -8096,7 +8096,7 @@ const UI = {
       <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan sin herir a quien esté en medio, pelean cuerpo a cuerpo (estocadas con las armas de punta, golpes desde arriba con las demás) y rematan a los zombis caídos, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones). Estos cables de activación son invisibles: sólo se ven, todos los colores a la vez, mientras tienes equipada una de sus herramientas.</div>
-      <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo.</div>
+      <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo. Las armas con filo, las motosierras, los rotores y los láseres cortan por donde pasan, siguiendo la trayectoria del golpe: un tajo fuerte de katana parte a una persona en dos, y los trozos se pueden volver a cortar. Las explosiones y los aplastamientos rompen el cuerpo en trozos.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
@@ -14955,7 +14955,7 @@ DEFS.mirror.desc = 'Superficie que refleja los haces láser. Con el calor de un 
     if (Math.random() < 0.25) Effects.sparks(hit.x, hit.y, hit.nx, hit.ny, 1, 1);
     if (t.isHuman) {
       const L = hit.d.part; if (!L || L.destroyed) return;
-      t.hurt(L, 0.35 * dt, 'burn', hit.x, hit.y);
+      t.hurt(L, 0.35 * dt, 'burn', hit.x, hit.y, dx, dy);
       L.laserT = (L.laserT || 0) + dt;
       if (L.laserT > 2.5 && L.joint) { L.laserT = 0; Phys.later(() => t.sever(L, 'cut')); }
     } else if (t.isFlammable && t.isFlammable() && Heat.tempOf(t) > 260 && !(t.fire > 0)) Phys.later(() => t.ignite(0.5));
@@ -15576,7 +15576,8 @@ def('helicopter', Object.assign({}, HELI_VB, {
         if (L && !L.destroyed) {
           t.hurt(L, 0.55 * V_.spool, 'slice', h.x, h.y, ux, uy, { power: 3 });
           hb.applyLinearImpulse(V(ux * 40 * V_.spool, (uy - 0.6) * 40 * V_.spool), V(h.x, h.y), true);
-          if (Settings.gore && !t.immortal && L.joint && Math.random() < 0.55 * V_.spool) Phys.later(() => { if (L.joint) t.sever(L, 'cut'); });
+          // las palas cortan a lo largo de su recorrido (y, si no se puede, separan por la articulación)
+          if (Settings.gore && !t.immortal && Math.random() < 0.6 * V_.spool) { const hx = h.x, hy = h.y, bx = dx * s, by = dy * s; Phys.later(() => { if (L.destroyed) return; if (!cutLimb(t, L, hx, hy, bx, by) && L.joint) t.sever(L, 'cut'); }); }
         }
       } else if (hb.getType() === 'dynamic') hb.applyLinearImpulse(V(ux * Math.min(hb.getMass(), 60) * 6 * V_.spool, uy * Math.min(hb.getMass(), 60) * 6 * V_.spool), V(h.x, h.y), true);
       if (hard || (!t.isHuman && hb.getMass() > 40)) {
@@ -16816,6 +16817,438 @@ function sigWiresVisible() { return !!WIRE_CH[Input.tool]; }
     return without(() => nr.call(this, x, y, r));
   };
   for (const t of TOOLS) if (WIRE_CH[t.id]) t.hint += ' Los cables de activación sólo se ven (todos los colores) con una de estas herramientas equipada.';
+}
+
+/* ---- 42_v12_corte.js ---- */
+/* =========================================================================
+   VERSIÓN 12: corte libre del cuerpo. Lo que corta (katanas, espadas, hachas,
+   cuchillos, motosierras, espadas de energía, rotores, láseres, haces...)
+   parte a las personas por donde pasa, siguiendo la trayectoria del golpe: los
+   píxeles de cada parte del cuerpo se reparten a un lado y otro de la línea de
+   corte y lo que se separa pasa a ser un trozo con física propia, que se puede
+   volver a cortar. Las explosiones y los aplastamientos rompen las partes en
+   trozos, como los ladrillos.
+   ========================================================================= */
+const CUT = { MIN_PX: 6, MAX_PIECES: 300 };
+function cutPieceCount() {
+  let n = 0;
+  for (const t of World.things) if (t.isHuman && !t.dead) for (const L of t.limbList) if (L.frag && !L.destroyed) n++;
+  return n;
+}
+// índices de los píxeles que tiene una parte del cuerpo
+function limbPixels(L) { const m = L.tpl.mask, out = []; for (let i = 0; i < m.length; i++) if (m[i]) out.push(i); return out; }
+// contorno convexo de unos píxeles, en coordenadas del cuerpo (como mucho 8 vértices)
+function cutHull(L, idx) {
+  const W = L.tpl.w, H = L.tpl.h, f = L.h.facing;
+  const pts = [], seen = new Set();
+  for (const i of idx) {
+    const x = i % W, y = (i / W) | 0;
+    for (const c of [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]) { const k = c[0] * 4096 + c[1]; if (!seen.has(k)) { seen.add(k); pts.push(c); } }
+  }
+  if (pts.length < 3) return null;
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+  const hull = lo.slice(0, -1).concat(up.slice(0, -1));
+  while (hull.length > 8) {
+    let bi = 0, ba = Infinity;
+    for (let i = 0; i < hull.length; i++) { const a = hull[(i + hull.length - 1) % hull.length], c = hull[(i + 1) % hull.length], ar = Math.abs(cr(a, hull[i], c)); if (ar < ba) { ba = ar; bi = i; } }
+    hull.splice(bi, 1);
+  }
+  if (hull.length < 3) return null;
+  let A = 0, cx = 0, cy = 0;
+  for (let i = 0; i < hull.length; i++) { const a = hull[i], b = hull[(i + 1) % hull.length], c = a[0] * b[1] - b[0] * a[1]; A += c; cx += (a[0] + b[0]) * c; cy += (a[1] + b[1]) * c; }
+  A /= 2; if (Math.abs(A) < 4) return null;
+  cx /= 6 * A; cy /= 6 * A;
+  // un poco por dentro del dibujo, como las formas de siempre
+  const verts = hull.map(([x, y]) => { const d = Math.hypot(x - cx, y - cy) || 1, s = Math.max(0.2, d - 0.4) / d; return V((cx + (x - cx) * s - W / 2) * PX * f, (cy + (y - cy) * s - H / 2) * PX); });
+  return { area: Math.abs(A), verts };
+}
+// pone a una parte la forma física de los píxeles que le quedan
+function cutSetShape(L) {
+  const b = L.body, h = L.h; if (!b) return false;
+  const hull = cutHull(L, limbPixels(L)); if (!hull) return false;
+  let shape = null;
+  try { shape = pl.Polygon(hull.verts); } catch (e) { shape = null; }
+  if (!shape || shape.m_count < 3 || shape.m_vertices.some((v) => Math.abs(v.x) > 1.5 || Math.abs(v.y) > 1.5)) return false;
+  const f0 = b.getFixtureList();
+  const o = f0 ? { density: f0.getDensity(), friction: f0.getFriction(), restitution: f0.getRestitution(), ud: f0.getUserData(), cat: f0.getFilterCategoryBits(), mask: f0.getFilterMaskBits() } : { density: 1, friction: 0.6, restitution: 0.1 };
+  const ud = o.ud && o.ud.part === L ? o.ud : { thing: h, part: L, mat: o.ud ? o.ud.mat : h.mat };
+  for (let f = b.getFixtureList(); f;) { const n = f.getNext(); b.destroyFixture(f); f = n; }
+  const nf = b.createFixture(shape, { density: o.density, friction: o.friction, restitution: o.restitution, filterGroupIndex: h.group, userData: ud });
+  if (o.cat !== undefined) nf.setFilterData({ groupIndex: h.group, categoryBits: o.cat, maskBits: o.mask });
+  b.resetMassData();
+  L.cutShape = true;
+  return true;
+}
+
+/* ---------------- cortar una parte del cuerpo ---------------- */
+// Corta la parte L de la persona h por la recta que pasa por (wx, wy) con dirección (dx, dy).
+// Devuelve el trozo que se separa (o null si no se ha podido: tajo demasiado al borde, inmortal...).
+function cutLimb(h, L, wx, wy, dx, dy, o = {}) {
+  if (!h || h.dead || !h.isHuman || !L || L.destroyed || !L.body || !Settings.gore) return null;
+  if (h.immortal && !o.force) return null;
+  if (L.body.getType() !== 'dynamic' || h.frozenSolid) return null;
+  if (Phys.world.isLocked()) { Phys.later(() => cutLimb(h, L, wx, wy, dx, dy, o)); return null; }
+  if (cutPieceCount() >= CUT.MAX_PIECES) return null;
+  const T = L.tpl, W = T.w, H = T.h, d = L.def;
+  const p0 = L.localPx(wx, wy), p1 = L.localPx(wx + dx, wy + dy);
+  let ux = p1[0] - p0[0], uy = p1[1] - p0[1];
+  const ul = Math.hypot(ux, uy); if (ul < 1e-9) return null;
+  ux /= ul; uy /= ul;
+  const sd = (x, y) => ux * (y - p0[1]) - uy * (x - p0[0]);
+  const at = (x, y) => sd(x, y) >= 0;
+  const A = [], B = [];
+  for (let i = 0; i < T.mask.length; i++) if (T.mask[i]) (sd(i % W + 0.5, ((i / W) | 0) + 0.5) >= 0 ? A : B).push(i);
+  const min = o.minPx || CUT.MIN_PX;
+  if (A.length < min || B.length < min) return null;
+  // sigue siendo la parte el lado que tiene su articulación (en el torso o en un trozo suelto, el que tiene más uniones o, si no, el mayor)
+  const jAt = (cd) => at(cd.jx - d.cx + W / 2, cd.jy - d.cy + H / 2);
+  let keepA;
+  if (L.joint && L.parent) keepA = jAt(d);
+  else {
+    let na = 0, nb = 0;
+    for (const c of L.children) if (c.joint && !c.destroyed) (jAt(c.def) ? na++ : nb++);
+    keepA = na !== nb ? na > nb : A.length >= B.length;
+  }
+  const keep = keepA ? A : B, part = keepA ? B : A;
+  if (!cutHull(L, part) || !cutHull(L, keep)) return null;
+  const total0 = L.px0 || (L.px0 = A.length + B.length);
+  // el trozo nuevo
+  const F = cutMakePiece(h, L, part);
+  if (!F) return null;
+  F.px0 = total0;
+  // la parte se queda con su lado
+  const nm = new Uint8Array(T.mask.length); for (const i of keep) nm[i] = 1;
+  L.cutMask = nm; L.tpl = Object.assign({}, T, { mask: nm });
+  if (!cutSetShape(L)) { L.cutMask = null; L.tpl = T; cutRemovePiece(h, F); return null; }
+  // lo que colgaba del lado cortado (antebrazo, cabeza, piernas...) se va con el trozo
+  for (const c of [...L.children]) if (c.joint && !c.destroyed && jAt(c.def) !== keepA) cutReattach(h, c, L, F);
+  // lo clavado en el trozo se va con él
+  for (const r of Stuck.list) {
+    if (r.target !== h || !r.joint) continue;
+    if (r.bO === L.body) { const a = r.joint.getAnchorA(), lp = L.localPx(a.x, a.y); if (at(lp[0], lp[1]) !== keepA) cutMoveStuck(r, L, F); }
+    setNoCollide(r.bS, F.body, true);
+  }
+  // la mano cortada suelta lo que sostiene
+  if (d.hand && at(2, H - 2.5) !== keepA) {
+    const side = (d.base || d.id).endsWith('B') ? 'B' : 'F';
+    if (h.held[side] && h.limbs['lowerArm' + side] === L) Holding.release(h.held[side]);
+    L.handless = true; L.broken = true;
+  }
+  // el corte: carne y hueso a los dos lados, sangre
+  const edge = [];
+  for (const M of [L, F]) {
+    const m = M.tpl.mask;
+    for (let i = 0; i < m.length; i++) {
+      if (!m[i]) continue;
+      const x = i % W + 0.5, y = ((i / W) | 0) + 0.5, dd = Math.abs(sd(x, y));
+      // sólo la fila de píxeles del corte enseña la carne (y el hueso, si lo hay); la de al lado, a ratos
+      if (dd < 0.75) { M.dmg[i] = Math.max(M.dmg[i], 0.97); if (M === L) edge.push([x, y]); }
+      else if (dd < 1.5 && Math.random() < 0.45) M.dmg[i] = Math.max(M.dmg[i], 0.55);
+      if (dd < 1.2) M.bloodMap[i] = Math.max(M.bloodMap[i], 0.18);
+    }
+    M.dirty = true;
+  }
+  const base = d.base || d.id, vital = /Body$|^head$/.test(base);
+  if (h.bleedKind && edge.length) {
+    const n = Math.min(3, Math.max(1, Math.round(edge.length / 6)));
+    for (let k = 0; k < n; k++) { const e = edge[Math.floor((k + 0.5) / n * edge.length)]; h.addWound(L, e[0], e[1], (vital ? 0.02 : 0.013) / n * 1.6, true); }
+    const fe = edge[(edge.length / 2) | 0]; h.addWound(F, fe[0], fe[1], 0.004, false);
+  }
+  // los trozos se separan un poco
+  const pa = L.worldPt(p0[0], p0[1]), pb = L.worldPt(p0[0] - uy, p0[1] + ux), nx = pb[0] - pa[0], ny = pb[1] - pa[1], nl = Math.hypot(nx, ny) || 1;
+  const sA = o.shatter ? 0 : 0.45;
+  for (const [M, sgn] of [[L, keepA ? 1 : -1], [F, keepA ? -1 : 1]]) { const m = M.body.getMass(); M.body.applyLinearImpulse(V(nx / nl * sgn * sA * m, ny / nl * sgn * sA * m), M.body.getWorldCenter(), true); }
+  if (!o.quiet) {
+    const bk = h.bleedKind;
+    const step = Math.max(1, Math.floor(edge.length / 4));
+    for (let k = 0; k < edge.length; k += step) {
+      const e = edge[k], w = L.worldPt(e[0], e[1]);
+      if (bk) Effects.blood(w[0], w[1], nx / nl * rand(-1.2, 1.2), ny / nl * rand(-1.2, 1.2) - 0.4, 2, 1, bk);
+      else if (h.kind === 'android') Effects.sparks(w[0], w[1], nx / nl, ny / nl, 2, 2);
+    }
+    if (!bk && h.kind !== 'android') Effects.debris(wx, wy, 0, -1, 6, h.kind === 'dummy' ? [230, 200, 60] : [220, 215, 200]);
+    Sound.play('gore', wx, wy, 0.9, { key: 'cut' + h.id, gap: 60 });
+  }
+  // consecuencias
+  const frac = part.length / total0;
+  if (!h.immortal && h.alive && h.kind !== 'dummy' && h.kind !== 'skeleton') {
+    h.pain += 1.2 * h.painMul; h.fear = 1;
+    if (base === 'head') { h.brain -= frac * 5; if (frac > 0.15) h.die('Cabeza partida'); }
+    else if (!h.zombie && base === 'upperBody') { h.heart -= frac * 3; h.lungs = true; if (frac > 0.3) h.die('Partido en dos'); }
+    else if (!h.zombie && (base === 'middleBody' || base === 'lowerBody') && frac > 0.35) h.die('Partido en dos');
+  }
+  h.updateConnectivity();
+  return F;
+}
+// crea el trozo: una parte más de la persona, suelta, con los píxeles cortados
+function cutMakePiece(h, L, idx) {
+  const T = L.tpl, mask = new Uint8Array(T.mask.length); for (const i of idx) mask[i] = 1;
+  h._cutN = (h._cutN || 0) + 1;
+  const base = L.def.base || L.def.id;
+  const def = Object.assign({}, L.def, { id: base + '~' + h._cutN, base, parent: null, frag: true, name: (LIMB_BY_ID[base] ? LIMB_BY_ID[base].name : L.def.name) + ' (trozo)' });
+  const F = new Limb(h, def, Object.assign({}, T, { mask }));
+  F.cutMask = mask; F.frag = true;
+  for (const k of ['dmg', 'bruise', 'burnMap', 'bloodMap', 'hole']) F[k].set(L[k]);
+  F.frost = L.frost; F.temp = L.temp; F.health = L.health; F.boneHealth = L.boneHealth; F.broken = L.broken; F.rigid = L.rigid;
+  F.severed = true; F.connected = false;
+  const b0 = L.body;
+  const hull = cutHull(F, idx); if (!hull) return null;
+  let shape = null;
+  try { shape = pl.Polygon(hull.verts); } catch (e) { shape = null; }
+  if (!shape || shape.m_count < 3 || shape.m_vertices.some((v) => Math.abs(v.x) > 1.5 || Math.abs(v.y) > 1.5)) return null;
+  const body = Phys.world.createBody({ type: 'dynamic', position: b0.getPosition(), angle: b0.getAngle(), angularDamping: 0.6, linearDamping: 0.02 });
+  body.setLinearVelocity(b0.getLinearVelocity()); body.setAngularVelocity(b0.getAngularVelocity()); body.setGravityScale(b0.getGravityScale());
+  if (b0._gs !== undefined) body._gs = b0._gs;
+  const f0 = b0.getFixtureList(), ud0 = f0 ? f0.getUserData() : null;
+  const nf = body.createFixture(shape, { density: f0 ? f0.getDensity() : 1, friction: f0 ? f0.getFriction() : 0.6, restitution: f0 ? f0.getRestitution() : 0.1, filterGroupIndex: h.group, userData: { thing: h, part: F, mat: ud0 ? ud0.mat : h.mat } });
+  if (f0) nf.setFilterData({ groupIndex: h.group, categoryBits: f0.getFilterCategoryBits(), maskBits: f0.getFilterMaskBits() });
+  F.cutShape = true; F.body = body;
+  h.addBody(body, F);
+  F.part = { body, spr: F.spr, ox: 0, oy: 0, flip: h.facing < 0, zOff: L.part ? L.part.zOff : L.def.z, limb: F, noStain: true };
+  h.parts.push(F.part); h.limbList.push(F); h.limbs[def.id] = F;
+  // lo que no chocaba con la parte tampoco choca con el trozo (lo que sostiene, lo clavado, ...)
+  if (b0._nc) for (const ob of [...b0._nc]) setNoCollide(body, ob, true);
+  F.compose();
+  return F;
+}
+function cutRemovePiece(h, F) {
+  const i = h.limbList.indexOf(F); if (i >= 0) h.limbList.splice(i, 1);
+  delete h.limbs[F.def.id];
+  const pi = h.parts.indexOf(F.part); if (pi >= 0) h.parts.splice(pi, 1);
+  const bi = h.bodies.indexOf(F.body); if (bi >= 0) h.bodies.splice(bi, 1);
+  try { Phys.world.destroyBody(F.body); } catch (e) {}
+}
+// la articulación de un hijo pasa de la parte al trozo
+function cutReattach(h, c, L, F) {
+  const j = c.joint;
+  const ji = h.joints.indexOf(j); if (ji >= 0) h.joints.splice(ji, 1);
+  try { Phys.world.destroyJoint(j); } catch (e) {}
+  c.joint = null;
+  const i = L.children.indexOf(c); if (i >= 0) L.children.splice(i, 1);
+  c.parent = F; F.children.push(c);
+  h.makeJoint(c);
+}
+// algo clavado en el lado cortado se queda clavado en el trozo
+function cutMoveStuck(r, L, F) {
+  const j = r.joint;
+  const la = j.getLocalAnchorA(), lb = j.getLocalAnchorB(), ax = j.getLocalAxisA();
+  const nj = Phys.world.createJoint(pl.PrismaticJoint({
+    enableLimit: true, lowerTranslation: j.getLowerLimit(), upperTranslation: j.getUpperLimit(), enableMotor: true, maxMotorForce: (r.sh && r.sh.friction) || 60, motorSpeed: 0,
+    localAnchorA: V(la.x, la.y), localAnchorB: V(lb.x, lb.y), localAxisA: V(ax.x, ax.y), referenceAngle: j.getReferenceAngle(),
+  }, F.body, r.bS));
+  try { Phys.world.destroyJoint(j); } catch (e) {}
+  r.joint = nj; r.bO = F.body; r.limb = F;
+  if (r.item) r.item._stuckPart = F.part;
+  if (r.extra) r.extra.push(L.body);
+  setNoCollide(r.bS, L.body, true);
+}
+// la hoja sigue su camino: un momento sin chocar con los dos lados del corte
+function bladePass(bodies, limbs) {
+  const pairs = [];
+  for (const b of bodies) for (const L of limbs) if (L && L.body && !(b._nc && b._nc.has(L.body))) { setNoCollideRaw(b, L.body); pairs.push([b, L.body]); }
+  if (pairs.length) setTimeout(() => { for (const [a, c] of pairs) { if (a._nc) a._nc.delete(c); if (c._nc) c._nc.delete(a); } }, 350);
+}
+// cuánto tiene que valer un tajo para atravesar una parte (las grandes cuestan más)
+function cutThreshold(L, sever) {
+  const m = L.def.frag && L.body ? L.body.getMass() / HUMAN_MASS_MUL : L.def.mass;
+  return (sever || 1.2) * (0.5 + m / 20);
+}
+
+/* ---------------- filos: tajos que atraviesan ---------------- */
+function edgeHit(contact, bS, bO, fO, e, item, p, rvx, rvy) {
+  const a = bS.getWorldPoint(e.a), b = bS.getWorldPoint(e.b);
+  const ex = b.x - a.x, ey = b.y - a.y, el = Math.hypot(ex, ey) || 1, tx = ex / el, ty = ey / el;
+  // un tajo rápido entra de golpe varios centímetros: el contacto cuenta si está a lo largo de la hoja y cerca del filo
+  const along = (p.x - a.x) * tx + (p.y - a.y) * ty, off = Math.abs((p.x - a.x) * -ty + (p.y - a.y) * tx);
+  if (along < -0.04 || along > el + 0.04 || off > 0.05 + Math.min(0.14, Math.hypot(rvx, rvy) / 120)) return false;
+  const perp = Math.abs(rvx * -ty + rvy * tx);
+  if (perp <= e.min) return false;
+  if (!bS.__id) bS.__id = uid();
+  const key = bS.__id + ':' + (bO.__id || (bO.__id = uid()));
+  const amt = (perp - e.min) / 12 * (e.dmg || 1);
+  const h = thingOf(fO), L = (fO.getUserData() || {}).part;
+  const cut = !!(Settings.gore && h && h.isHuman && !h.immortal && L && !L.destroyed && amt >= cutThreshold(L, e.sever));
+  // si lo atraviesa, la hoja no se frena: sigue cortando lo que encuentre
+  if (cut) { contact.setEnabled(false); setNoCollideRaw(bS, bO); }
+  const now = Phys.time;
+  if (!_sliceMemo.has(key) || now - _sliceMemo.get(key) > 0.25) {
+    _sliceMemo.set(key, now);
+    Phys.later(() => {
+      sliceHit(item, fO, p.x, p.y, rvx, rvy, amt, e);
+      if (cut && !L.destroyed) { const F = cutLimb(h, L, p.x, p.y, rvx, rvy); bladePass([bS], [L, F]); }
+    });
+  }
+  return cut;
+}
+// el mismo objeto afilado de siempre, pero los filos ahora pueden atravesar
+trySharp = function (contact, fS, fO, dS, dO) {
+  const bS = fS.getBody(), bO = fO.getBody();
+  if (bS._nc && bS._nc.has(bO)) { contact.setEnabled(false); return true; }
+  const item = dS.thing;
+  if (!item || item.dead || dO.thing === item) return false;
+  const sh = dS.sharp;
+  const wm = contact.getWorldManifold(null);
+  if (!wm || !wm.points.length) return false;
+  const p = wm.points[0];
+  const vS = bS.getLinearVelocityFromWorldPoint(p), vO = bO.getLinearVelocityFromWorldPoint(p);
+  const rvx = vS.x - vO.x, rvy = vS.y - vO.y;
+  const mo = MATERIALS[dO.mat];
+  const isLimb = dO.thing && dO.thing.isHuman;
+  if (sh && sh.cutter) {
+    if (!item.on && !sh.alwaysOn) return false;
+    if (!mo || !(isLimb || dO.mat === 'wood' || dO.mat === 'fruit' || dO.mat === 'foam' || dO.mat === 'plastic')) return false;
+    const key = bS.__id + ':' + (bO.__id || (bO.__id = uid()));
+    const now = Phys.time;
+    if (!_sliceMemo.has(key) || now - _sliceMemo.get(key) > (sh.rate || 0.12)) {
+      _sliceMemo.set(key, now);
+      Phys.later(() => cutterHit(item, sh, fO, p.x, p.y, rvx, rvy));
+    }
+    if (sh.passThrough && isLimb) { contact.setEnabled(false); return true; }
+    return false;
+  }
+  if (sh && mo && (mo.stab || (sh.pierceAll && dO.thing && !dO.thing.isTerrain))) {
+    const tip = bS.getWorldPoint(sh.tip), dir = bS.getWorldVector(sh.dir);
+    const dTip = Math.hypot(p.x - tip.x, p.y - tip.y);
+    if (dTip < sh.tipR) {
+      const along = rvx * dir.x + rvy * dir.y;
+      const sp = Math.hypot(rvx, rvy);
+      const minS = Math.max(sh.min || 3, sh.pierceAll ? 0 : mo.stabMin || 0) * (isLimb ? 1 : 1.2);
+      if (along > minS && along > sp * 0.72) {
+        if (!bS.__id) bS.__id = uid();
+        contact.setEnabled(false);
+        setNoCollideRaw(bS, bO);
+        const tx = tip.x, ty = tip.y, dx = dir.x, dy = dir.y;
+        Phys.later(() => Stuck.create(item, bS, fO, tx, ty, dx, dy, along, sh));
+        return true;
+      }
+    }
+  }
+  if (dS.edge && isLimb) return edgeHit(contact, bS, bO, fO, dS.edge, item, p, rvx, rvy);
+  return false;
+};
+{
+  // los filos sin punta (el hacha) también cortan
+  const ps = preSolve;
+  preSolve = function (contact) {
+    const fA = contact.getFixtureA(), fB = contact.getFixtureB(), dA = fA.getUserData(), dB = fB.getUserData();
+    if (dA && dB) {
+      if (dA.edge && !dA.sharp && trySharp(contact, fA, fB, dA, dB)) return;
+      if (dB.edge && !dB.sharp && trySharp(contact, fB, fA, dB, dA)) return;
+    }
+    return ps(contact);
+  };
+}
+
+/* ---------------- sierras y espadas de energía: el corte avanza hasta atravesar ---------------- */
+if (DEFS.chainsaw && DEFS.chainsaw.sharp) DEFS.chainsaw.sharp.gib = false;
+{
+  const ch0 = cutterHit;
+  cutterHit = function (item, sh, fO, x, y, vx, vy) {
+    ch0(item, sh, fO, x, y, vx, vy);
+    const t = thingOf(fO); if (!t || t.dead || !t.isHuman || !Settings.gore || t.immortal) return;
+    const L = fO.getUserData().part; if (!L || L.destroyed) return;
+    L.sawAcc = (L.sawAcc || 0) + (sh.dmg || 0.2) * (sh.burn ? 1.4 : 1);
+    if (L.sawAcc < cutThreshold(L, 0.75)) return;
+    L.sawAcc = 0;
+    // por donde avanza la hoja (si casi no se mueve, a lo largo de la hoja)
+    let dx = vx, dy = vy;
+    if (Math.hypot(dx, dy) < 1.5 && item.main && sh.dir) { const v = item.main.getWorldVector(sh.dir); dx = v.x; dy = v.y; }
+    const F = cutLimb(t, L, x, y, dx, dy);
+    if (F && item.bodies) bladePass(item.bodies, [L, F]);
+  };
+}
+
+/* ---------------- láseres y haces: cortan a lo largo del rayo ---------------- */
+{
+  const hu = Human.prototype.hurt;
+  Human.prototype.hurt = function (L, amount, type, x, y, dx = 0, dy = 0, o = {}) {
+    if (L && x !== undefined && (dx || dy)) L._lastHit = { x, y, dx, dy, t: Phys.time };
+    return hu.call(this, L, amount, type, x, y, dx, dy, o);
+  };
+  const sv = Human.prototype.sever;
+  Human.prototype.sever = function (L, why) {
+    const lh = L && L._lastHit;
+    if ((why === 'beam' || why === 'cut' || why === 'arc') && lh && Phys.time - lh.t < 0.08 && Settings.gore && !this.immortal && !L.destroyed) {
+      if (cutLimb(this, L, lh.x, lh.y, lh.dx, lh.dy)) return;
+    }
+    return sv.call(this, L, why);
+  };
+}
+
+/* ---------------- explosiones y aplastamientos: se rompe en trozos, como un ladrillo ---------------- */
+{
+  const gb = Human.prototype.gib;
+  Human.prototype.gib = function (L, dx = 0, dy = 0) {
+    if (!L || L.destroyed || this.immortal || !Settings.gore || !L.body || L.body.getType() !== 'dynamic' || this.frozenSolid) return gb.call(this, L, dx, dy);
+    if (Phys.world.isLocked()) { Phys.later(() => this.gib(L, dx, dy)); return; }
+    const n = limbPixels(L).length;
+    // lo que ya se ha roto hace poco, o es muy pequeño, revienta del todo
+    if (n < 36 || (L.shT && Phys.time - L.shT < 0.6) || cutPieceCount() > CUT.MAX_PIECES - 6) return gb.call(this, L, dx, dy);
+    const c = L.body.getWorldCenter(), pieces = [L];
+    const cuts = n > 160 ? 3 : n > 70 ? 2 : 1;
+    for (let k = 0; k < cuts; k++) {
+      let P = pieces[0], pn = 0;
+      for (const Q of pieces) { const q = limbPixels(Q).length; if (q > pn) { pn = q; P = Q; } }
+      const pc = P.body.getWorldCenter(), an = rand(TAU);
+      const F = cutLimb(this, P, pc.x + gauss() * 0.03, pc.y + gauss() * 0.03, Math.cos(an), Math.sin(an), { force: true, shatter: true, minPx: 8, quiet: true });
+      if (F) pieces.push(F);
+    }
+    if (pieces.length < 2) return gb.call(this, L, dx, dy);
+    if (L.joint) this.sever(L, 'gib');
+    const bl = Math.hypot(dx, dy);
+    for (const P of pieces) {
+      P.health = 0; P.shT = Phys.time;
+      const pc = P.body.getWorldCenter(), m = P.body.getMass();
+      let ox = pc.x - c.x, oy = pc.y - c.y; const ol = Math.hypot(ox, oy) || 1; ox /= ol; oy /= ol;
+      const sp = rand(2, 4.5);
+      P.body.applyLinearImpulse(V((ox * sp + (bl ? dx / bl * 3 : 0)) * m, (oy * sp - 1.5 + (bl ? dy / bl * 3 : 0)) * m), pc, true);
+      P.body.applyAngularImpulse(gauss() * m * 0.02, true);
+    }
+    Effects.gore(c.x, c.y, 8, 4, this.kind === 'android' ? 'robot' : this.kind === 'dummy' ? 'dummy' : this.bleedKind ? 'flesh' : 'dummy', dx, dy);
+    if (this.bleedKind) Effects.blood(c.x, c.y, 0, -1, 24, 3, this.bleedKind);
+    Sound.play('gore', c.x, c.y, 1.2);
+    const base = L.def.base || L.id;
+    if ((base === 'head' || base === 'upperBody') && this.alive && !this.immortal) this.die('Reventado');
+    this.updateConnectivity();
+  };
+}
+
+/* ---------------- lo demás sigue funcionando con las partes cortadas ---------------- */
+{
+  // al girar a la persona (R), las formas cortadas también se reflejan
+  const ff = Human.prototype.flipFacing;
+  Human.prototype.flipFacing = function () {
+    const r = ff.apply(this, arguments);
+    for (const L of this.limbList) if (L.cutShape && !L.destroyed && L.body) cutSetShape(L);
+    return r;
+  };
+  // al volverse zombi o carbonizarse se rehace el dibujo: lo cortado sigue cortado
+  const reMask = (h) => { for (const L of h.limbList) if (L.cutMask && !L.destroyed) { const m = L.tpl.mask, k = L.cutMask, nm = new Uint8Array(m.length); for (let i = 0; i < m.length; i++) nm[i] = m[i] && k[i] ? 1 : 0; L.tpl = Object.assign({}, L.tpl, { mask: nm }); L.dirty = true; } };
+  for (const fn of ['becomeZombie', 'carbonize']) {
+    const o = Human.prototype[fn];
+    Human.prototype[fn] = function () { const r = o.apply(this, arguments); reMask(this); return r; };
+  }
+  // una mano cortada no vuelve aunque se cure
+  const he = Human.prototype.heal;
+  Human.prototype.heal = function () { const r = he.apply(this, arguments); for (const L of this.limbList) if (L.handless) L.broken = true; return r; };
+}
+
+/* ---------------- la IA también puede partir con sus tajos ---------------- */
+{
+  const mh = Human.prototype.meleeHit;
+  Human.prototype.meleeHit = function (a, L, x, y) {
+    mh.call(this, a, L, x, y);
+    const W = a.wpn, d = W && W.def, T = a.tgt;
+    if (!d || !d.edge || !T || T.dead || !Settings.gore || T.immortal || !L || L.destroyed || a.style === 'thrust') return;
+    const chance = clamp((d.edge.dmg || 1) * 0.2, 0.05, 0.4) * (L.def.mass > 9 ? 0.35 : 1);
+    if (Math.random() > chance) return;
+    const ux = Math.sign(L.body.getPosition().x - this.root.body.getPosition().x) || this.facing, p = L.body.getWorldCenter();
+    Phys.later(() => { const F = cutLimb(T, L, p.x + gauss() * 0.04, p.y + gauss() * 0.04, ux * 0.45, 1); if (F) bladePass(W.bodies, [L, F]); });
+  };
 }
 
 /* ---- 99_main.js ---- */
