@@ -34,13 +34,15 @@ canvas { image-rendering: pixelated; }
 .tbx-filter input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: #eee; font: inherit; font-size: 13px; padding: 6px 2px; user-select: text; -webkit-user-select: text; }
 .tbx-filter input::placeholder { color: #8a8d93; }
 .tbx-filter button { background: transparent; border: 0; color: #c9ccd2; font-size: 14px; padding: 2px 7px; }
-.tbx-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 8px; display: grid; grid-template-columns: repeat(3, 86px); grid-auto-rows: 86px; gap: 4px; align-content: start; justify-content: center; scrollbar-width: thin; scrollbar-color: #5a5d63 transparent; }
-.item { width: 100%; height: 100%; background: #2b2d31; border: 1px solid #3a3d43; border-radius: 3px; display: grid; place-items: center; padding: 0; overflow: hidden; }
+.tbx-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 8px; display: grid; grid-template-columns: repeat(3, 86px); grid-auto-rows: auto; gap: 4px; align-content: start; justify-content: center; scrollbar-width: thin; scrollbar-color: #5a5d63 transparent; }
+.item { width: 100%; height: 86px; background: #2b2d31; border: 1px solid #3a3d43; border-radius: 3px; display: grid; place-items: center; padding: 0; overflow: hidden; }
 .item canvas { width: 64px; height: 64px; }
 .item:hover { background: #3a3d43; }
 .item.on { background: #5a5d63; border-color: #fff; }
 .tbx-empty { grid-column: 1 / -1; color: #9a9da3; font-size: 12px; line-height: 1.4; padding: 8px 4px; }
 .tbx-empty b { color: #e9e9e9; }
+.isub { grid-column: 1 / -1; color: #9a9da3; font-size: 10.5px; font-weight: bold; letter-spacing: 0.03em; text-transform: uppercase; padding: 8px 2px 1px; border-bottom: 1px solid #3a3d43; }
+.isub:first-child { padding-top: 2px; }
 .tbx-bottom { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 6px; border-top: 1px solid #000; background: rgba(0, 0, 0, 0.35); }
 .tbx-b { height: 40px; background: #2b2d31; border: 1px solid #3a3d43; border-radius: 3px; display: grid; place-items: center; padding: 0; }
 .tbx-b img { width: 24px; height: 24px; }
@@ -165,7 +167,8 @@ canvas { image-rendering: pixelated; }
   .tbx-tab { left: 236px; }
   .cat { height: 38px; }
   .cat canvas, .cat img { width: 24px; height: 24px; }
-  .tbx-grid { grid-template-columns: repeat(3, 68px); grid-auto-rows: 68px; }
+  .tbx-grid { grid-template-columns: repeat(3, 68px); grid-auto-rows: auto; }
+  .item { height: 68px; }
   .item canvas { width: 50px; height: 50px; }
   .hint { display: none; }
   .status { right: 60px; gap: 2px; top: 4px; }
@@ -8084,7 +8087,7 @@ const UI = {
       <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
       <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan sin herir a quien esté en medio, pelean cuerpo a cuerpo (estocadas con las armas de punta, golpes desde arriba con las demás) y rematan a los zombis caídos, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
-      <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, detectores, contadores y retardadores se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones).</div>
+      <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones).</div>
       <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
@@ -8312,24 +8315,31 @@ const Power = {
       const out = src.def.powerOut(src);
       if (out <= 0) continue;
       src.powerIn = Math.max(src.powerIn, out);
-      const best = new Map([[src, out]]);
+      // lo mejor que le llega a cada cosa desde esta fuente (por el camino con menos pérdidas)
+      const best = new Map([[src, out]]), amp = new Set();
       const q = [[src, out]];
       while (q.length) {
         const [t, p] = q.shift();
+        if ((best.get(t) || 0) > p) continue;
         for (const { o, c } of adj.get(t) || []) {
-          if (o.def && (o.def.insulator || (o.def.blocks && o.def.blocks(o)))) continue;
+          if (o === src || (o.def && (o.def.insulator || (o.def.blocks && o.def.blocks(o))))) continue;
           let v = p * 0.9;
-          if (o.def && o.def.resistor) v *= 0.5;
+          // lo que deja pasar cada pieza (resistencia, deslizador, transformador...); lo que la multiplica sólo
+          // se cruza una vez (si no, la corriente daría vueltas creciendo sin fin)
+          if (o.def && o.def.powerScale) { const k = o.def.powerScale(o); if (k > 1) { if (amp.has(o)) continue; amp.add(o); } v = Math.min(2000, v * k); }
+          else if (o.def && o.def.resistor) v *= 0.5;
           if (v < 0.2 || (best.get(o) || 0) >= v) continue;
           best.set(o, v); this.lit.add(c);
-          o.powerIn = (o.powerIn || 0) + v;
           q.push([o, v]);
         }
       }
+      for (const [o, v] of best) if (o !== src) o.powerIn = (o.powerIn || 0) + v;
     }
     // efectos: personas electrocutadas y aparatos que se encienden con corriente
     for (const t of World.things) {
       if (t.dead) continue;
+      // un pulso electromagnético deja las máquinas sin corriente un rato
+      if (t._empT && Phys.time < t._empT) t.powerIn = 0;
       const p = t.powerIn || 0;
       if (t.isHuman) {
         if (p > 0.3) this.electrocute(t, p);
@@ -14356,6 +14366,813 @@ Human.prototype.tearOff = function (L, drag) {
 {
   const hf = Human.prototype.forces;
   Human.prototype.forces = function (dt) { this.tearCheck(dt); return hf.call(this, dt); };
+}
+
+/* ---- 36_v10_maquinas.js ---- */
+/* =========================================================================
+   VERSIÓN 10 (1): la maquinaria de la lista. Lo que ya había se ajusta a
+   cómo debe funcionar cada cosa y se añade lo que faltaba: puertas lógicas,
+   núcleo de distorsión, generador EMP, motor eléctrico, hélice grande,
+   engranajes, espejo láser, láser y martillo eléctrico.
+   ========================================================================= */
+
+// la fuerza ajustable (versión 8) también para las máquinas nuevas
+function v10ForceAdj(d) {
+  if (d._forceChecked) return; d._forceChecked = true;
+  const src = ['init', 'build', 'update', 'forces', 'activate', 'onUse'].map((k) => (typeof d[k] === 'function' ? String(d[k]) : '')).join('\n');
+  if (!FORCE_RE.test(src) || d._forceAdj) return;
+  d._forceAdj = true;
+  for (const k of ['update', 'forces', 'activate', 'onUse']) {
+    if (typeof d[k] !== 'function') continue;
+    const f = d[k];
+    d[k] = function (it, ...r) { return withForce(it, () => f.call(this, it, ...r)); };
+  }
+}
+// cambia una definición por otra nueva en el mismo sitio del catálogo
+function redef(id, d) {
+  const old = DEFS[id]; d.id = id; DEFS[id] = d;
+  const i = DEF_LIST.indexOf(old); if (i >= 0) DEF_LIST[i] = d; else DEF_LIST.push(d);
+  return d;
+}
+
+/* ---------------- nivel de señal ---------------- */
+// Las señales de activación son pulsos; algunas cosas, además, están «activas» de forma continua (un interruptor
+// encendido, una tecla pulsada, un sensor que detecta, una puerta con la salida activa...). Las puertas lógicas
+// miran ese nivel y los pulsos recientes de lo que tienen conectado.
+function sigLevel(t) { return !!(t && !t.dead && t.def && t.def.sigLevel && t.def.sigLevel(t)); }
+DEFS.button.sigLevel = (it) => (it.vars.pressT || 0) > 0;
+DEFS.small_button.sigLevel = (it) => (it.vars.pressT || 0) > 0;
+DEFS.act_toggle.sigLevel = (it) => !!it.on;
+DEFS.key_trigger.sigLevel = (it) => !!it.vars.was;
+DEFS.sig_transformer.sigLevel = (it) => !!it.vars.pw || it.vars.pulse > 0;
+for (const id of ['det_motion', 'det_metal', 'det_life', 'det_fire', 'det_impact']) DEFS[id].sigLevel = (it) => !!it.vars.det;
+
+/* ---------------- puertas lógicas ---------------- */
+// Entradas: los cables de propagación que llegan a la puerta (y lo que la active directamente). Una entrada está
+// activa si lo que la manda está activo o si ha mandado una señal hace muy poco. Al activarse la salida, la puerta
+// manda una señal por sus cables de salida y, mientras sigue activa, da electricidad (3) por un cable.
+const GATE_WIN = 0.15;
+// letras de píxeles (3 o 4 de ancho y 5 de alto) para rotular las puertas
+const PXFONT = { A: ['.#.', '#.#', '###', '#.#', '#.#'], N: ['#..#', '##.#', '#.##', '#..#', '#..#'], D: ['##.', '#.#', '#.#', '#.#', '##.'], O: ['.#.', '#.#', '#.#', '#.#', '.#.'], R: ['##.', '#.#', '##.', '#.#', '#.#'], X: ['#.#', '#.#', '.#.', '#.#', '#.#'], T: ['###', '.#.', '.#.', '.#.', '.#.'] };
+function pxText(a, txt, x, y, col) {
+  const w = [...txt].reduce((s, ch) => s + PXFONT[ch][0].length + 1, -1);
+  let cx = Math.round(x - w / 2);
+  for (const ch of txt) { const g = PXFONT[ch]; g.forEach((row, ry) => { for (let rx = 0; rx < row.length; rx++) if (row[rx] === '#') a.px(cx + rx, y + ry, col); }); cx += g[0].length + 1; }
+}
+function gateDef(kind, label, name, desc, col) {
+  return {
+    name, cat: 'machinery', mat: 'plastic', mass: 0.5, gate: true, desc,
+    sprite: () => drawSprite(18, 12, (a) => { a.rect(0, 0, 18, 12, '#2a2d32'); a.rect(1, 1, 16, 3, col); a.rect(2, 5, 14, 7, '#15171a'); a.rect(0, 5, 1, 4, '#c9a23a'); a.rect(17, 5, 1, 4, '#c9a23a'); pxText(a, label, 9, 6, '#e9edf1'); a.edge(0.8); }),
+    sigLevel: (it) => !!it.vars.out,
+    init(it) { it.vars.inT = new Map(); it.vars.out = false; it.vars.age = 0; },
+    activate(it, src) { it.vars.inT.set(src && src !== it ? src : 'mano', Phys.time); return false; },
+    update(it, dt) {
+      it.vars.age += dt;
+      const ins = new Set();
+      for (const c of it.conns) if (WIRE_CH[c.type] && c.tB === it && c.tA && !c.tA.dead) ins.add(c.tA);
+      for (const [s, t] of it.vars.inT) { if (Phys.time - t > 1) it.vars.inT.delete(s); else if (Phys.time - t < GATE_WIN) ins.add(s); }
+      let high = 0;
+      for (const s of ins) if ((s !== 'mano' && sigLevel(s)) || Phys.time - (it.vars.inT.get(s) ?? -9) < GATE_WIN) high++;
+      const n = ins.size;
+      const out = kind === 'and' ? n >= 2 && high === n : kind === 'or' ? high >= 1 : kind === 'xor' ? high === 1 : high === 0;
+      it.vars.n = n; it.vars.high = high;
+      if (out && !it.vars.out && it.vars.age > 0.3) { const p = it.pos(); Sound.play('beep', p.x, p.y, 0.25, { pitch: 1.6 }); it.vars.out = true; sendSignal(it); }
+      it.vars.out = out;
+    },
+    powerOut(it) { return it.vars.out ? 3 : 0; },
+    draw(it, ctx) { ledAt(it, ctx, 15, 2.5, it.vars.out); },
+    info(it) { return [[`Entradas: ${it.vars.n || 0} (activas: ${it.vars.high || 0})`, '#cfd5dc'], [it.vars.out ? 'Salida activa' : 'Salida apagada', it.vars.out ? '#7ad48a' : '#9aa3ad']]; },
+  };
+}
+def('gate_and', gateDef('and', 'AND', 'Puerta AND', 'Envía una señal de salida sólo si recibe a la vez señal por todas sus entradas (al menos dos). Une las entradas con cables de propagación que lleguen a ella y la salida con cables que salgan de ella.', '#3a8a3a'));
+def('gate_or', gateDef('or', 'OR', 'Puerta OR', 'Envía una señal de salida si recibe señal por cualquiera de sus entradas.', '#2b5ea8'));
+def('gate_xor', gateDef('xor', 'XOR', 'Puerta XOR', 'Envía una señal de salida si recibe señal por una sola de sus entradas, pero no por varias a la vez.', '#8a5a2a'));
+def('gate_not', gateDef('not', 'NOT', 'Puerta NOT', 'Invierte la señal: mientras no recibe ninguna, su salida está activa (da electricidad y avisa al activarse); al recibir una, se apaga.', '#8a2a3a'));
+
+/* ---------------- palanca e interruptor ---------------- */
+{
+  const d = DEFS.switch;
+  d.name = 'Palanca';
+  d.desc = 'Palanca física: cada vez que cambia de posición (F, clic o un golpe en la palanca) envía una señal por sus cables de propagación. Arriba deja pasar la electricidad; abajo la corta.';
+  d.sigLevel = (it) => !!it.on;
+  d.activate = function (it, src) {
+    it.on = !it.on; const p = it.pos(); Sound.play('clunk', p.x, p.y, 0.5, { pitch: 1.4 });
+    it.vars.flipT = Phys.time; sendSignal(it, src && src !== it ? src : undefined);
+  };
+  d.onImpact = function (it, im, dv) { if (dv > 3 && Phys.time - (it.vars.flipT || -9) > 0.4) Phys.later(() => { if (!it.dead) it.activate(); }); };
+  d.menu = (it) => [{ label: it.on ? 'Bajar la palanca' : 'Subir la palanca', fn: () => it.activate() }];
+  d.info = (it) => [[it.on ? 'Arriba (pasa la corriente)' : 'Abajo (corta la corriente)', it.on ? '#7ad48a' : '#9aa3ad']];
+}
+DEFS.act_toggle.name = 'Interruptor';
+DEFS.act_toggle.desc = 'Cada activación lo enciende o lo apaga. Encendido se queda activo: da electricidad sin parar y cuenta como señal activa para las puertas lógicas.';
+
+/* ---------------- activador por llave, caja de retraso, metrónomo, contador ---------------- */
+DEFS.key_trigger.name = 'Activador por llave';
+DEFS.key_trigger.desc = 'Envía una señal al pulsar su tecla del teclado (J por defecto; se cambia en el menú). Mientras la mantienes, da energía.';
+{
+  const d = DEFS.delay_box;
+  d.name = 'Caja de retraso';
+  d.desc = 'Retrasa las señales que le llegan el tiempo que elijas, de 0,05 a 60 segundos.';
+  d.menu = (it) => {
+    const o = [0.1, 0.5, 1, 2, 5, 10, 30, 60];
+    return [{ label: `Retraso: ${it.vars.d} s (cambiar)`, fn: () => { it.vars.d = o[(o.indexOf(it.vars.d) + 1) % o.length] || 1; } },
+      { label: 'Retraso exacto…', fn: () => { const v = askNumber('Segundos de retraso (0,05 a 60)', it.vars.d); if (v !== null) it.vars.d = clamp(v, 0.05, 60); } }];
+  };
+  d.info = (it) => [[`Retraso: ${it.vars.d} s`, '#cfd5dc'], [it.vars.q.length ? `${it.vars.q.length} señal(es) en espera` : 'Sin señales en espera', '#9aa3ad']];
+}
+{
+  const d = DEFS.timer, m = d.menu;
+  d.desc = 'Encendido, envía señales una y otra vez a un ritmo constante. El ritmo se cambia en el menú.';
+  d.menu = (it) => [...(m ? m(it) : []), { label: 'Ritmo exacto…', fn: () => { const v = askNumber('Segundos entre señales', it.vars.iv); if (v !== null) it.vars.iv = clamp(v, 0.05, 600); } }];
+}
+{
+  const d = DEFS.counter, m = d.menu;
+  d.desc = 'Cuenta las señales que recibe y, al llegar al número elegido, envía una señal de salida y vuelve a empezar.';
+  d.menu = (it) => [...m(it), { label: 'Número exacto…', fn: () => { const v = askNumber('Señales que hay que contar', it.vars.max); if (v !== null) it.vars.max = Math.max(1, Math.round(v)); } }];
+  d.reading = (it) => `${it.vars.n}/${it.vars.max}`;
+}
+
+/* ---------------- aleatorizador: elige al azar una de sus salidas ---------------- */
+{
+  const d = DEFS.randomizer;
+  d.desc = 'Al recibir una señal, la manda sólo por uno de sus cables de salida, elegido al azar.';
+  d.activate = function (it, src) {
+    const outs = [...it.conns].filter((c) => WIRE_CH[c.type] && c.tA === it && c.tB && !c.tB.dead);
+    if (!outs.length) return false;
+    const c = pick(outs); c.flash = 0.25;
+    const p = it.pos(); Sound.play('beep', p.x, p.y, 0.3, { pitch: 1.8 });
+    activateThing(c.tB, it, new Set(src && src !== it ? [it, src] : [it]), WIRE_CH[c.type]);
+    return false;
+  };
+  d.menu = (it) => [{ label: 'Enviar una señal', fn: () => it.activate() }];
+  d.info = (it) => [[`${[...it.conns].filter((c) => WIRE_CH[c.type] && c.tA === it).length} salida(s)`, '#cfd5dc']];
+}
+
+/* ---------------- electricidad: resistencia, fusible, deslizador, transformador ---------------- */
+// cuánto deja pasar cada pieza (Power multiplica la energía por powerScale al entrar en ella)
+{
+  const d = DEFS.resistor;
+  d.desc = 'Reduce la intensidad de la corriente que pasa por ella (a la mitad, o lo que elijas en el menú).';
+  d.powerScale = (it) => it.vars.k || 0.5;
+  d.menu = (it) => { const o = [0.75, 0.5, 0.25, 0.1]; return [{ label: `Deja pasar: ${Math.round((it.vars.k || 0.5) * 100)} %`, fn: () => { it.vars.k = o[(o.indexOf(it.vars.k || 0.5) + 1) % o.length]; } }]; };
+  d.info = (it) => [[`Energía que entra: ${(it.powerIn || 0).toFixed(1)} · deja pasar ${Math.round((it.vars.k || 0.5) * 100)} %`, '#ffd76a']];
+}
+redef('act_fuse', {
+  name: 'Fusible', cat: 'machinery', mat: 'plastic', mass: 0.2,
+  desc: 'Deja pasar la electricidad mientras no supere su límite (10 por defecto). Si lo supera, se funde y corta el circuito para siempre (menú: reponer).',
+  sprite: () => drawSprite(16, 6, (a) => { a.rect(0, 1, 3, 4, '#c9a23a'); a.rect(13, 1, 3, 4, '#c9a23a'); a.rect(3, 0, 10, 6, [220, 235, 240, 160]); a.hline(3, 12, 3, '#8a9099'); }),
+  init(it) { it.vars.lim = 10; },
+  blocks(it) { return !!it.vars.blown; },
+  onPower(it, p) {
+    if (it.vars.blown || p <= it.vars.lim) return;
+    it.vars.blown = true; const q = it.pos(); Sound.play('pop', q.x, q.y, 0.7); Effects.sparks(q.x, q.y, 0, 0, 10, 2); Effects.smoke(q.x, q.y, 2);
+  },
+  activate(it) { if (it.vars.blown) { it.vars.blown = false; Sound.play('click', it.pos().x, it.pos().y, 0.5); } },
+  draw(it, ctx) { if (it.vars.blown) { const p = it.worldPt(8, 3); ctx.fillStyle = '#2a2a2a'; ctx.fillRect(p[0] - 2 * PX, p[1] - PX, 4 * PX, 2 * PX); } },
+  info(it) { return [[it.vars.blown ? 'Fundido: corta la corriente' : `Listo (límite ${it.vars.lim})`, it.vars.blown ? '#e05a4f' : '#7ad48a']]; },
+  menu(it) { return [{ label: 'Reponer', fn: () => { it.vars.blown = false; } }, { label: `Límite: ${it.vars.lim} (cambiar)…`, fn: () => { const v = askNumber('Energía máxima antes de fundirse', it.vars.lim); if (v !== null) it.vars.lim = Math.max(0.5, v); } }]; },
+});
+// deslizador: un potenciómetro con un mando que se arrastra por la guía; deja pasar ese porcentaje de la energía
+redef('slider', {
+  name: 'Deslizador', cat: 'machinery', mat: 'plastic', mass: 1.2,
+  desc: 'Potenciómetro: arrastra el mando por la guía (o elige un valor en el menú) para graduar cuánta electricidad deja pasar, del 0 al 100 %.',
+  sprite: () => drawSprite(40, 10, (a) => { a.rect(0, 3, 40, 5, '#2a2d32'); a.hline(0, 39, 3, '#3c4148'); a.rect(3, 5, 34, 1, '#0d0f11'); for (let x = 4; x <= 36; x += 8) a.vline(x, 8, 9, '#8a9099'); a.edge(0.8); }),
+  thumb: () => composeSprites(40, 12, [{ spr: drawSprite(40, 10, (a) => { a.rect(0, 3, 40, 5, '#2a2d32'); a.rect(3, 5, 34, 1, '#0d0f11'); }), x: 0, y: 2 }, { spr: drawSprite(6, 10, (a) => { a.rect(0, 0, 6, 10, '#f0b23c'); a.edge(0.8); }), x: 24, y: 0 }], [20, 7]),
+  build(it, x, y, ang, flip) {
+    const track = drawSprite(40, 10, (a) => { a.rect(0, 3, 40, 5, '#2a2d32'); a.hline(0, 39, 3, '#3c4148'); a.rect(3, 5, 34, 1, '#0d0f11'); for (let x = 4; x <= 36; x += 8) a.vline(x, 8, 9, '#8a9099'); a.edge(0.8); });
+    const knob = drawSprite(6, 10, (a) => { a.rect(0, 0, 6, 10, '#f0b23c'); a.hline(0, 5, 0, '#ffd76a'); a.rect(2, 2, 2, 6, '#c98a20'); a.edge(0.8); });
+    const b1 = it.makeBody(x, y, ang, track, [{ box: [0, 3, 40, 5] }], 'plastic', { mass: 1 });
+    const off = rot(0, -2 * PX, ang);
+    const b2 = it.makeBody(x + off[0], y + off[1], ang, knob, [{ box: [0, 0, 6, 10] }], 'plastic', { mass: 0.2, zOff: 0.1 });
+    setNoCollide(b1, b2, true);
+    const ax = rot(1, 0, ang);
+    it.vars.span = 16 * PX;
+    it.vars.j = it.joint(pl.PrismaticJoint({ enableLimit: true, lowerTranslation: -it.vars.span, upperTranslation: it.vars.span, enableMotor: true, maxMotorForce: 3, motorSpeed: 0 }, b1, b2, V(x + off[0], y + off[1]), V(ax[0], ax[1])));
+  },
+  value(it) { const j = it.vars.j; if (!j) return 0.5; return clamp((j.getJointTranslation() + it.vars.span) / (2 * it.vars.span), 0, 1); },
+  powerScale(it) { return DEFS.slider.value(it); },
+  setValue(it, v) {
+    const j = it.vars.j, b1 = it.bodies[0], b2 = it.bodies[1]; if (!j || !b2) return;
+    const ax = j.getLocalAxisA ? b1.getWorldVector(j.getLocalAxisA()) : V(1, 0), dt = (v * 2 - 1) * it.vars.span - j.getJointTranslation();
+    const p = b2.getPosition(); b2.setTransform(V(p.x + ax.x * dt, p.y + ax.y * dt), b2.getAngle()); b2.setLinearVelocity(b1.getLinearVelocity()); b2.setAwake(true);
+  },
+  reading(it) { return `${Math.round(DEFS.slider.value(it) * 100)} %`; },
+  info(it) { return [[`Valor: ${Math.round(DEFS.slider.value(it) * 100)} %`, '#ffd76a'], [`Energía que entra: ${(it.powerIn || 0).toFixed(1)}`, '#cfd5dc']]; },
+  menu(it) { return [0, 25, 50, 75, 100].map((v) => ({ label: `Poner al ${v} %`, fn: () => DEFS.slider.setValue(it, v / 100) })); },
+});
+{
+  const d = DEFS.elec_transformer;
+  d.desc = 'Modifica la potencia de la corriente que pasa por él: la multiplica o la divide (×2 por defecto; se cambia en el menú). Ponlo entre una fuente y lo que quieras alimentar.';
+  d.gate = false; d.onPower = undefined; d.activate = undefined;
+  d.powerScale = (it) => it.vars.k || 2;
+  const o = [0.25, 0.5, 2, 4, 10];
+  d.menu = (it) => [{ label: `Multiplica por ${it.vars.k || 2} (cambiar)`, fn: () => { it.vars.k = o[(o.indexOf(it.vars.k || 2) + 1) % o.length]; } }];
+  d.draw = (it, ctx) => { const p = it.worldPt(8, 6); drawLabel(ctx, p[0], p[1], '×' + (it.vars.k || 2), (it.powerIn || 0) > 0.5 ? '#ffd76a' : '#8a9099', 5); };
+  d.info = (it) => [[`Entra: ${(it.powerIn || 0).toFixed(1)} (×${it.vars.k || 2})`, '#ffd76a']];
+}
+DEFS.sig_transformer.name = 'Convertidor de señal';
+DEFS.sig_transformer.desc = 'Transforma una señal de activación en un pulso de electricidad y, al revés, la electricidad que le llega en una señal de activación.';
+
+/* ---------------- electrodo: chispa que prende y electrocuta ---------------- */
+{
+  const ef = electrodeFire;
+  electrodeFire = function (it) {
+    ef(it);
+    const tip = it.worldPt(21, 3);
+    Effects.sparks(tip[0], tip[1], 0, 0, 6, 1.6, 'blue'); Effects.light(tip[0], tip[1], 0.8, [150, 200, 255], 0.8, 0.06); Sound.play('zap', tip[0], tip[1], 0.25);
+    bodiesInRadius(tip[0], tip[1], 0.12, (b) => {
+      const t = bodyData(b).thing; if (!t || t === it || t.isTerrain || t.dead) return;
+      if (t.isHuman) { const L = bodyData(b).part; if (L && !L.destroyed) Phys.later(() => t.shockHit(L, 0.8, tip[0], tip[1])); }
+      else if (t.isFlammable && t.isFlammable() && Math.random() < 0.35) Phys.later(() => t.ignite(0.4));
+    });
+  };
+  DEFS.electrode.desc = 'Al recibir una señal (o mientras recibe electricidad) suelta una chispa en la punta: activa lo que toca, puede prender lo inflamable y da calambre a quien la toque.';
+}
+
+/* ---------------- fuentes de energía ---------------- */
+{
+  // acumulador: guarda muchísima energía y la suelta de golpe al activarlo
+  const d = DEFS.accumulator, CAP = 1000, OUT = 60;
+  d.desc = 'Almacena muchísima electricidad: se carga con la que le llega por un cable y, al activarlo, la suelta en una gran descarga (60) hasta vaciarse.';
+  d.init = (it) => { it.vars.charge = CAP; it.vars.dis = 0; };
+  d.powerOut = (it) => (it.vars.dis > 0 ? OUT : 0);
+  d.activate = (it) => {
+    if (it.vars.dis > 0) { it.vars.dis = 0; return; }
+    if (it.vars.charge < 30) { UI.toast('El acumulador está descargado'); return; }
+    it.vars.dis = 1; const p = it.pos(); Sound.play('zap', p.x, p.y, 0.8); Effects.sparks(p.x, p.y - 0.2, 0, -1, 10, 2, 'blue');
+  };
+  d.update = (it, dt) => {
+    if (it.vars.dis > 0) { it.vars.charge = Math.max(0, it.vars.charge - OUT * 4 * dt); if (it.vars.charge <= 0) it.vars.dis = 0; }
+    else { const ext = it.powerIn || 0; if (ext > 0.5) it.vars.charge = Math.min(CAP, it.vars.charge + ext * dt * 3); }
+  };
+  d.draw = (it, ctx) => { const p = it.worldPt(12, 11); ctx.fillStyle = '#0d1a2a'; ctx.fillRect(p[0] - 8 * PX, p[1] - PX, 16 * PX, 2 * PX); ctx.fillStyle = it.vars.dis > 0 ? '#ffd76a' : '#5dff7a'; ctx.fillRect(p[0] - 8 * PX, p[1] - PX, 16 * PX * it.vars.charge / CAP, 2 * PX); };
+  d.menu = (it) => [{ label: it.vars.dis > 0 ? 'Cortar la descarga' : 'Descargar', fn: () => it.activate() }];
+  d.info = (it) => [[`Carga: ${Math.round(it.vars.charge / CAP * 100)} %`, '#ffd76a'], [it.vars.dis > 0 ? 'Descargando (60)' : 'Cargándose con la energía que le llega', '#cfd5dc']];
+  d.reading = (it) => `${Math.round(it.vars.charge / CAP * 100)} %`;
+}
+DEFS.battery.desc = 'Da una corriente de electricidad constante y estándar (5). Únela con un cable a lámparas, motores o personas.';
+DEFS.generator.desc = 'Produce un flujo continuo de electricidad de alta intensidad (20).';
+DEFS.generator_big.desc = 'Versión enorme del generador (50): alimenta maquinaria pesada sin quemarse.';
+DEFS.matter_extractor.name = 'Extractor de energía de materia';
+DEFS.matter_extractor.desc = 'Convierte en electricidad la masa de lo que se destruye en su boca (y los líquidos de su depósito).';
+
+// núcleo de distorsión: fuente exótica de muchísima energía que deforma el espacio; si se daña, colapsa
+def('warp_core', {
+  name: 'Núcleo de distorsión', cat: 'machinery', mat: 'metal', mass: 80, hp: 10,
+  desc: 'Fuente de energía exótica y muy volátil: da muchísima electricidad (120) y deforma el espacio a su alrededor. Si recibe demasiados golpes, disparos o se calienta en exceso, se vuelve inestable, colapsa en una singularidad y estalla.',
+  sprite: () => drawSprite(22, 40, (a) => {
+    a.rect(0, 0, 22, 5, '#3c4148'); a.rect(0, 35, 22, 5, '#3c4148'); a.hline(0, 21, 0, '#565c65');
+    a.rect(3, 5, 16, 30, '#1e1a2e'); for (let y = 7; y < 34; y += 5) a.rect(3, y, 16, 1, '#3a2a5a');
+    a.rect(7, 6, 8, 28, [150, 110, 255, 230]); a.rect(9, 6, 4, 28, [215, 200, 255, 240]); a.rect(1, 12, 2, 16, '#565c65'); a.rect(19, 12, 2, 16, '#565c65'); a.edge(0.8);
+  }),
+  init(it) { it.on = true; it.vars.ph = 0; },
+  powerOut(it) { return it.on && !it.vars.boom ? 120 : 0; },
+  activate(it) { if (it.vars.boom) return; it.on = !it.on; Sound.play('click', it.pos().x, it.pos().y, 0.6); },
+  onImpact(it, im, dv) { if (dv > 7) it.hitDamage((dv - 7) * 0.5, null); },
+  onBreak(it) { DEFS.warp_core.unstable(it); },
+  unstable(it) { if (it.vars.boom || it.dead) return; it.vars.boom = 2.2; it.on = false; const p = it.pos(); Sound.play('beep', p.x, p.y, 1, { pitch: 0.5 }); UI.toast('¡El núcleo de distorsión se ha vuelto inestable!'); },
+  forces(it, dt) {
+    if (!it.on && !it.vars.boom) return;
+    // el espacio se deforma: lo ligero de alrededor gira lentamente alrededor del núcleo (y cae hacia él al colapsar)
+    const c = it.main.getWorldCenter(), k = it.vars.boom ? 4 : 1;
+    bodiesInRadius(c.x, c.y, 3 * k, (b, d) => {
+      if (b.getType() !== 'dynamic') return; const t = bodyData(b).thing; if (!t || t === it || t.isTerrain) return;
+      const p = b.getWorldCenter(), dx = c.x - p.x, dy = c.y - p.y, dd = Math.max(0.3, Math.hypot(dx, dy)), m = Math.min(b.getMass(), 60);
+      const pull = (it.vars.boom ? 60 : 4) / dd, swirl = 6 / dd;
+      b.applyForce(V((dx * pull - dy * swirl) / dd * m, (dy * pull + dx * swirl) / dd * m), p, true);
+    });
+  },
+  update(it, dt) {
+    const p = it.pos(); it.vars.ph += dt * (it.vars.boom ? 14 : 3);
+    if ((it.temp || 0) > 700 && !it.vars.boom) DEFS.warp_core.unstable(it);
+    if (it.on || it.vars.boom) {
+      if (!it.vars.loop) { it.vars.loop = Sound.loop('hum'); it.loops.push(it.vars.loop); }
+      it.vars.loop.set(it.vars.boom ? 0.4 : 0.12, p.x, p.y, it.vars.boom ? 1.6 + (2.2 - it.vars.boom) * 0.6 : 0.45);
+      if (Math.random() < (it.vars.boom ? 0.9 : 0.25)) { const a = rand(TAU), r = rand(0.8, 2.4); Effects.add(PT.ESPARK, p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, -Math.sin(a) * 2 - Math.cos(a), Math.cos(a) * 2 - Math.sin(a), 0.6, 1, [170, 130, 255]); }
+    } else if (it.vars.loop) { it.vars.loop.stop(); it.vars.loop = null; }
+    if (it.vars.boom) {
+      it.vars.boom -= dt; Cam.addShake(0.03);
+      if (Math.random() < dt * 6) Effects.bolt(p.x, p.y, p.x + gauss() * 1.5, p.y + gauss() * 1.5, [180, 140, 255], 0.15, 1, 0.3);
+      if (it.vars.boom <= 0) {
+        it.vars.boom = 0;
+        Phys.later(() => {
+          if (it.dead) return;
+          const c = it.pos();
+          // colapso: una singularidad que se lo traga todo unos segundos y, después, la explosión
+          const bh = new Item(DEFS.blackhole, c.x, c.y, {}); bh.setFrozen(true); if (!bh.on) bh.activate();
+          setTimeout(() => { if (!bh.dead) { const q = bh.pos(); bh.destroy(true); explode(q.x, q.y, 9, { fire: true }); } }, 2600);
+          it.destroy(true);
+        });
+      }
+    }
+  },
+  light(it) { if (!it.on && !it.vars.boom) return []; const p = it.pos(); return [{ x: p.x, y: p.y, r: 4 + Math.sin(it.vars.ph) * 0.6 + (it.vars.boom ? 3 : 0), col: [170, 130, 255], intensity: 0.9 }]; },
+  draw(it, ctx) { if (!it.on && !it.vars.boom) return; const p = it.pos(); ctx.strokeStyle = `rgba(180,150,255,${0.18 + Math.sin(it.vars.ph) * 0.1})`; ctx.lineWidth = 1.2 / Cam.zoom; for (let k = 1; k <= 3; k++) { ctx.beginPath(); ctx.arc(p.x, p.y, (k * 0.6 + (it.vars.ph % 1) * 0.6) * (it.vars.boom ? 0.6 : 1), 0, TAU); ctx.stroke(); } },
+  menu(it) { return [{ label: it.on ? 'Apagar' : 'Encender', fn: () => it.activate() }]; },
+  info(it) { return [[it.vars.boom ? '¡INESTABLE!' : it.on ? 'Encendido: genera 120' : 'Apagado', it.vars.boom ? '#ff5a4a' : it.on ? '#c9b0ff' : '#9aa3ad'], [`Integridad: ${Math.max(0, Math.round(it.hp / 10 * 100))} %`, '#cfd5dc']]; },
+});
+{
+  // un disparo también lo daña
+  const d = DEFS.warp_core;
+  d.bulletHit = (it, f, x, y, dx, dy, energy, h) => { it.hitDamage(1.5 + energy * 0.5, null); Effects.sparks(x, y, -dx, -dy, 6, 2, 'blue'); return energy * 0.2; };
+}
+
+// generador EMP: pulso electromagnético que apaga un rato las máquinas eléctricas cercanas
+const EMP_R = 9;
+def('emp_generator', {
+  name: 'Generador EMP', cat: 'machinery', mat: 'metal', mass: 25,
+  desc: 'Al activarlo (o al llegarle electricidad) libera un pulso electromagnético que apaga durante 6 segundos la maquinaria eléctrica cercana (9 m) y aturde a los androides. Se recarga en 4 segundos.',
+  sprite: () => drawSprite(26, 22, (a) => { a.rect(0, 8, 26, 14, '#3c4148'); a.hline(0, 25, 8, '#565c65'); a.rect(3, 11, 20, 6, '#2b5ea8'); for (let x = 5; x < 22; x += 3) a.vline(x, 11, 16, '#4f86d0'); a.rect(11, 0, 4, 8, '#2a2d32'); a.circle(13, 2, 2, '#7fd3ff'); a.edge(0.8); }),
+  init(it) { it.vars.cool = 0; },
+  activate(it) {
+    if (it.vars.cool > 0) return;
+    it.vars.cool = 4;
+    const c = it.pos(), off = [];
+    Effects.wave(c.x, c.y, EMP_R, 0.6, [140, 210, 255]); Effects.flash(c.x, c.y, 4, [140, 210, 255], 0.3, 1);
+    for (let i = 0; i < 24; i++) { const a = rand(TAU); Effects.bolt(c.x, c.y, c.x + Math.cos(a) * rand(2, EMP_R * 0.8), c.y + Math.sin(a) * rand(2, EMP_R * 0.8), [150, 210, 255], 0.2, 1, 0.4); }
+    Sound.play('zap', c.x, c.y, 1.2); Sound.play('thunder', c.x, c.y, 0.5, { pitch: 1.6 });
+    for (const t of World.things) {
+      if (t === it || t.dead || t.isTerrain) continue;
+      const q = t.isHuman ? t.root.body.getPosition() : t.pos(); if (Math.hypot(q.x - c.x, q.y - c.y) > EMP_R) continue;
+      if (t.isHuman) { if (t.kind === 'android') { t.shock = Math.max(t.shock, 6); t.knock = Math.max(t.knock, 6); } continue; }
+      t._empT = Phys.time + 6;
+      if (t.on && t.def.activate && !t.def.explosive) { try { t.def.activate(t, 'emp'); } catch (e) {} t._pwrOn = false; off.push(t); }
+    }
+    // al pasar el pulso, vuelve a encenderse lo que apagó
+    setTimeout(() => { for (const t of off) if (!t.dead && !t.on && t.def.activate) { try { t.def.activate(t, 'emp'); } catch (e) {} } }, 6000);
+  },
+  update(it, dt) { it.vars.cool = Math.max(0, it.vars.cool - dt); },
+  onPower(it, p) { const on = p > 0.5; if (on && !it.vars.pw) it.activate(); it.vars.pw = on; },
+  draw(it, ctx) { ledAt(it, ctx, 13, 2, it.vars.cool <= 0, '#7fd3ff'); },
+  menu(it) { return [{ label: 'Liberar pulso', fn: () => it.activate() }]; },
+  info(it) { return [[it.vars.cool > 0 ? `Recargando (${it.vars.cool.toFixed(1)} s)` : 'Listo', it.vars.cool > 0 ? '#9aa3ad' : '#7fd3ff']]; },
+});
+{
+  // lo apagado por un pulso no da electricidad hasta que pasa (ni la usa: ver Power.update)
+  for (const id in DEFS) {
+    const d = DEFS[id]; if (typeof d.powerOut !== 'function') continue;
+    const po = d.powerOut;
+    d.powerOut = function (it) { return it._empT && Phys.time < it._empT ? 0 : po.call(this, it); };
+  }
+}
+
+/* ---------------- sensores ---------------- */
+{
+  // termómetro: la temperatura de aquello a lo que está unido (o, si no, de lo que toca)
+  const d = DEFS.thermometer;
+  d.desc = 'Mide en tiempo real la temperatura del objeto al que lo unas (con cualquier cable o unión) o, si no está unido a nada, de lo que toca.';
+  d.target = (it) => { for (const c of it.conns) { const o = c.tA === it ? c.tB : c.tA; if (o && !o.dead && !o.isTerrain) return { t: o, b: c.tA === it ? c.bB : c.bA }; } return null; };
+  d.tempOf = (it) => {
+    const g = d.target(it);
+    if (g) { if (g.t.isHuman) { const L = bodyData(g.b).part || g.t.limbs.upperBody; return L && L.temp !== undefined ? L.temp : 37; } return Heat.tempOf(g.t); }
+    return it.temp !== undefined ? it.temp : Settings.ambientTemp;
+  };
+  d.draw = (it, ctx) => { const p = it.worldPt(2, -4), T = d.tempOf(it); drawLabel(ctx, p[0], p[1], `${Math.round(T)}°C`, T > 60 ? '#ff8a3c' : T < 0 ? '#7fd3ff' : '#e9edf1', 6); };
+  d.reading = (it) => `${Math.round(d.tempOf(it))} °C`;
+}
+{
+  const d = DEFS.power_gauge;
+  d.name = 'Medidor de potencia';
+  d.desc = 'Indica con precisión la electricidad que le llega por el circuito.';
+  d.reading = (it) => (it.powerIn || 0).toFixed(1);
+}
+DEFS.heart_monitor.reading = (it) => { const h = it.vars.h; return h && !h.dead ? `${h.bpm > 0 ? Math.round(h.bpm) : 0} lpm` : '---'; };
+
+/* ---------------- motores y movimiento ---------------- */
+// motor eléctrico: gira con la electricidad que le llega; cuanta más, más rápido y con más fuerza
+def('electric_motor', {
+  name: 'Motor eléctrico', cat: 'machinery', mat: 'metal', mass: 14,
+  desc: 'Genera fuerza de giro con la electricidad que le llega por un cable: cuanta más energía, más rápido y con más fuerza. Fija cosas a su eje (con un cable fijo o una atadura) para hacerlas girar.',
+  sprite: () => drawSprite(22, 20, (a) => { a.rect(0, 2, 18, 16, '#2b5ea8'); a.rect(1, 3, 16, 3, '#4f86d0'); for (let x = 3; x < 16; x += 3) a.vline(x, 7, 16, '#1e4580'); a.rect(18, 7, 4, 6, '#8a9099'); a.rect(2, 0, 4, 2, '#c9a23a'); a.rect(11, 0, 4, 2, '#c9a23a'); a.edge(0.8); }),
+  build(it, x, y, ang, flip) {
+    const body = drawSprite(22, 20, (a) => { a.rect(0, 2, 18, 16, '#2b5ea8'); a.rect(1, 3, 16, 3, '#4f86d0'); for (let x = 3; x < 16; x += 3) a.vline(x, 7, 16, '#1e4580'); a.rect(18, 7, 4, 6, '#8a9099'); a.rect(2, 0, 4, 2, '#c9a23a'); a.rect(11, 0, 4, 2, '#c9a23a'); a.edge(0.8); });
+    const disk = drawSprite(12, 12, (a) => { a.circle(6, 6, 6, '#b9bfc7'); a.ring(6, 6, 6, 1, '#6e757e'); a.rect(5, 1, 2, 4, '#f0b23c'); a.circle(6, 6, 1.5, '#2a2d32'); });
+    const b1 = it.makeBody(x, y, ang, body, [{ box: [0, 2, 22, 16] }], 'metal', { mass: 12 });
+    const cp = it.worldPt(10, 10);
+    const b2 = it.makeBody(cp[0], cp[1], ang, disk, [{ circle: [6, 6, 6] }], 'metal', { mass: 1.5, zOff: 0.1 });
+    setNoCollide(b1, b2, true);
+    it.vars.j = it.joint(pl.RevoluteJoint({ enableMotor: true, maxMotorTorque: 1, motorSpeed: 0 }, b1, b2, V(cp[0], cp[1])));
+    it.vars.dir = 1;
+  },
+  update(it) {
+    const p = it.powerIn || 0, j = it.vars.j; if (!j) return;
+    const on = p > 0.5 && !(it._empT && Phys.time < it._empT);
+    j.setMaxMotorTorque(on ? Math.min(9000, 250 + p * 160) : 1);
+    j.setMotorSpeed(on ? Math.min(40, 3 + p * 0.7) * it.vars.dir : 0);
+    if (on) { if (!it.vars.loop) { it.vars.loop = Sound.loop('hum'); it.loops.push(it.vars.loop); } const q = it.pos(); it.vars.loop.set(0.05 + Math.min(0.1, p * 0.003), q.x, q.y, 0.8 + Math.min(1.5, p * 0.03)); }
+    else if (it.vars.loop) { it.vars.loop.stop(); it.vars.loop = null; }
+  },
+  activate(it) { it.vars.dir *= -1; Sound.play('click', it.pos().x, it.pos().y, 0.5); },
+  menu(it) { return [{ label: 'Invertir sentido', fn: () => it.activate() }]; },
+  info(it) { const p = it.powerIn || 0; return [[p > 0.5 ? `Girando con ${p.toFixed(1)} de energía` : 'Sin electricidad', p > 0.5 ? '#7ad48a' : '#9aa3ad']]; },
+});
+// hélice grande
+def('big_propeller', Object.assign({
+  name: 'Hélice grande', cat: 'machinery', mat: 'metal', mass: 14, usesPower: true,
+  desc: 'Hélice enorme para mover grandes estructuras por el aire o por el agua: empuja con mucha fuerza hacia donde apunta.',
+  sprite: () => drawSprite(26, 18, (a) => { a.rect(0, 2, 18, 14, '#4b5058'); a.hline(0, 17, 2, '#626871'); for (let y = 5; y < 15; y += 3) a.hline(2, 15, y, '#3c4148'); a.rect(18, 7, 5, 4, '#2a2d32'); a.edge(0.8); }),
+  draw(it, ctx) {
+    const q = it.worldPt(24, 9), [dx, dy] = it.dirWorld(0, 1), s = Math.sin(it.vars.spin || 0) * (it.on ? 1 : 0.9);
+    ctx.strokeStyle = it.on ? 'rgba(200,205,210,0.6)' : '#8a9099'; ctx.lineWidth = PX * 3;
+    ctx.beginPath(); ctx.moveTo(q[0] - dx * 22 * PX * s, q[1] - dy * 22 * PX * s); ctx.lineTo(q[0] + dx * 22 * PX * s, q[1] + dy * 22 * PX * s); ctx.stroke();
+  },
+}, pusher({ dir: [1, 0], force: 2600, nozzle: [24, 9], sound: 'fan', vol: 0.2, pitch: 0.8, fx(it, q, dx, dy) { if (Math.random() < 0.5) Effects.add(PT.DUST, q[0] + gauss() * 0.3, q[1] + gauss() * 0.3, -dx * 8, -dy * 8, 0.5, 2, [210, 210, 210]); } })));
+// engranajes: dos que se tocan giran a la vez, en sentido contrario y según su tamaño
+def('gears', {
+  name: 'Engranajes', cat: 'machinery', mat: 'metal', mass: 3,
+  desc: 'Rueda dentada: los engranajes que se tocan giran a la vez, en sentido contrario (uno pequeño con uno grande multiplica la fuerza o la velocidad). Clávalos con un pin y acerca uno a otro; redimensiónalos para cambiar la relación.',
+  sprite: () => drawSprite(26, 26, (a) => {
+    for (let k = 0; k < 12; k++) { const an = (k / 12) * TAU; a.circle(13 + Math.cos(an) * 11, 13 + Math.sin(an) * 11, 2.2, '#8a9099'); }
+    a.circle(13, 13, 10.5, '#8a9099'); a.circle(13, 13, 8, '#6e757e'); a.circle(13, 13, 3, '#3c4148'); a.circle(13, 13, 1.3, '#1b1c1f');
+    for (let k = 0; k < 4; k++) { const an = (k / 4) * TAU + 0.4; a.circle(13 + Math.cos(an) * 5.5, 13 + Math.sin(an) * 5.5, 1.4, '#565c65'); }
+  }),
+  shapes: [{ circle: [13, 13, 11.5] }],
+  gearR(it) { return 12.5 * PX * (it.scale || 1); },
+  forces(it) {
+    // cada par se ajusta una vez (desde el de id menor)
+    const A = it.main; if (!A || A.getType() === 'static') return;
+    const ra = DEFS.gears.gearR(it), ca = A.getWorldCenter();
+    for (const o of World.things) {
+      if (o === it || o.dead || !o.def || o.def.id !== 'gears' || o.id < it.id) continue;
+      const B = o.main, rb = DEFS.gears.gearR(o), cb = B.getWorldCenter();
+      const d = Math.hypot(cb.x - ca.x, cb.y - ca.y);
+      if (Math.abs(d - (ra + rb)) > 0.22 * Math.min(ra, rb)) continue;
+      const Ia = A.getType() === 'dynamic' ? A.getInertia() : 0, Ib = B.getType() === 'dynamic' ? B.getInertia() : 0;
+      const k = (Ia ? ra * ra / Ia : 0) + (Ib ? rb * rb / Ib : 0); if (!k) continue;
+      // las velocidades en el borde tienen que ser iguales y opuestas: wa·ra + wb·rb = 0
+      const e = A.getAngularVelocity() * ra + B.getAngularVelocity() * rb, P = -e / k * 0.9;
+      if (Ia) A.setAngularVelocity(A.getAngularVelocity() + P * ra / Ia);
+      if (Ib) B.setAngularVelocity(B.getAngularVelocity() + P * rb / Ib);
+    }
+  },
+});
+{
+  // ventilador: también aviva el fuego de lo que sopla
+  const d = DEFS.fan, ff = d.forces;
+  d.desc = 'Genera una corriente de aire continua que empuja lo ligero y aviva el fuego de lo que alcanza.';
+  d.forces = function (it, dt) {
+    ff.call(this, it, dt);
+    if (!it.on) return;
+    const [dx, dy] = it.dirWorld(1, 0), p = it.worldPt(12, 17);
+    bodiesInRadius(p[0] + dx * 4, p[1] + dy * 4, 4.5, (b) => {
+      const t = bodyData(b).thing; if (!t || t === it || !(t.fire > 0)) return;
+      const c = b.getWorldCenter(), rx = c.x - p[0], ry = c.y - p[1], along = rx * dx + ry * dy;
+      if (along < 0 || along > 8 || Math.abs(rx * -dy + ry * dx) > 0.9) return;
+      t.fire = Math.min(1, t.fire + (dt || 1 / 120) * 0.25);
+    });
+  };
+}
+{
+  // imán eléctrico: atrae con fuerza el metal de todo el mapa
+  const d = DEFS.magnet;
+  d.name = 'Imán eléctrico';
+  d.desc = 'Encendido, genera un campo magnético enorme que atrae con fuerza todos los objetos metálicos del mapa (más cuanto más cerca).';
+  d.forces = withForceWrap(d, function (it) {
+    if (!it.on) return;
+    const p = it.worldPt(15, 16);
+    for (const t of World.things) {
+      if (t === it || t.dead || t.isTerrain || t.isHuman) continue;
+      for (const b of t.bodies) {
+        if (b.getType() !== 'dynamic') continue;
+        let metal = false; for (let f = b.getFixtureList(); f; f = f.getNext()) { const m = fixData(f).mat; if (m === 'metal' || m === 'heavymetal' || m === 'robot') { metal = true; break; } }
+        if (!metal) continue;
+        const c = b.getWorldCenter(), dx = p[0] - c.x, dy = p[1] - c.y, dd = Math.max(0.2, Math.hypot(dx, dy)), m = b.getMass();
+        const F = Math.min(m * 60, 1600 / (dd * dd) + m * 300 / Math.max(1, dd));
+        b.applyForce(V(dx / dd * F, dy / dd * F), c, true);
+      }
+    }
+    // los androides también
+    for (const t of World.things) {
+      if (!t.isHuman || t.kind !== 'android' || t.dead) continue;
+      const b = t.root.body, c = b.getWorldCenter(), dx = p[0] - c.x, dy = p[1] - c.y, dd = Math.max(0.3, Math.hypot(dx, dy));
+      const F = Math.min(t.mass() * 20, 3000) / Math.max(1, dd); b.applyForce(V(dx / dd * F, dy / dd * F), c, true);
+    }
+  });
+}
+function withForceWrap(d, f) { return d._forceAdj ? function (it, ...r) { return withForce(it, () => f.call(this, it, ...r)); } : f; }
+DEFS.thruster.name = 'Impulsor';
+DEFS.thruster.desc = 'Propulsor que empuja con fuerza constante en la dirección de la flecha mientras está activo.';
+DEFS.thrusterbed.name = 'Cama de impulsores';
+DEFS.thrusterbed.desc = 'Plataforma con muchos minipropulsores alineados debajo: se lanza por los aires. Con electricidad empuja aún más y se calienta.';
+DEFS.winch.name = 'Cabrestante';
+DEFS.winch.desc = 'Enrolla (o desenrolla) las cuerdas y cadenas unidas a él para tirar de las cosas o soltarlas. F: encender o apagar · señal roja: cambiar de sentido.';
+DEFS.boat_motor.name = 'Motor de barco';
+DEFS.boat_motor.desc = 'Motor sumergible para barcos: su hélice sólo empuja dentro del agua.';
+DEFS.jet_engine.desc = 'Turbina gigante con un empuje enorme. Quema lo que tiene detrás.';
+DEFS.metal_wheel.name = 'Ruedas';
+DEFS.metal_wheel.desc = 'Rueda libre (sin motor) para mover estructuras. Únela con un pin.';
+DEFS.wheel.desc = 'Rueda con motor propio para dar tracción a los vehículos. Actívala para que gire. Únela con un pin.';
+DEFS.servo.desc = 'Motor de precisión: al activarlo gira su brazo un número exacto de grados (se elige en el menú). Une cosas a su brazo.';
+DEFS.rotor.desc = 'Motor que gira sin parar a muchas revoluciones mientras está encendido. Fija cosas a su disco.';
+DEFS.piston.desc = 'Brazo que se extiende y se recoge al activarlo, empujando lo que tenga delante.';
+DEFS.industrial_piston.desc = 'Pistón enorme con una fuerza de empuje e impacto devastadora.';
+DEFS.propeller.desc = 'Aspa giratoria: empuja hacia donde apunta para dar sustentación o empuje.';
+DEFS.conveyor.desc = 'Superficie que desplaza sin parar lo que tiene encima. Actívala para encenderla.';
+
+/* ---------------- luces ---------------- */
+DEFS.flashlight.name = 'Linterna de mano';
+DEFS.flashlight.desc = 'Haz de luz direccional de corto alcance.';
+DEFS.floodlight.name = 'Foco de inundación';
+DEFS.floodlight.desc = 'Ilumina una zona enorme con mucha apertura y brillo.';
+DEFS.spotlight.name = 'Foco directo';
+DEFS.spotlight.desc = 'Cono de luz concentrado y de largo alcance, ideal para torres de vigilancia.';
+DEFS.led.name = 'Luces LED';
+DEFS.led.desc = 'Indicador luminoso diminuto para circuitos. Se enciende con electricidad (o con F).';
+{
+  // bombilla clásica: estalla con demasiado voltaje
+  const d = DEFS.bulb, op = d.onPower;
+  d.name = 'Bombilla clásica';
+  d.desc = 'Bombilla incandescente tradicional. Si le llega demasiada electricidad (más de 25), estalla.';
+  d.onPower = function (it, p) {
+    if (op) op.call(this, it, p);
+    if (it.vars.broken || p <= 25) return;
+    const q = it.pos(); Effects.sparks(q.x, q.y, 0, -1, 10, 2.5); Effects.flash(q.x, q.y, 1.2, [255, 240, 200], 0.15, 1); Sound.play('pop', q.x, q.y, 0.8);
+    it.hp = 0; it._broken = true; Phys.later(() => { if (!it.dead && d.onBreak) d.onBreak(it); });
+  };
+}
+{
+  // tubo fluorescente: parpadea al dañarse
+  const d = DEFS.fluorescent, lt = d.light;
+  d.desc = 'Lámpara alargada de luz blanca. Parpadea al encenderse y cuando está dañada.';
+  d.light = (it) => (it.on && !it.vars.broken && it.hp < (d.hp || 1) * 0.999 && Math.random() < 0.3 ? [] : lt(it));
+}
+{
+  // luz de cátodo: tubo decorativo de varios colores
+  const d = DEFS.cathode_light, lt = d.light;
+  d.name = 'Luz de cátodo';
+  d.desc = 'Tubo de luz decorativo de descarga de gas neón. El color se cambia en el menú.';
+  d.forces = undefined;
+  const COLS = [['Violeta', [200, 170, 255]], ['Rosa', [255, 110, 200]], ['Azul', [110, 170, 255]], ['Verde', [110, 255, 150]], ['Naranja', [255, 170, 90]], ['Rojo', [255, 90, 90]]];
+  d.light = (it) => { const l = lt(it); const c = COLS[it.vars.ci || 0][1]; for (const o of l) o.col = c; return l; };
+  d.draw = (it, ctx) => { if (!it.on || it.vars.broken) return; const c = COLS[it.vars.ci || 0][1], a = it.worldPt(5, 5), b = it.worldPt(5, 29); ctx.strokeStyle = rgbStr(c, 0.55); ctx.lineWidth = 5 * PX; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
+  const m = d.menu;
+  d.menu = (it) => [...(m ? m(it) : [{ label: it.on ? 'Apagar' : 'Encender', fn: () => it.activate() }]), { label: `Color: ${COLS[it.vars.ci || 0][0]} (cambiar)`, fn: () => { it.vars.ci = ((it.vars.ci || 0) + 1) % COLS.length; } }];
+}
+// espejo láser: refleja cualquier láser sin estropearse
+def('laser_mirror', Object.assign({}, DEFS.mirror, {
+  name: 'Espejo láser', mat: 'metal', hp: 0, fragile: 0, laserProof: true,
+  desc: 'Espejo especial que desvía y hace rebotar los haces láser sin estropearse nunca (un espejo normal acaba rompiéndose con el calor del láser).',
+  sprite: () => drawSprite(5, 44, (a) => { a.rect(0, 0, 5, 44, '#8a6a20'); a.rect(1, 1, 3, 42, [255, 225, 150, 255]); a.vline(2, 2, 41, [255, 245, 210, 255]); }),
+  shapes: [{ box: [0, 0, 5, 44] }],
+  onBreak: undefined,
+}));
+DEFS.mirror.desc = 'Superficie que refleja los haces láser. Con el calor de un láser fuerte acaba rompiéndose.';
+
+/* ---------------- láser: calienta, prende y corta ---------------- */
+{
+  const d = DEFS.laser_pointer;
+  d.name = 'Láser';
+  d.desc = 'Proyecta un haz de luz roja concentrada que calienta lo que toca hasta prenderlo y corta la carne poco a poco. Rebota en los espejos. F: encender o apagar (también con electricidad).';
+  d.update = function (it, dt) {
+    if (!it.on || (it._empT && Phys.time < it._empT)) { it.vars.las = null; if (it.vars.loop) { it.vars.loop.stop(); it.vars.loop = null; } return; }
+    const mz = it.muzzle();
+    let x = mz.x, y = mz.y, dx = mz.dx, dy = mz.dy, ign = it; const segs = []; let hit = null;
+    for (let k = 0; k <= 8; k++) {
+      const h = rayFirst(x, y, x + dx * 45, y + dy * 45, (f) => { const o = thingOf(f); return o !== ign && !f.isSensor() && !fixData(f).ghost; });
+      if (!h) { segs.push([x, y, x + dx * 45, y + dy * 45]); break; }
+      segs.push([x, y, h.x, h.y]);
+      const o = h.d.thing;
+      if (o && o.def && o.def.mirror) {
+        // un espejo normal se calienta y, al rato, se rompe
+        if (!o.def.laserProof) { o.vars.lheat = (o.vars.lheat || 0) + dt; if (o.vars.lheat > 6 && !o._broken) Phys.later(() => o.hitDamage(999, null)); }
+        const dd = dx * h.nx + dy * h.ny; dx -= 2 * dd * h.nx; dy -= 2 * dd * h.ny; x = h.x + dx * 0.003; y = h.y + dy * 0.003; ign = o; continue;
+      }
+      hit = h; break;
+    }
+    it.vars.las = segs;
+    if (!hit || !hit.d.thing || hit.d.thing.isTerrain) return;
+    const t = hit.d.thing;
+    Heat.addTo(t, hit.b, 380 * dt);
+    if (Math.random() < 0.3) Effects.smoke(hit.x, hit.y, 1, [90, 88, 86], 0.4, 0.6);
+    if (Math.random() < 0.25) Effects.sparks(hit.x, hit.y, hit.nx, hit.ny, 1, 1);
+    if (t.isHuman) {
+      const L = hit.d.part; if (!L || L.destroyed) return;
+      t.hurt(L, 0.35 * dt, 'burn', hit.x, hit.y);
+      L.laserT = (L.laserT || 0) + dt;
+      if (L.laserT > 2.5 && L.joint) { L.laserT = 0; Phys.later(() => t.sever(L, 'cut')); }
+    } else if (t.isFlammable && t.isFlammable() && Heat.tempOf(t) > 260 && !(t.fire > 0)) Phys.later(() => t.ignite(0.5));
+  };
+}
+
+/* ---------------- fluidos, medicina y máquinas avanzadas: nombres ---------------- */
+DEFS.liquid_duplicator.name = 'Duplicador de líquido';
+DEFS.liquid_duplicator.desc = 'Encendido, clona sin fin el líquido que tiene dentro (cualquier mezcla).';
+DEFS.liquid_outlet.name = 'Salida de fluido';
+DEFS.liquid_outlet.desc = 'Boquilla que vierte o rocía el líquido elegido. Encendida, no para de echar.';
+DEFS.liquid_valve.name = 'Válvula';
+DEFS.liquid_valve.desc = 'Llave de paso entre conductores de líquido: abierta deja pasar, cerrada lo corta. F: abrir o cerrar.';
+DEFS.pressuriser.name = 'Presurizador';
+DEFS.pressuriser.desc = 'Bomba que añade presión a los recipientes unidos con conductores para que el líquido pase más rápido por los demás.';
+DEFS.blood_tank.desc = 'Tanque hermético de 5 L para guardar, succionar o bombear líquidos. Únelo con un conductor a una persona o a otro recipiente. Modos: empujar, extraer, parado o vaciar.';
+DEFS.liquidentifier.desc = 'Analizador que muestra en pantalla la composición exacta del líquido que tiene dentro.';
+DEFS.cpb_machine.name = 'Bypass cardiopulmonar';
+DEFS.cpb_machine.desc = 'Encendido y unido a una persona (con cualquier cable o conductor), oxigena y bombea su sangre: la mantiene viva aunque no tenga corazón o se le pare.';
+DEFS.defibrillator.desc = 'Descarga eléctrica de alto voltaje para reanimar el corazón: ponlo sobre el pecho de alguien y actívalo.';
+DEFS.heart_monitor.desc = 'Muestra el pulso, el electrocardiograma y el estado de la persona más cercana (o de la que conectes con un cable).';
+DEFS.tesla.name = 'Bobina de Tesla';
+DEFS.tesla.desc = 'Encendida, dispara arcos eléctricos ramificados y mortales a todo lo conductor que tenga cerca.';
+DEFS.physics_gun.name = 'Pistola de físicas';
+DEFS.physics_gun.desc = 'Mantén F para atrapar a distancia lo que apuntas y moverlo con el arma, sin gravedad. Al soltar, cae.';
+DEFS.dampening_box.name = 'Caja de amortiguación';
+DEFS.dampening_box.desc = 'Encendida, absorbe la energía de movimiento y las vibraciones: frena en seco su movimiento y el de lo que tenga unido.';
+DEFS.gyro.name = 'Giróscopo estabilizador';
+DEFS.gyro.desc = 'Encendido, mantiene la máquina a la que está unido perfectamente nivelada (o con el ángulo que tenía), por pesada que sea.';
+DEFS.centrifuge.desc = 'Gira a gran velocidad para separar los líquidos mezclados: tras unos segundos sólo queda el que más había.';
+DEFS.heater.desc = 'Placa que se pone al rojo (600 °C) al recibir electricidad o al encenderla y calienta lo que toca.';
+DEFS.cooler.name = 'Elemento de enfriamiento';
+DEFS.cooler.desc = 'Placa criogénica que se enfría hasta congelar (-90 °C) al recibir electricidad o al encenderla.';
+DEFS.launch_pad.desc = 'Catapulta: al activarla lanza violentamente hacia arriba lo que tenga encima.';
+DEFS.immob_field.desc = 'Encendido, proyecta un campo (3 × 3 m sobre él) que deja inmóvil y flotando todo lo que entra.';
+DEFS.particle_projector.desc = 'Cañón fijo que lanza un chorro continuo de partículas: humo, chispas, fuego, agua, espuma, confeti o nieve.';
+DEFS.decimator.desc = 'Encendido, lanza un campo que desintegra todo lo que toca. Sobrecargado con mucha electricidad (15 o más), crea un agujero negro.';
+
+/* ---------------- martillo eléctrico: prensa que golpea al recibir una señal ---------------- */
+redef('power_hammer', {
+  name: 'Martillo eléctrico', cat: 'machinery', mat: 'heavymetal', mass: 400,
+  desc: 'Prensa industrial: al recibir una señal (o electricidad) deja caer de golpe su martillo de varias toneladas y vuelve a subirlo.',
+  sprite: () => composeSprites(40, 60, [{ spr: hammerFrameSpr(), x: 0, y: 0 }, { spr: hammerHeadSpr(), x: 9, y: 10 }], [20, 30]),
+  build(it, x, y, ang, flip) {
+    const frame = hammerFrameSpr(), head = hammerHeadSpr();
+    const b1 = it.makeBody(x, y, ang, frame, [{ box: [0, 54, 40, 6] }, { box: [0, 0, 5, 54] }, { box: [35, 0, 5, 54] }, { box: [0, 0, 40, 6] }], 'heavymetal', { mass: 300 });
+    const hp0 = it.worldPt(20, 17);
+    const b2 = it.makeBody(hp0[0], hp0[1], ang, head, [{ box: [0, 0, 22, 14] }], 'heavymetal', { mass: 150, zOff: 0.1 });
+    setNoCollide(b1, b2, true);
+    const ax = rot(0, 1, ang);
+    it.vars.j = it.joint(pl.PrismaticJoint({ enableLimit: true, lowerTranslation: 0, upperTranslation: 28 * PX, enableMotor: true, maxMotorForce: 60000, motorSpeed: -2 }, b1, b2, V(hp0[0], hp0[1]), V(ax[0], ax[1])));
+    it.vars.st = 0;
+  },
+  activate(it) { if (it.vars.st > 0) return; it.vars.st = 0.45; const p = it.pos(); Sound.play('clunk', p.x, p.y, 1, { pitch: 0.6 }); },
+  onPower(it, p) { const on = p > 0.5; if (on && !it.vars.pw) it.activate(); it.vars.pw = on; },
+  update(it, dt) {
+    const j = it.vars.j; if (!j) return;
+    if (it.vars.st > 0) { it.vars.st -= dt; j.setMaxMotorForce(900000); j.setMotorSpeed(18); }
+    else { j.setMaxMotorForce(60000); j.setMotorSpeed(-2); }
+  },
+  onImpact(it, im, dv, body, ofix) {
+    if (!(it.vars.st > 0) || body !== it.bodies[1] || dv < 3) return;
+    const t = ofix && thingOf(ofix); if (!t || t === it) return;
+    if (Phys.time - (it.vars.hitT || -9) < 0.3) return; it.vars.hitT = Phys.time;
+    Phys.later(() => {
+      Effects.dust(im.x, im.y, 10, [180, 180, 180]); Sound.play('impact_heavy_metal', im.x, im.y, 1); Cam.addShake(0.35);
+      if (t.isHuman) { const L = ofix.getUserData().part; if (L && !L.destroyed) t.hurt(L, 1.2, 'blunt', im.x, im.y); }
+      else if (t.hitDamage) t.hitDamage(6, null);
+    });
+  },
+  menu(it) { return [{ label: 'Golpear', fn: () => it.activate() }]; },
+});
+function hammerFrameSpr() { return drawSprite(40, 60, (a) => { a.rect(0, 54, 40, 6, '#3c4148'); a.hline(0, 39, 54, '#565c65'); a.rect(0, 0, 5, 54, '#565c65'); a.rect(35, 0, 5, 54, '#565c65'); a.vline(1, 0, 53, '#6e757e'); a.vline(36, 0, 53, '#6e757e'); a.rect(0, 0, 40, 6, '#3c4148'); a.rect(16, 6, 8, 4, '#2a2d32'); a.rect(5, 50, 30, 4, '#c9a23a'); for (let x = 6; x < 34; x += 4) a.rect(x, 50, 2, 4, '#1b1c1f'); a.edge(0.8); }); }
+function hammerHeadSpr() { return drawSprite(22, 14, (a) => { a.rect(0, 0, 22, 14, '#4b5058'); a.hline(0, 21, 0, '#6e757e'); a.rect(0, 11, 22, 3, '#2a2d32'); a.rect(9, 2, 4, 6, '#f0b23c'); a.edge(0.8); }); }
+
+/* ---------------- automatización y comunicación ---------------- */
+{
+  const d = DEFS.decoupler, op = d.onPower;
+  d.desc = 'Junta de separación: al recibir una señal o electricidad se rompe limpiamente y suelta todas sus uniones.';
+  d.onPower = function (it, p) { if (op) op.call(this, it, p); const on = p > 0.5; if (on && !it.vars.pw) it.activate(); it.vars.pw = on; };
+}
+DEFS.adhesive_coupler.name = 'Acoplador';
+DEFS.adhesive_coupler.desc = 'Mecanismo de anclaje: activado, engancha lo que toque al entrar en contacto; desactivado, lo suelta.';
+DEFS.siren.desc = 'Alarma que emite un sonido cíclico fuerte con luz giratoria mientras está activa.';
+DEFS.pointer.name = 'Puntero';
+DEFS.pointer.desc = 'Flecha indicadora motorizada: encendida, gira para apuntar siempre a tu cursor; al apagarla se queda fija marcando esa dirección.';
+{
+  // jukebox: gramola que pone canciones y estalla con demasiado voltaje
+  const d = DEFS.radio, op = d.onPower;
+  d.name = 'Jukebox';
+  d.desc = 'Gramola clásica que pone canciones (menú: cambiar de canción). Si le llega demasiada electricidad (más de 40), estalla.';
+  d.onPower = function (it, p) {
+    if (op) op.call(this, it, p);
+    if (p > 40 && !it.dead) { const q = it.pos(); Phys.later(() => { if (it.dead) return; it.destroy(true); explode(q.x, q.y, 0.8, { fire: true }); Effects.debris(q.x, q.y, 0, -2, 14, [122, 74, 42]); }); }
+  };
+}
+{
+  // radio: además de transmitir la señal a las demás radios de su canal, pone música o hace sonar un tono
+  const d = DEFS.radio_tx, act = d.activate, up = d.update, mn = d.menu, inf = d.info;
+  d.desc = 'Transmite las señales que recibe a las demás radios de su canal, sin cables (y suena con el tono elegido al recibirlas). También pone música de la emisora elegida (menú).';
+  const TONES = [['Grave', 0.6], ['Medio', 1], ['Agudo', 1.6], ['Sin tono', 0]];
+  d.activate = function (it, src) {
+    const r = act.call(this, it, src);
+    const tn = TONES[it.vars.tone || 0]; if (tn[1]) { const p = it.pos(); Sound.play('beep', p.x, p.y, 0.4, { pitch: tn[1], key: 'rtone' + it.id, gap: 90 }); }
+    return r;
+  };
+  d.update = function (it, dt) {
+    up.call(this, it, dt);
+    if (!it.vars.music) return;
+    it.vars.nt = (it.vars.nt || 0) - dt; if (it.vars.nt > 0) return;
+    const s = RADIO_SONGS[(it.vars.song || 0) % RADIO_SONGS.length], i = it.vars.mi = (it.vars.mi || 0) + 1, n = s[i % s.length];
+    it.vars.nt = 0.26;
+    if (n >= 0) { const p = it.pos(); Sound.play('note', p.x, p.y, 0.55, { pitch: Math.pow(2, n / 12) * (i % 16 < 8 ? 1 : 0.5) * 1.12 }); }
+  };
+  d.menu = (it) => [...mn(it), { label: it.vars.music ? 'Apagar la música' : 'Poner música', fn: () => { it.vars.music = !it.vars.music; } },
+    { label: `Emisora ${((it.vars.song || 0) % RADIO_SONGS.length) + 1}`, fn: () => { it.vars.song = ((it.vars.song || 0) + 1) % RADIO_SONGS.length; it.vars.mi = 0; } },
+    { label: `Tono: ${TONES[it.vars.tone || 0][0]} (cambiar)`, fn: () => { it.vars.tone = ((it.vars.tone || 0) + 1) % TONES.length; } }];
+  d.info = (it) => [...inf(it), [it.vars.music ? `Música: emisora ${((it.vars.song || 0) % RADIO_SONGS.length) + 1}` : 'Sin música', '#9aa3ad']];
+}
+{
+  // pantallas: además de un texto, pueden mostrar en tiempo real la lectura de lo que tienen conectado
+  const readOf = (it) => {
+    for (const c of it.conns) { const o = c.tA === it ? c.tB : c.tA; if (o && !o.dead && o.def && o.def.reading) return o.def.reading(o); }
+    for (const c of it.conns) { const o = c.tA === it ? c.tB : c.tA; if (o && !o.dead && !o.isTerrain) return o.isHuman ? (o.alive ? 'VIVO' : 'MUERTO') : `${Math.round(Heat.tempOf(o))} °C`; }
+    return (it.powerIn || 0) > 0.05 ? (it.powerIn || 0).toFixed(1) : '---';
+  };
+  for (const id of ['text_display', 'holo_display']) {
+    const d = DEFS[id], dr = d.draw, mn = d.menu;
+    d.desc = (id === 'text_display' ? 'Pantalla' : 'Proyector holográfico') + ' que muestra el texto que quieras o, en modo lectura, el valor en tiempo real de lo que tenga conectado (termómetro, medidor de potencia, contador, monitor cardíaco, deslizador...). Una señal cambia entre texto y lectura.';
+    d.draw = function (it, ctx) {
+      if (!it.vars.readMode) return dr.call(this, it, ctx);
+      const keep = it.vars.text; it.vars.text = readOf(it);
+      try { dr.call(this, it, ctx); } finally { it.vars.text = keep; }
+    };
+    d.activate = (it) => { it.vars.readMode = !it.vars.readMode; Sound.play('click', it.pos().x, it.pos().y, 0.4); };
+    d.menu = (it) => [...(mn ? mn(it) : []), { label: it.vars.readMode ? 'Mostrar el texto' : 'Mostrar la lectura de lo conectado', fn: () => it.activate() }];
+  }
+}
+
+// las máquinas nuevas también tienen fuerza ajustable si mueven algo
+for (const id of ['electric_motor', 'big_propeller', 'gears', 'power_hammer', 'warp_core', 'emp_generator', 'gate_and', 'gate_or', 'gate_xor', 'gate_not', 'slider', 'act_fuse', 'laser_mirror']) if (DEFS[id]) v10ForceAdj(DEFS[id]);
+
+/* ---- 37_v10_catalogo.js ---- */
+/* =========================================================================
+   VERSIÓN 10 (2): las 8 categorías del catálogo y la Maquinaria ordenada
+   por apartados, con sólo lo que está en la lista
+   ========================================================================= */
+CATEGORIES.length = 0;
+CATEGORIES.push(
+  { id: 'entities', name: 'Seres vivos' },
+  { id: 'melee', name: 'Armas cuerpo a cuerpo' },
+  { id: 'firearms', name: 'Armas de fuego' },
+  { id: 'explosives', name: 'Armas pesadas' },
+  { id: 'vehicles', name: 'Vehículos' },
+  { id: 'machinery', name: 'Maquinaria' },
+  { id: 'props', name: 'Objetos y Decoración' },
+  { id: 'bio', name: 'Materiales médicos y Químicos' },
+  { id: 'contraptions', name: 'Artefactos guardados' },
+);
+Object.assign(CAT_ICON, { explosives: 'grenade', machinery: 'wheel', props: 'crate', bio: 'syr_life' });
+
+// la Maquinaria: exactamente la lista, en su orden y por apartados
+const MACHINERY_SECTIONS = [
+  ['Activación y gestión de señales', ['button', 'small_button', 'act_toggle', 'switch', 'key_trigger', 'delay_box', 'gate_and', 'gate_or', 'gate_xor', 'gate_not', 'sig_transformer', 'timer', 'randomizer', 'counter', 'resistor', 'act_fuse', 'slider', 'electrode']],
+  ['Fuentes de alimentación y potencia', ['battery', 'accumulator', 'generator', 'generator_big', 'elec_transformer', 'warp_core', 'matter_extractor', 'emp_generator']],
+  ['Sensores y detectores', ['det_motion', 'det_metal', 'det_life', 'det_fire', 'det_impact', 'thermometer', 'power_gauge']],
+  ['Propulsión, motores y movimiento', ['servo', 'rotor', 'electric_motor', 'boat_motor', 'metal_wheel', 'wheel', 'thruster', 'jet_engine', 'thrusterbed', 'winch', 'piston', 'industrial_piston', 'fan', 'propeller', 'big_propeller', 'conveyor', 'gears']],
+  ['Iluminación y óptica', ['flashlight', 'floodlight', 'spotlight', 'cathode_light', 'fluorescent', 'bulb', 'led', 'mirror', 'laser_mirror']],
+  ['Mecánica de fluidos y química', ['blood_tank', 'liquidentifier', 'liquid_duplicator', 'liquid_outlet', 'liquid_valve', 'pressuriser']],
+  ['Medicina avanzada', ['defibrillator', 'heart_monitor', 'cpb_machine']],
+  ['Maquinaria física avanzada, energía y destrucción', ['decimator', 'immob_field', 'tesla', 'particle_projector', 'physics_gun', 'dampening_box', 'gyro', 'centrifuge', 'laser_pointer', 'heater', 'cooler', 'power_hammer', 'launch_pad', 'magnet']],
+  ['Automatización, acoplamientos y comunicación', ['decoupler', 'adhesive_coupler', 'siren', 'radio_tx', 'text_display', 'holo_display', 'pointer', 'radio']],
+];
+// lo que no está en la lista se quita (si había algo parecido, lo guardado con él pasa a ser eso)
+const V10_REMOVED = {
+  insulator: null, conv_bg: null, conv_br: null, conv_rb: null, detector: null, laser_recv: null, sawblade: null, laser_sensor: null,
+  pressure_plate: null, turret: null, laser_turret: null, ceiling_turret: null, beartrap: null, chain: null, wing: null,
+  glowstick: null, torch: null, drain: null,
+  power_meter: 'power_gauge', gate: 'gate_and', timed_gate: 'delay_box', ir_thermometer: 'thermometer', toggle_mirror: 'laser_mirror',
+  ion_thruster: 'thruster', hover_thruster: 'thruster', mini_thruster: 'thruster', industrial_gyro: 'gyro', giant_fan: 'fan',
+  wood_wheel: 'metal_wheel', bigwheel: 'wheel', pressure_valve: 'liquid_valve',
+};
+// el resto cambia de categoría
+const V10_CATS = {
+  props: ['balloon', 'extinguisher', 'anchor', 'trampoline', 'liquid_tank', 'wood_bowl'],
+  bio: ['flask', 'flask_water', 'flask_acid', 'flask_nitro', 'flask_tritium', 'flask_oil', 'flask_blood', 'flask_coolant', 'flask_life', 'bottle', 'iv_bag', 'heal_gun', 'reconstructor', 'rigidifier'],
+  firearms: ['att_scope', 'att_laser', 'att_light', 'att_silencer', 'att_explosive', 'att_incendiary', 'taser', 'laser_rifle', 'disintegrator', 'beam_rifle', 'blaster', 'heat_ray', 'freeze_ray', 'beam_repeater', 'blaster_rifle', 'machine_blaster', 'storm_gun', 'stunner', 'pulse_drum', 'arc_caster'],
+  melee: ['energy_sword'],
+  explosives: ['rocket_launcher', 'grenade_launcher', 'crossbow', 'harpoon_gun', 'cannon', 'flamethrower', 'spike_rifle', 'missile_launcher', 'flare_gun', 'bazooka', 'shard_launcher', 'auto_spike_gun', 'cannon_120', 'accelerator', 'ion_cannon', 'ray_cannon', 'laser_cannon', 'beam_cannon', 'blackhole'],
+};
+{
+  for (const id in V10_REMOVED) {
+    const d = DEFS[id]; if (!d) continue;
+    const i = DEF_LIST.indexOf(d); if (i >= 0) DEF_LIST.splice(i, 1);
+    const to = V10_REMOVED[id];
+    if (to && DEFS[to]) DEFS[id] = DEFS[to]; else delete DEFS[id];
+  }
+  // la bengala sólo existe como proyectil de la pistola de bengalas
+  if (DEFS.flare) DEFS.flare.cat = null;
+  for (const cat in V10_CATS) for (const id of V10_CATS[cat]) if (DEFS[id]) DEFS[id].cat = cat;
+  // la maquinaria, en el orden de la lista y con su apartado
+  const order = new Map();
+  MACHINERY_SECTIONS.forEach(([sub, ids], si) => ids.forEach((id, k) => { const d = DEFS[id]; if (!d) return; d.cat = 'machinery'; d.sub = sub; order.set(d, si * 100 + k); }));
+  // lo que quede en categorías que ya no existen (o en Maquinaria sin estar en la lista) se avisa en la consola
+  for (const d of DEF_LIST) {
+    if (!d.cat || d.cat === 'map') continue;
+    if (d.cat === 'machinery' && !order.has(d)) console.warn('Maquinaria fuera de la lista:', d.id);
+    if (!CATEGORIES.some((c) => c.id === d.cat)) console.warn('Categoría desconocida:', d.id, d.cat);
+  }
+  const machines = DEF_LIST.filter((d) => order.has(d)).sort((a, b) => order.get(a) - order.get(b));
+  let k = 0;
+  for (let i = 0; i < DEF_LIST.length; i++) if (order.has(DEF_LIST[i])) DEF_LIST[i] = machines[k++];
+}
+// los apartados de la Maquinaria se ven en el catálogo
+{
+  const bi = UI.buildItems;
+  UI.buildItems = function () {
+    bi.call(this);
+    if (this.filter.trim() || this.cat !== 'machinery') return;
+    const grid = this.$('#igrid'); let last = null;
+    for (const b of [...grid.querySelectorAll('.item')]) {
+      const d = DEFS[b.dataset.id], s = d && d.sub;
+      if (s && s !== last) { last = s; grid.insertBefore(this.el('div', 'isub', s), b); }
+    }
+  };
 }
 
 /* ---- 99_main.js ---- */
