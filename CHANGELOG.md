@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## Versión 12 (4 de octubre de 2026)
+
+- **Corte libre del cuerpo**: las personas (y los zombis y androides) se pueden cortar por cualquier sitio, siguiendo la trayectoria de lo que las corta. Un tajo de katana de arriba abajo las parte en dos mitades; uno horizontal, por la cintura o por el cuello. Antes del corte el cuerpo se ve igual que siempre.
+  - Los píxeles de cada parte se reparten a un lado y otro de la línea de corte y lo que se separa se convierte en un trozo con su propia forma física, que cae, rueda, sangra y se puede volver a cortar. En el borde del corte se ven la carne y el hueso.
+  - Lo que colgaba del lado cortado se va con el trozo (si cortas el brazo por la mitad, el antebrazo cae con él), lo que estaba clavado en ese lado también, y una mano cortada suelta lo que sostenía.
+  - Si el tajo es lo bastante fuerte, la hoja no se frena: atraviesa una parte tras otra. Cuanto más grande es la parte (el torso, la cadera), más fuerte tiene que ser el golpe; el hacha y las espadas cortan mucho mejor que un cuchillo.
+  - Cortan las katanas, espadas, machetes, cuchillos, hachas (que antes no llegaban a cortar), el cristal y la espada legendaria; la motosierra y la espada de energía cortan poco a poco hasta atravesar; el rotor del helicóptero, el láser y las armas de haz cortan a lo largo de su recorrido, y la IA también puede partir a sus enemigos con sus tajos.
+  - Partir la cabeza mata; partir el torso o la cadera, también (salvo a los zombis, que se siguen arrastrando sin piernas).
+- **Romperse en trozos como los ladrillos**: las explosiones fuertes, los aplastamientos y los disparos de gran calibre ya no hacen desaparecer las partes del cuerpo en una nube de sangre: las rompen en dos, tres o cuatro trozos que salen despedidos. Si se vuelven a golpear, revientan del todo.
+- Para que la partida siga fluida hay un máximo de 300 trozos sueltos a la vez; los cortes respetan los ajustes de desmembramiento e inmortalidad.
+
 ## Versión 11 (4 de octubre de 2026)
 
 - **Armas de fuego por apartados**: el catálogo de armas de fuego se divide en **Pistolas**, **Escopetas**, **Subfusiles**, **Fusiles de asalto / rifles**, **Rifles de precisión / snipers** y **Armas explosivas y lanzadores** (y, al final, los accesorios), con su título como en la maquinaria.
