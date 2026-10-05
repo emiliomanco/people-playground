@@ -1,5 +1,26 @@
 # Historial de cambios
 
+## Versión 13.7: texturas nuevas para todo lo demás (5 de octubre de 2026)
+
+- **Todo lo que aún tenía el dibujo antiguo se ha redibujado** con el estilo de las armas nuevas: luz arriba y sombra abajo, contorno, biseles, tornillos y remaches, brillos y reflejos. Son 196 objetos más.
+- **Vehículos y ruedas** (11 vehículos):
+  - El coche, la camioneta y el autobús se pintan como los del creador de vehículos: ventanillas con reflejos, línea de cintura, puertas con tirador, faros, pilotos, parachoques y pasos de rueda con su borde.
+  - Redibujados a mano: el camión (con la caja de carga), el tanque con su camuflaje, faldones, escotilla y ametralladora, el tanque antiguo con la oruga alrededor y remaches, el vagón contenedor, el coche flotante, el carrito de la compra, el monopatín y la bicicleta.
+  - Todas las ruedas del juego tienen llanta con tuercas, flanco y dibujo, también las de la bicicleta y las ruedas de la maquinaria.
+- **Maquinaria** (las 90 máquinas):
+  - Carcasas con bisel y tornillos, pantallas hundidas en su marco con reflejo, bornes de latón, bobinas de cobre, rejillas y franjas de peligro.
+  - Señales: botones con su capuchón, puertas lógicas, temporizador, contador, retardador con su reloj, interruptor, tecla, resistencia con sus bandas de color, fusible de cristal y electrodo.
+  - Energía: batería, acumulador con su barra de carga, generadores con aletas y panel de control, núcleo de distorsión que brilla, extractor de materia y generador EMP.
+  - Sensores con su lente y una franja del color de lo que detectan, termómetro con su escala y medidor de energía.
+  - Motores y movimiento: motor de barco, propulsores, motor a reacción, cabrestante con su cable enrollado, ventilador, hélices, cinta transportadora y engranajes.
+  - Las máquinas de varias piezas también cambian el dibujo de cada pieza: servomotor, rotor, motor eléctrico, pistón, pistón industrial, deslizador, puntero y martillo eléctrico.
+  - Iluminación: linterna, reflector, foco, tubos (también al romperse), bombilla con su filamento, LED y espejos.
+  - Fluidos, medicina y lo demás: tanque de sangre, identificador y duplicador de líquidos, válvula, presurizador, desfibrilador, monitor cardíaco con su cuadrícula, bypass con sus bombas, decimador, bobina Tesla, pistola de físicas, giróscopo, centrifugadora, imán, sirena, radios y pantallas.
+  - Las luces, las pantallas y las agujas de cada máquina siguen exactamente en su sitio.
+- **Objetos y decoración** (66): madera con vetas y clavos (caja, tablón, silla, mesa, rampa, bolos, cuenco, columna de madera, barril y escritorio), metal con remaches (cajas, vigas, chapa, bidón, yunque, bola de demolición, pinchos, campana, pesa de 1000 kg, anclas...), hormigón, ladrillo y piedra con poros (muros de ladrillo, de mampostería y de sillería, rocas y columna clásica), cristales con reflejos, muebles, electrodomésticos, la fruta, el arbusto y el árbol con hojas y corteza. El globo y la carcasa redimensionable conservan su color.
+- **Materiales médicos y químicos** (29): jeringas con émbolo, graduación y aguja, matraces con su escala, botella y gotero.
+- Se usan exactamente igual que antes: todos los objetos conservan su tamaño, su forma física, el hueco para el líquido y los puntos de la boca y la empuñadura.
+
 ## Versión 13.6: creador de vehículos (5 de octubre de 2026)
 
 - **Crea tu propio vehículo**: en el catálogo, Vehículos → **«Crear vehículo»** (el primero) abre un menú con vista previa en el que eliges:
