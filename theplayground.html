@@ -6333,6 +6333,7 @@ const Renderer = {
     drawTerrain(ctx, Cam);
     Decals.draw(ctx, Cam);
     if (Settings.thermal) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(6,4,30,0.78)'; ctx.fillRect(0, 0, W, H); ctx.restore(); Cam.apply(ctx); }
+    else if (Settings.xray) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(2,10,22,0.74)'; ctx.fillRect(0, 0, W, H); ctx.restore(); Cam.apply(ctx); }
     // objetos ordenados por profundidad
     const list = [];
     for (const t of World.things) {
@@ -8090,14 +8091,14 @@ const UI = {
       <div><b>${K('activate')}</b> activar lo que señalas (mantener: uso continuo) · arrastrando a alguien por el brazo, <b>${K('activate')}</b> hace que su mano agarre lo que tenga cerca (otra vez: soltar)</div>
       <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA, fuerza de las máquinas...); con varias cosas seleccionadas, cada opción se aplica a todas las que la admiten · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
       <div><b>${K('delete')}</b> borrar · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar · <b>Alt</b> ajustar a la cuadrícula</div>
-      <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas)</div>
+      <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas) · <b>${K('xray')}</b> rayos X (los huesos y los órganos; señala un órgano para ver cómo está, agárralo y tira para arrancarlo, o dáñalo desde el menú)</div>
       <div><b>${K('toggleUI')}</b> ocultar la interfaz · <b>${K('pinSnap')}</b> con el pin: al centro de masa · <b>Esc</b> menú</div>
       <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
       <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan sin herir a quien esté en medio, pelean cuerpo a cuerpo (estocadas con las armas de punta, golpes desde arriba con las demás) y rematan a los zombis caídos, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones). Estos cables de activación son invisibles: sólo se ven, todos los colores a la vez, mientras tienes equipada una de sus herramientas.</div>
       <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo. Las armas con filo, las motosierras, los rotores y los láseres cortan por donde pasan, siguiendo la trayectoria del golpe: un tajo fuerte de katana parte a una persona en dos, y los trozos se pueden volver a cortar. Las explosiones y los aplastamientos rompen el cuerpo en trozos.</div>
-      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona). Una parte se cose soltándola junto a su sitio de otro cuerpo; con torso, cabeza, cerebro, corazón y un pulmón, una descarga eléctrica le da vida: tu propio Frankenstein.</div>
+      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona; de cada órgano, todos los que quieras). Una parte se cose soltándola junto a su sitio de otro cuerpo (y se mueve como siempre) o tocando cualquier otro sitio, donde queda cosida tal como la pusiste: brazos en la cabeza, piernas en el pecho, varios torsos juntos... Con torso, cabeza, cerebro, corazón y un pulmón, una descarga eléctrica le da vida: tu propio Frankenstein.</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
@@ -16983,7 +16984,9 @@ function cutLimb(h, L, wx, wy, dx, dy, o = {}) {
   if (!h.immortal && h.alive && h.kind !== 'dummy' && h.kind !== 'skeleton') {
     h.pain += 1.2 * h.painMul; h.fear = 1;
     // (un zombi resistente sólo muere si le cortan la mitad de la cabeza: ver 43_v13_zombis.js)
-    if (base === 'head' && h.zHard && h.zHard()) { h.brain -= frac * 1.2; if (h.headLeft() <= 1 - Z_HEAD_CUT) h.die('Cabeza partida'); }
+    // (cortar una parte cosida de más, aunque sea una cabeza o un torso, no mata: ver 50_v131_cirugia.js)
+    if (d.extra) {}
+    else if (base === 'head' && h.zHard && h.zHard()) { h.brain -= frac * 1.2; if (h.headLeft() <= 1 - Z_HEAD_CUT) h.die('Cabeza partida'); }
     else if (base === 'head') { h.brain -= frac * 5; if (frac > 0.15) h.die('Cabeza partida'); }
     else if (!h.zombie && base === 'upperBody') { h.heart -= frac * 3; h.lungs = true; if (frac > 0.3) h.die('Partido en dos'); }
     else if (!h.zombie && (base === 'middleBody' || base === 'lowerBody') && frac > 0.35) h.die('Partido en dos');
@@ -17218,7 +17221,7 @@ if (DEFS.chainsaw && DEFS.chainsaw.sharp) DEFS.chainsaw.sharp.gib = false;
     Effects.gore(c.x, c.y, 8, 4, this.kind === 'android' ? 'robot' : this.kind === 'dummy' ? 'dummy' : this.bleedKind ? 'flesh' : 'dummy', dx, dy);
     if (this.bleedKind) Effects.blood(c.x, c.y, 0, -1, 24, 3, this.bleedKind);
     Sound.play('gore', c.x, c.y, 1.2);
-    const base = L.def.base || L.id;
+    const base = L.def.extra ? '' : L.def.base || L.id;
     if (base === 'head') this._zHeadBlown = true;
     if ((base === 'head' || base === 'upperBody') && this.alive && !this.immortal) this.die('Reventado');
     this.updateConnectivity();
@@ -17474,6 +17477,8 @@ const ORGAN_SLOTS = [
 const ORGAN_BLEED = { liver: 1.6, kidney: 1, stomach: 0.6, intestines: 0.7, heart: 2, lung: 0.8 };
 // cuánto le hace a un órgano cada tipo de daño (si le da de lleno)
 const ORGAN_DMG = { bullet: 1.8, stab: 1.6, slice: 1.3, cut: 1.2, bite: 0.5, blunt: 0.22, crush: 1.0, explosion: 0.8, acid: 0.6, burn: 0.12 };
+// y lo delicado que es cada uno (el corazón: dos balazos que lo atraviesen lo paran)
+const ORGAN_FRAG = { heart: 1.6, kidney: 1.2, liver: 1.1 };
 
 // ¿usa órganos? (con Cuerpos realistas, o si es un cuerpo montado a mano: ver 45_v13_frankenstein.js)
 Human.prototype.orgOn = function () { return !!((Settings.realBodies || this.frank) && (this.kind === 'human' || this.kind === 'zombie') && !this.charred); };
@@ -17519,8 +17524,9 @@ function organItemHp(it) { return it && !it.dead && it.def.hp ? clamp(it.hp / it
 /* ---------------- qué órganos le funcionan ---------------- */
 // los de dentro (en partes unidas al cuerpo) y los que tiene unidos con una vena artificial
 Human.prototype.orgScan = function () {
-  const S = { brain: 0, brainIn: null, brainExt: null, heart: 0, lung: 0, liver: 0, kidney: 0, stomach: 0, intestines: 0, muscle: 0, cpb: false, ext: [] };
+  const S = { brain: 0, brainIn: null, brainExt: null, heart: 0, heartN: 0, lung: 0, liver: 0, kidney: 0, stomach: 0, intestines: 0, muscle: 0, cpb: false, ext: [] };
   const add = (t, hp) => {
+    if (t === 'heart') S.heartN++;
     if (t === 'lung' || t === 'kidney') S[t] += hp;
     else if (t === 'muscle') S.muscle += hp > 0.2 ? 1 : 0;
     else S[t] = Math.max(S[t], hp);
@@ -17554,21 +17560,29 @@ Human.prototype.orgScan = function () {
     this.deathWhy = null;
     if (this.alive && !this.immortal) {
       // el cerebro: el de dentro sigue lo que le pasa a la cabeza; uno de fuera, lo que le pase a él
-      if (S.brainIn) S.brainIn.hp = clamp(this.brain, 0, 1);
+      // (con varios cerebros en la cabeza manda el que mejor está, y lo que le pase a la cabeza se lo lleva él)
+      const hd = this.limbs.head, hb = hd && !hd.destroyed && hd.connected && hd.organs ? hd.organs.filter((g) => g.t === 'brain') : [];
+      if (hb.length) {
+        const cur = this._brainOrg && hb.includes(this._brainOrg) ? this._brainOrg : hb.length === 1 ? hb[0] : null;
+        if (cur) cur.hp = clamp(this.brain, 0, 1);
+        const best = hb.reduce((a, g) => (g.hp > a.hp ? g : a));
+        if (best !== cur) this.brain = best.hp;
+        this._brainOrg = best; S.brainIn = best; S.brain = best.hp;
+      }
       else if (S.brainExt) this.brain = organItemHp(S.brainExt);
       else { this.brain = 0; this.deathWhy = 'Sin cerebro'; }
       if (!zh) {
         // corazón: sin él (o destrozado) la sangre deja de circular
         const hp = S.cpb ? Math.max(S.heart, 0.45) : S.heart;
         this.heart = Math.min(this.heart, hp);
-        if (hp <= 0 && !S.cpb) this.deathWhy = this.deathWhy || 'Sin corazón';
+        if (hp <= 0 && !S.cpb) this.deathWhy = this.deathWhy || (S.heartN ? 'Corazón destrozado' : 'Sin corazón');
         // hígado y riñones: sin ellos se acumulan las toxinas
         const filt = Math.min(S.liver, Math.min(1, S.kidney));
         if (filt < 0.3) this.tox = (this.tox || 0) + dt * (0.3 - filt) / 48;
         else if (this.tox) this.tox = Math.max(0, this.tox - dt * 0.004);
         if (this.tox >= 1) { this.die('Fallo orgánico'); }
         // los músculos de más dan fuerza
-        this._musK = 1 + 0.3 * Math.min(6, S.muscle);
+        this._musK = 1 + 0.3 * Math.min(10, S.muscle);
       } else this._musK = 1;
     }
     const r = uv1.call(this, dt);
@@ -17610,25 +17624,37 @@ Human.prototype.orgScan = function () {
     ensureOrgans(this);
     const alive = this.alive, heart = this.heart, brain = this.brain;
     const r = hu1.call(this, L, amount, type, x, y, dx, dy, o);
-    if (!alive || this.dead) return r;
-    // el corazón y los pulmones sólo se dañan si el golpe les da (no al azar, como sin órganos)
-    if (type !== 'shock') this.heart = heart;
-    this.lungs = false;
-    // una cabeza vacía no tiene cerebro que dañar (si tiene uno de fuera, le cuenta lo que le pase a ése)
-    if (L.id === 'head' && !(L.organs && L.organs.some((g) => g.t === 'brain'))) this.brain = brain;
+    if (this.dead || L.destroyed) return r;
+    if (alive) {
+      // el corazón y los pulmones sólo se dañan si el golpe les da (no al azar, como sin órganos)
+      if (type !== 'shock') this.heart = heart;
+      this.lungs = false;
+      // una cabeza vacía no tiene cerebro que dañar (si tiene uno de fuera, le cuenta lo que le pase a ése)
+      if (L.id === 'head' && !(L.organs && L.organs.some((g) => g.t === 'brain'))) this.brain = brain;
+    }
     const k0 = ORGAN_DMG[type];
     if (!k0 || !L.organs || !L.organs.length || !(amount > 0)) return r;
-    let lp = null;
+    let lp = null, dir = null, depth = 0;
     if (x !== undefined) lp = L.localPx(x, y);
+    // una bala (o una hoja que se clava) no se queda en la piel: daña lo que encuentra en su recorrido por dentro
+    if (lp && (type === 'bullet' || type === 'stab') && (dx || dy)) {
+      if (o && o.exit) return r; // (la salida ya se ha contado desde la entrada)
+      const q = L.localPx(x + dx * 0.05, y + dy * 0.05), ux = q[0] - lp[0], uy = q[1] - lp[1], ul = Math.hypot(ux, uy);
+      if (ul > 1e-6) { dir = [ux / ul, uy / ul]; depth = type === 'bullet' ? Math.hypot(L.tpl.w, L.tpl.h) : 7; }
+    }
     for (const g of L.organs) {
       let k = 0;
-      if (lp) { const R = g.r + (type === 'bullet' || type === 'stab' ? 1 : 1.7), d = Math.hypot(lp[0] - g.x, lp[1] - g.y); if (d < R) k = 1 - (d / R) * 0.6; }
+      if (dir) {
+        const t = clamp((g.x - lp[0]) * dir[0] + (g.y - lp[1]) * dir[1], 0, depth), cx = lp[0] + dir[0] * t, cy = lp[1] + dir[1] * t;
+        const d = Math.hypot(g.x - cx, g.y - cy), R = g.r + 0.7;
+        if (d < R) k = 1 - (d / R) * 0.5;
+      } else if (lp) { const R = g.r + 1.7, d = Math.hypot(lp[0] - g.x, lp[1] - g.y); if (d < R) k = 1 - (d / R) * 0.6; }
       if (type === 'explosion' || type === 'crush') k = Math.max(k, 0.35);
       if (k <= 0) continue;
-      const a = amount * k0 * k;
-      if (g.t === 'brain') continue; // el cerebro ya lo lleva la cabeza
+      const a = amount * k0 * k * (ORGAN_FRAG[g.t] || 1);
+      if (g.t === 'brain' && alive) continue; // (en un cuerpo vivo, el cerebro lo lleva la cabeza)
       g.hp = Math.max(0, g.hp - a);
-      if (ORGAN_BLEED[g.t]) this.internal = Math.min(0.012, (this.internal || 0) + a * 0.004 * ORGAN_BLEED[g.t]);
+      if (alive && ORGAN_BLEED[g.t]) this.internal = Math.min(0.012, (this.internal || 0) + a * 0.004 * ORGAN_BLEED[g.t]);
       if (g.hp <= 0 && !g.dead) { g.dead = true; paintOrgan(L, g, false); }
     }
     return r;
@@ -17805,15 +17831,12 @@ function listY(a) { return a.length <= 1 ? a.join('') : a.slice(0, -1).join(', '
 // mete un órgano suelto en su sitio del cuerpo (si le cabe)
 function implantOrgan(h, it) {
   const t = it.def.organ, T = ORGAN_TYPES[t];
-  if (!h || h.dead || !h.isHuman || !t) return false;
+  if (!h || h.dead || !h.isHuman || !t || it.dead) return false;
   ensureOrgans(h);
-  const L = h.limbs[T.limb];
-  if (!L || L.destroyed) { UI.toast(`No tiene ${T.limb === 'head' ? 'cabeza' : T.limb === 'upperBody' ? 'torso' : 'abdomen'} donde meterlo`); return false; }
-  const have = h.limbList.reduce((n, M) => n + (M.organs && M.connected && !M.destroyed ? M.organs.filter((g) => g.t === t).length : 0), 0);
-  if (have >= T.max) { UI.toast(`Ya tiene ${T.max > 1 ? T.max + ' ' : ''}${T.name.toLowerCase()}${T.max > 1 ? 's' : ''}`); return false; }
-  const used = new Set((L.organs || []).filter((g) => g.t === t).map((g) => g.k));
-  const s = ORGAN_SLOTS.find((q) => q.t === t && !used.has(q.k)) || { t, x: L.tpl.w / 2, y: L.tpl.h / 2, r: 0.5 };
-  const g = { t, x: s.x, y: s.y, r: s.r, k: s.k, hp: organItemHp(it), z: it.vars.z ? 1 : 0 };
+  // sin límite: cada uno va a un hueco libre (ver organSpot en 50_v131_cirugia.js)
+  const sp = organSpot(h, t);
+  if (!sp) { UI.toast(`No tiene ${t === 'brain' ? 'cabeza' : 'tronco'} donde meterlo`); return false; }
+  const L = sp.L, g = { t, x: sp.x, y: sp.y, r: sp.r, k: sp.k, hp: organItemHp(it), z: it.vars.z ? 1 : 0 };
   (L.organs || (L.organs = [])).push(g);
   paintOrgan(L, g, true);
   const p = it.pos();
@@ -17822,7 +17845,7 @@ function implantOrgan(h, it) {
   if (h.bleedKind) Effects.blood(p.x, p.y, 0, -0.5, 4, 0.6, h.bleedKind);
   // un cerebro de zombi convierte en zombi a quien se lo ponen
   if (g.z && t === 'brain' && h.kind === 'human' && !h.zombie) h.zombieT = Math.max(h.zombieT || 0, 6);
-  UI.toast(`${T.name} dentro de ${h.name}`);
+  if (!implantOrgan.quiet) UI.toast(`${T.name} dentro de ${h.name}`);
   return true;
 }
 // lo saca: queda suelto al lado (sin el cerebro se muere; sin el corazón, enseguida)
@@ -17928,42 +17951,59 @@ for (const t of ORGAN_ORDER) {
   };
 }
 // el panel de cirugía: ver cómo está cada órgano, sacarlo o meter uno de los que tenga al lado
+const ORGAN_PLURAL = { brain: 'Cerebros', heart: 'Corazones', lung: 'Pulmones', liver: 'Hígados', stomach: 'Estómagos', kidney: 'Riñones', intestines: 'Intestinos', muscle: 'Músculos' };
+// (una sola ventana: «Sacar» y «Meter» la actualizan, no abren otra encima)
 function openOrgans(h) {
   ensureOrgans(h);
+  let box = null;
+  const inside = (t) => { const out = []; for (const L of h.limbList) if (L.organs && !L.destroyed) for (const g of L.organs) if (g.t === t) out.push({ L, g }); return out; };
+  const near = (t) => {
+    const c = h.root.body.getPosition();
+    return World.things.filter((o) => o.def && o.def.organ === t && !o.dead && !o.holder && Math.hypot(o.pos().x - c.x, o.pos().y - c.y) < 2.2);
+  };
+  const cands = (t) => { const ext = h.orgScan().ext.filter((o) => o.def.organ === t); return [...ext, ...near(t).filter((o) => !ext.includes(o))]; };
+  const close = () => { const i = UI.modals.findIndex((m) => m.box === box); if (i >= 0) { const m = UI.modals.splice(i, 1)[0]; m.wrap.remove(); if (m.onClose) m.onClose(); } };
+  // los porcentajes: uno a uno si son pocos; si son muchos, agrupados («18 × 100 %»)
+  const pct = (list) => {
+    const v = list.map(({ L, g }) => `${g.hp <= 0 ? 'destrozado' : Math.round(g.hp * 100) + ' %'}${L.connected ? '' : ' (en un trozo suelto)'}`);
+    if (v.length <= 4) return v.join(', ');
+    const n = new Map(); for (const x of v) n.set(x, (n.get(x) || 0) + 1);
+    return `${v.length} dentro: ` + [...n].map(([x, k]) => (k > 1 ? `${k} × ` : '') + x).join(', ');
+  };
   const draw = () => {
+    if (box && !box.isConnected) return;
+    if (h.dead) { close(); return; }
     const S = h.orgScan(), rows = [];
-    const near = (t) => World.things.filter((o) => o.def && o.def.organ === t && !o.dead && Math.hypot(o.pos().x - h.root.body.getPosition().x, o.pos().y - h.root.body.getPosition().y) < 2.2);
     for (const t of ORGAN_ORDER) {
-      const T = ORGAN_TYPES[t], ins = [];
-      for (const L of h.limbList) if (L.organs && !L.destroyed) for (const g of L.organs) if (g.t === t) ins.push({ L, g });
-      const ext = S.ext.filter((o) => o.def.organ === t);
-      if (t === 'muscle' && !ins.length && !ext.length && !near(t).length) continue;
-      let html = `<div class="srow chk"><span><b>${T.name}${T.max > 1 && t !== 'muscle' ? 's' : ''}</b> · `;
-      html += ins.length ? ins.map(({ L, g }) => `${Math.round(g.hp * 100)} %${L.connected ? '' : ' (en un trozo suelto)'}`).join(', ') : '<i>falta</i>';
+      const T = ORGAN_TYPES[t], ins = inside(t), ext = S.ext.filter((o) => o.def.organ === t), cand = cands(t);
+      if (t === 'muscle' && !ins.length && !ext.length && !cand.length) continue;
+      let html = `<div class="srow chk"><span><b>${ins.length + ext.length > 1 || T.max > 1 ? ORGAN_PLURAL[t] : T.name}</b> · `;
+      html += ins.length ? pct(ins) : '<i>falta</i>';
       if (ext.length) html += ` · por vena: ${ext.map((o) => Math.round(organItemHp(o) * 100) + ' %').join(', ')}`;
       html += '</span><span>';
-      ins.forEach((x, i) => { html += `<button class="btn" data-out="${t}:${i}">Sacar</button>`; });
-      const cand = [...ext, ...near(t).filter((o) => !ext.includes(o))];
-      if (ins.length < T.max && cand.length) html += `<button class="btn" data-in="${t}">Meter</button>`;
+      if (ins.length > 3) html += `<button class="btn" data-worst="${t}" title="Saca el que está peor">Sacar el peor</button>`;
+      else ins.forEach((x, i) => { html += `<button class="btn" data-out="${t}:${i}">Sacar</button>`; });
+      if (cand.length) html += `<button class="btn" data-in="${t}">Meter</button>`;
+      if (cand.length > 1) html += `<button class="btn" data-all="${t}">Meter todos (${cand.length})</button>`;
       html += '</span></div>';
       rows.push(html);
     }
-    const b = UI.openModal(`<h2>Órganos de ${h.name}</h2><div class="settings">${rows.join('')}</div>
-      <div class="sub">«Sacar» lo deja suelto al lado. «Meter» pone dentro el que tenga unido con una vena o cerca. Para un trasplante sin abrir, une el órgano al cuerpo con un conductor de líquido.${Settings.realBodies || h.frank ? '' : ' <b>Activa Cuerpos realistas en Entorno para que los órganos cuenten.</b>'}</div>
-      <div class="row"><button class="btn" id="orgOk">Hecho</button></div>`);
-    for (const bt of b.querySelectorAll('[data-out]')) bt.onclick = () => {
-      const [t, i] = bt.dataset.out.split(':'), ins = [];
-      for (const L of h.limbList) if (L.organs && !L.destroyed) for (const g of L.organs) if (g.t === t) ins.push({ L, g });
-      const x = ins[+i]; if (x) extractOrgan(h, x.L, x.g);
+    const html = `<h2>Órganos de ${h.name}</h2><div class="settings">${rows.join('')}</div>
+      <div class="sub">«Sacar» lo deja suelto al lado. «Meter» pone dentro el que tenga unido con una vena o cerca (de cada uno, todos los que quieras: cada uno busca su hueco). Para un trasplante sin abrir, une el órgano al cuerpo con un conductor de líquido.${Settings.realBodies || h.frank ? '' : ' <b>Activa Cuerpos realistas en Entorno para que los órganos cuenten.</b>'}</div>
+      <div class="row"><button class="btn" id="orgOk">Hecho</button></div>`;
+    if (!box) box = UI.openModal(html);
+    else { const st = box.scrollTop, se = box.querySelector('.settings'), ss = se ? se.scrollTop : 0; box.innerHTML = html; box.scrollTop = st; const se2 = box.querySelector('.settings'); if (se2) se2.scrollTop = ss; }
+    for (const bt of box.querySelectorAll('[data-out]')) bt.onclick = () => { const [t, i] = bt.dataset.out.split(':'), x = inside(t)[+i]; if (x) extractOrgan(h, x.L, x.g); draw(); };
+    for (const bt of box.querySelectorAll('[data-worst]')) bt.onclick = () => { const a = inside(bt.dataset.worst); if (a.length) { const x = a.reduce((m, q) => (q.g.hp < m.g.hp ? q : m)); extractOrgan(h, x.L, x.g); } draw(); };
+    for (const bt of box.querySelectorAll('[data-in]')) bt.onclick = () => { const o = cands(bt.dataset.in)[0]; if (o) implantOrgan(h, o); draw(); };
+    for (const bt of box.querySelectorAll('[data-all]')) bt.onclick = () => {
+      const t = bt.dataset.all; let n = 0;
+      implantOrgan.quiet = true;
+      try { for (const o of cands(t)) if (implantOrgan(h, o)) n++; } finally { implantOrgan.quiet = false; }
+      if (n) UI.toast(`${n > 1 ? n + ' ' + ORGAN_PLURAL[t].toLowerCase() : ORGAN_TYPES[t].name} dentro de ${h.name}`);
       draw();
     };
-    for (const bt of b.querySelectorAll('[data-in]')) bt.onclick = () => {
-      const t = bt.dataset.in, S2 = h.orgScan();
-      const o = S2.ext.find((q) => q.def.organ === t) || near(t)[0];
-      if (o) implantOrgan(h, o);
-      draw();
-    };
-    b.querySelector('#orgOk').onclick = () => UI.closeModal();
+    box.querySelector('#orgOk').onclick = close;
   };
   draw();
 }
@@ -18077,7 +18117,7 @@ function partThumb(slots) {
 for (const [id, name, slots, desc] of BODY_PARTS) {
   def(id, {
     name, cat: 'organs', sub: 'Partes del cuerpo', entity: 'human', part: slots,
-    desc: desc + ' Suéltala junto a su sitio de otro cuerpo (o usa «Coser» en su menú) para coserla. Con torso, cabeza, cerebro, corazón, un pulmón y una descarga eléctrica cobra vida.',
+    desc: desc + ' Suéltala junto a su sitio de otro cuerpo, o tocando cualquier otra parte de él (o usa «Coser» en su menú), para coserla. Con torso, cabeza, cerebro, corazón, un pulmón y una descarga eléctrica cobra vida.',
     thumb: () => { const s = partThumb(slots); s.anchor = [s.w / 2, s.h / 2]; return s; },
   });
 }
@@ -18382,7 +18422,7 @@ Human.prototype.frankLife = function () {
     if (this.limbs.upperBody && !this.limbs.upperBody.destroyed) {
       const miss = organMissing(this);
       lines.push(miss.length ? ['Le falta: ' + listY(miss), '#e05a4f'] : ['Listo: dale una descarga eléctrica para darle vida', '#7ad48a']);
-    } else lines.push(['Suéltala junto a su sitio en un cuerpo para coserla', '#9aa3ad']);
+    } else lines.push(['Suéltala junto a su sitio, o tocando cualquier parte de un cuerpo, para coserla', '#9aa3ad']);
     return lines;
   };
 }
@@ -18436,7 +18476,9 @@ if (DEFS.balloon) DEFS.balloon.restore = (it) => {
 function canonBodies(h) {
   const order = new Map(LIMB_DEFS.map((d, i) => [d.id, i]));
   const live = h.limbList.filter((L) => !L.destroyed && L.body && h.bodies.includes(L.body));
-  live.sort((a, b) => (a.frag ? 99 : order.get(a.id)) - (b.frag ? 99 : order.get(b.id)));
+  // las de siempre en su orden, luego las cosidas de más (por su número) y al final los trozos
+  const rank = (L) => L.frag ? 1e9 : order.has(L.id) ? order.get(L.id) : 100 + extraNum(L.id);
+  live.sort((a, b) => rank(a) - rank(b));
   const rest = h.bodies.filter((b) => !live.some((L) => L.body === b));
   h.bodies.length = 0; for (const L of live) h.bodies.push(L.body); for (const b of rest) h.bodies.push(b);
   return live.filter((L) => !L.frag).map((L) => L.id);
@@ -18454,6 +18496,20 @@ function bodySnap(h) {
     if (L.pal && L.pal !== h.pal) { let i = s.pals.indexOf(L.pal); if (i < 0) { i = s.pals.length; s.pals.push(L.pal); } s.pl[d.id] = i; odd = true; }
     if (L._st && L._st.length) { s.st[d.id] = L._st.map((q) => q.slice()); odd = true; }
     if (L.organs) for (const g of L.organs) s.org.push([d.id, g.t, +g.hp.toFixed(3), g.k || '', g.z ? 1 : 0, +g.x.toFixed(2), +g.y.toFixed(2), +g.r.toFixed(2)]);
+  }
+  // las partes cosidas de más (ver 50_v131_cirugia.js): su piel, de quién cuelgan, cómo y sus órganos
+  const xs = extraLimbs(h);
+  if (xs.length) {
+    odd = true; s.x = [];
+    for (const L of xs) {
+      let pi = -1;
+      if (L.pal && L.pal !== h.pal) { pi = s.pals.indexOf(L.pal); if (pi < 0) { pi = s.pals.length; s.pals.push(L.pal); } }
+      const j = L.joint && L.parent && !L.parent.frag ? L.sj : null;
+      const sj = j ? [j.la[0], j.la[1], j.lb[0], j.lb[1], j.ref, j.lo, j.hi, j.f].map((v) => +(+v).toFixed(4)) : null;
+      s.x.push([L.id, pi, L.joint && L.parent && !L.parent.frag ? L.parent.id : '', sj, L.flipRel ? 1 : 0]);
+      if (L._st && L._st.length) s.st[L.id] = L._st.map((q) => q.slice());
+      if (L.organs) for (const g of L.organs) s.org.push([L.id, g.t, +g.hp.toFixed(3), g.k || '', g.z ? 1 : 0, +g.x.toFixed(2), +g.y.toFixed(2), +g.r.toFixed(2)]);
+    }
   }
   if (h._orgInit) {
     s.oi = 1;
@@ -18486,12 +18542,26 @@ function applyBodySnap(h, s, r) {
   }
   for (const d of LIMB_DEFS) if (s.sl[d.id] === 2) { const L = h.limbs[d.id]; if (L && !L.destroyed) silentSever(h, L); }
   relinkLimbs(h);
+  // las partes de más se crean antes de colocarlas
+  const xs = [];
+  if (s.x) for (const [id, pi, pid, sj, fr] of s.x) {
+    if (h.limbs[id] && !h.limbs[id].destroyed) continue;
+    const L = buildExtraLimb(h, id, pi >= 0 ? s.pals[pi] : h.pal, fr);
+    if (L) xs.push([L, pid, sj]);
+  }
   // cada parte en su sitio
   s.ids.forEach((id, k) => {
     const L = h.limbs[id], q = r && r.bodies && r.bodies[k];
     if (!L || L.destroyed || !q) return;
     L.body.setTransform(V(at[0] + q[0], at[1] + q[1]), q[2]); L.body.setLinearVelocity(V(0, 0)); L.body.setAngularVelocity(0);
   });
+  // y, ya en su sitio, se cosen a lo que colgaban
+  for (const [L, pid, sj] of xs) {
+    const P = pid && h.limbs[pid]; if (!P || P.destroyed) continue;
+    L.parent = P; L.sj = sj ? { la: [sj[0], sj[1]], lb: [sj[2], sj[3]], ref: sj[4], lo: sj[5], hi: sj[6], f: sj[7] } : null;
+    h.makeJoint(L); L.severed = false;
+  }
+  if (xs.length) relinkLimbs(h);
   canonBodies(h);
   for (const id in s.st) { const L = h.limbs[id]; if (L && !L.destroyed) for (const q of s.st[id]) stitchAt(L, q[0], q[1], q[2]); }
   if (s.oi) {
@@ -18583,7 +18653,7 @@ drawBlueprintGhost = function (ctx, bp, x, y) {
 function drawHumanGhost(ctx, b, r, x, y) {
   ctx.save(); ctx.globalAlpha = 0.45; ctx.fillStyle = '#cfd5dc';
   b.ids.forEach((id, k) => {
-    const q = r.bodies[k], d = LIMB_BY_ID[id]; if (!q || !d) return;
+    const q = r.bodies[k], d = limbDefOf(id); if (!q || !d) return;
     const rows = LIMB_MAPS[d.tpl], w = Math.max(...rows.map((s) => s.length)) * PX, hh = rows.length * PX;
     ctx.save(); ctx.translate(x + q[0], y + q[1]); ctx.rotate(q[2]); ctx.fillRect(-w / 2, -hh / 2, w, hh); ctx.restore();
   });
@@ -18935,6 +19005,650 @@ Human.prototype.aiDualShoot = function (dt, g) {
 {
   const st = Human.prototype.aiStop;
   Human.prototype.aiStop = function () { const r = st.apply(this, arguments); if (this.aiAimB || (this.held.B && this.held.B._back) || (this.limbs.upperArmB && this.limbs.upperArmB._wide)) dropBackHold(this); return r; };
+}
+
+/* ---- 49_v13_rayosx.js ---- */
+/* =========================================================================
+   VERSIÓN 13 (7): VISIÓN DE RAYOS X (tecla X o el botón de arriba). Las
+   personas se ven por dentro: los huesos y los órganos, cada uno con su estado
+   (los dañados, más oscuros y con el borde rojo; los destrozados, grises).
+   Señalando un órgano se ve cuál es y cómo está; agarrándolo con el ratón y
+   tirando se arranca, y el menú contextual permite dañarlo o arrancarlo.
+   Además, los órganos sueltos que no están unidos a nada cuentan como restos:
+   «Borrar restos» los quita.
+   ========================================================================= */
+Settings.xray = false;
+KEY_ACTIONS.splice(KEY_ACTIONS.findIndex((a) => a[0] === 'thermal') + 1, 0, ['xray', 'Rayos X (ver, dañar y arrancar órganos)', 'x']);
+{
+  // si ya usabas la X para otra cosa, los rayos X se quedan sin tecla (se puede asignar en Ajustes)
+  const ls = loadSettings;
+  loadSettings = function () {
+    const r = ls();
+    const k = Settings.keys || {};
+    if (!k.xray && Object.entries(k).some(([a, v]) => a !== 'xray' && v === 'x')) k.xray = 'none';
+    return r;
+  };
+}
+ICONS.xray = ['............', '.....WW.....', '..c..WW..c..', '.cccWWWWccc.', '.c...WW...c.', '.cccWWWWccc.', '.c...WW...c.', '.cccWWWWccc.', '..c..WW..c..', '.....WW.....', '.....WW.....', '............'];
+
+/* ---------------- encender y apagar ---------------- */
+function xrayToggle() {
+  Settings.xray = !Settings.xray; saveSettings();
+  const any = Settings.realBodies || World.things.some((t) => t.isHuman && !t.dead && t.frank);
+  UI.toast(Settings.xray ? 'Rayos X: activados' + (any ? '' : ' (activa Cuerpos realistas en Entorno para ver los órganos)') : 'Rayos X: desactivados', 2600);
+  UI.refreshTop();
+}
+{
+  const da = Input.doAction.bind(Input);
+  Input.doAction = function (id, key) { if (id === 'xray') { xrayToggle(); return; } return da(id, key); };
+  const ui0 = UI.init.bind(UI);
+  UI.init = function () {
+    const r = ui0();
+    const th = this.statusEl && this.statusEl.querySelector('#stThermal');
+    if (th) {
+      const b = document.createElement('button');
+      b.className = 'st'; b.id = 'stXray'; b.title = `Rayos X (${keyLabel(keyOf('xray'))})`;
+      b.innerHTML = `<img src="${iconURL('xray')}">`;
+      b.onclick = () => Input.doAction('xray');
+      th.after(b);
+    }
+    this.refreshTop();
+    return r;
+  };
+  const rt = UI.refreshTop.bind(UI);
+  UI.refreshTop = function () { const r = rt(); const b = this.statusEl && this.statusEl.querySelector('#stXray'); if (b) b.classList.toggle('off', !Settings.xray); return r; };
+}
+
+/* ---------------- el dibujo por dentro ---------------- */
+// cada parte del cuerpo: carne translúcida, huesos claros y los órganos con su estado
+{
+  const cp = Limb.prototype.compose;
+  Limb.prototype.compose = function () { this._cmpN = (this._cmpN || 0) + 1; return cp.call(this); };
+}
+function xraySprite(L) {
+  const T = L.tpl, n = T.w * T.h;
+  let key = (L._cmpN || 0) + ':' + (L.broken ? 1 : 0);
+  if (L.organs) for (const g of L.organs) key += ',' + g.t + Math.round(g.hp * 20);
+  if (L._xr && L._xrKey === key && L._xr.w === T.w && L._xr.h === T.h) return L._xr;
+  const s = L._xr && L._xr.w === T.w && L._xr.h === T.h ? L._xr : new Sprite(T.w, T.h), d = s.data;
+  // y aparte, sólo los órganos: se dibujan otra vez encima de todo (que no los tape un brazo)
+  const so = L.organs && L.organs.length ? (L._xo && L._xo.w === T.w && L._xo.h === T.h ? L._xo : new Sprite(T.w, T.h)) : null, od = so && so.data;
+  if (od) od.fill(0);
+  const on = (x, y) => x >= 0 && y >= 0 && x < T.w && y < T.h && T.mask[y * T.w + x];
+  for (let i = 0; i < n; i++) {
+    const o = i * 4;
+    if (!T.mask[i]) { d[o + 3] = 0; continue; }
+    if (L.hole[i]) { d[o] = 8; d[o + 1] = 12; d[o + 2] = 20; d[o + 3] = 210; continue; }
+    // el contorno siempre es carne (así el hueso se ve por dentro)
+    const x = i % T.w, y = (i / T.w) | 0, edge = !on(x - 1, y) || !on(x + 1, y) || !on(x, y - 1) || !on(x, y + 1);
+    if (edge) { d[o] = 120; d[o + 1] = 160; d[o + 2] = 200; d[o + 3] = 170; continue; }
+    if (T.bone[i]) { const k = L.broken ? 0.72 : 1; d[o] = 214 * k; d[o + 1] = 228 * k; d[o + 2] = 242 * k; d[o + 3] = 235; continue; }
+    d[o] = 62; d[o + 1] = 92; d[o + 2] = 128; d[o + 3] = 95;
+  }
+  if (L.organs) for (const g of L.organs) {
+    const c = ORGAN_TYPES[g.t].col, px = organPx(L, g), dead = g.hp <= 0;
+    const mine = new Set(px);
+    for (const i of px) {
+      const o = i * 4, x = i % T.w, y = (i / T.w) | 0;
+      let r = c[0], gg = c[1], b = c[2];
+      if (dead) { r = gg = b = 78; } else { const k = (1 - g.hp) * 0.75; r = lerp(r, 70, k); gg = lerp(gg, 12, k); b = lerp(b, 12, k); }
+      // el borde de un órgano dañado, en rojo
+      const edge = !mine.has(i - 1) || !mine.has(i + 1) || !mine.has(i - T.w) || !mine.has(i + T.w);
+      if (edge && !dead && g.hp < 0.65) { r = 255; gg = 70; b = 60; }
+      d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 245;
+      od[o] = r; od[o + 1] = gg; od[o + 2] = b; od[o + 3] = 235;
+      void x; void y;
+    }
+  }
+  s.dirty = true; L._xr = s; L._xrKey = key;
+  if (so) so.dirty = true;
+  L._xo = so;
+  return s;
+}
+const XR = { queue: [] };
+{
+  const dp = Renderer.drawPart.bind(Renderer);
+  Renderer.drawPart0 = dp;
+  Renderer.drawPart = function (ctx, p, b) {
+    if (!Settings.xray || Settings.thermal) return dp(ctx, p, b);
+    const L = p.limb;
+    if (L && L.h && !L.destroyed && L.tpl && L.tpl.bone) {
+      const s0 = p.spr; p.spr = xraySprite(L);
+      try { dp(ctx, p, b); } finally { p.spr = s0; }
+      if (L._xo && L.organs.length) XR.queue.push({ p: { spr: L._xo, ox: p.ox, oy: p.oy, flip: p.flip, scale: p.scale }, b });
+      return;
+    }
+    // lo demás, apagado (como en una radiografía)
+    ctx.globalAlpha = 0.4; dp(ctx, p, b); ctx.globalAlpha = 1;
+  };
+}
+
+/* ---------------- señalar, arrancar y dañar ---------------- */
+// el órgano que hay bajo el cursor (en cualquier parte del cuerpo de esa posición, aunque la tape un brazo)
+function organAt(wx, wy) {
+  const P = V(wx, wy);
+  let best = null, bd = 1e9;
+  queryAABB(wx - 0.01, wy - 0.01, wx + 0.01, wy + 0.01, (f) => {
+    const ud = f.getUserData(), h = ud && ud.thing, L = ud && ud.part;
+    if (!h || !h.isHuman || h.dead || !L || L.destroyed || !L.organs || !L.organs.length || !f.testPoint(P)) return true;
+    const lp = L.localPx(wx, wy);
+    for (const g of L.organs) { const d = Math.hypot(lp[0] - g.x, lp[1] - g.y); if (d < g.r + 0.8 && d < bd) { bd = d; best = { h, L, g }; } }
+    return true;
+  });
+  return best;
+}
+// el rótulo, del mismo tamaño en pantalla con cualquier zoom
+function xrLabel(ctx, wx, wy, up, text, col) {
+  const p = Cam.toScreen(wx, wy), y = p[1] - up;
+  ctx.save(); ctx.setTransform(Cam.dpr, 0, 0, Cam.dpr, 0, 0);
+  ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(text).width + 10;
+  ctx.fillStyle = 'rgba(4,10,20,0.78)'; ctx.fillRect(p[0] - w / 2, y - 9, w, 18);
+  ctx.fillStyle = col; ctx.fillText(text, p[0], y + 0.5);
+  ctx.restore();
+}
+function organLabel(g) { const T = ORGAN_TYPES[g.t]; return `${T.name} · ${g.hp <= 0 ? 'destrozado' : Math.round(g.hp * 100) + ' %'}`; }
+function damageOrgan(h, L, g, amt) {
+  g.hp = Math.max(0, g.hp - amt);
+  // (el cerebro que manda: con varios, sólo el que piensa le quita vida a la persona)
+  if (g.t === 'brain' && L.id === 'head' && h.alive && !h.immortal && (!h._brainOrg || h._brainOrg === g)) h.brain -= amt;
+  if (g.hp <= 0 && !g.dead) { g.dead = true; paintOrgan(L, g, false); }
+  for (const i of organPx(L, g)) L.dmg[i] = Math.max(L.dmg[i], 0.6);
+  L.dirty = true;
+  if (h.alive) { h.pain += 0.4 * h.painMul; if (ORGAN_BLEED[g.t]) h.internal = Math.min(0.012, (h.internal || 0) + amt * 0.004 * ORGAN_BLEED[g.t]); }
+  const w = L.worldPt(g.x, g.y);
+  if (h.bleedKind) Effects.blood(w[0], w[1], 0, -0.5, 5, 0.8, h.bleedKind);
+  Sound.play('impact_flesh', w[0], w[1], 0.6);
+}
+{
+  // agarrar un órgano y tirar: se arranca y se queda en la mano del ratón
+  const ld = Input.leftDown.bind(Input);
+  Input.leftDown = function (shift, ctrl) {
+    if (Settings.xray && !Settings.thermal && this.mode !== 'powers' && (this.tool === 'drag' || this.tool === 'gentle') && !shift && !this.spawnDef) {
+      const og = organAt(this.wx, this.wy);
+      if (og) { this._ripPend = { og, x: this.wx, y: this.wy }; return; }
+    }
+    return ld(shift, ctrl);
+  };
+  const lu = Input.leftUp.bind(Input);
+  Input.leftUp = function () { this._ripPend = null; return lu(); };
+  const dw = Input.drawWorld.bind(Input);
+  Input.drawWorld = function (ctx) {
+    // los órganos, otra vez encima de todo
+    const q = XR.queue; XR.queue = [];
+    if (q.length && Settings.xray && !Settings.thermal) {
+      ctx.save();
+      for (const e of q) Renderer.drawPart0(ctx, e.p, e.b);
+      ctx.restore(); Cam.apply(ctx);
+    }
+    dw(ctx);
+    if (!Settings.xray || Settings.thermal) { this._ripPend = null; return; }
+    const z = Cam.zoom;
+    // tirando del órgano agarrado: sale del cuerpo
+    const rp = this._ripPend;
+    if (rp) {
+      const og = rp.og;
+      if (!og.L || og.L.destroyed || og.h.dead || !(og.L.organs || []).includes(og.g)) this._ripPend = null;
+      else if (Math.hypot(this.wx - rp.x, this.wy - rp.y) > 0.07) {
+        this._ripPend = null;
+        const it = extractOrgan(og.h, og.L, og.g);
+        if (it && !it.dead) { it.main.setTransform(V(this.wx, this.wy), it.main.getAngle()); this.startDrag({ body: it.main, thing: it }, this.wx, this.wy); }
+      }
+    }
+    // el órgano señalado: su nombre y cómo está
+    const og = this.drag || rp ? null : organAt(this.wx, this.wy);
+    if (og) {
+      const w = og.L.worldPt(og.g.x, og.g.y);
+      ctx.save(); ctx.strokeStyle = og.g.hp > 0.65 ? '#7ad48a' : og.g.hp > 0 ? '#ff6a5a' : '#9aa3ad'; ctx.lineWidth = 1.5 / z;
+      ctx.beginPath(); ctx.arc(w[0], w[1], (og.g.r + 0.8) * PX, 0, TAU); ctx.stroke(); ctx.restore();
+      xrLabel(ctx, w[0], w[1], (og.g.r + 0.8) * PX * z + 14, organLabel(og.g), og.g.hp > 0.65 ? '#cfe9d4' : og.g.hp > 0 ? '#ffb4a8' : '#cfd5dc');
+    }
+  };
+  // en el menú contextual, con los rayos X: dañar o arrancar el órgano señalado
+  const ci = UI.ctxItems.bind(UI);
+  UI.ctxItems = function (t, hit, wx, wy) {
+    const items = ci(t, hit, wx, wy);
+    if (!Settings.xray || !t || !t.isHuman) return items;
+    const og = organAt(wx, wy);
+    if (!og || og.h !== t) return items;
+    const name = ORGAN_TYPES[og.g.t].name;
+    items.unshift(
+      { label: `Arrancar: ${name}`, fn: () => extractOrgan(og.h, og.L, og.g), once: true },
+      { label: `Dañar: ${name} (${og.g.hp <= 0 ? 'destrozado' : Math.round(og.g.hp * 100) + ' %'})`, fn: () => damageOrgan(og.h, og.L, og.g, 0.25), once: true },
+      '-');
+    return items;
+  };
+}
+
+/* ---------------- los órganos sueltos son restos ---------------- */
+{
+  const cd = Clear.debris.bind(Clear);
+  Clear.debris = function () {
+    // los que no están unidos a nada (ni con una vena ni en la mano de alguien) se borran con los demás restos
+    for (const t of World.things) if (!t.dead && t.def && t.def.organ && !t.conns.size && !t.holder) t.isDebris = true;
+    return cd();
+  };
+}
+
+/* ---- 50_v131_cirugia.js ---- */
+/* =========================================================================
+   VERSIÓN 13.1 (2): CIRUGÍA SIN LÍMITES.
+   - De cada órgano se pueden meter todos los que quieras (10 corazones, 20
+     pulmones...): cada uno busca un hueco libre (su sitio de siempre si está
+     libre; si no, en el resto del tronco; los cerebros, en la cabeza; los
+     músculos, en cualquier parte) y todos cuentan.
+   - Las partes del cuerpo se cosen en cualquier sitio que toquen de otro
+     cuerpo: una pierna en el pecho, un brazo en la cabeza, un torso pegado a
+     otro... Junto a su hueco de siempre van a su hueco (y se mueven como
+     siempre); en cualquier otro sitio quedan cosidas tal como las pusiste,
+     como partes de más que el cuerpo sostiene con sus músculos y con sus
+     órganos funcionando. Se copian y se guardan con el cuerpo.
+   ========================================================================= */
+const TORSO_IDS = new Set(['upperBody', 'middleBody', 'lowerBody']);
+function limbBase(L) { return L.def.base || String(L.id).split('~')[0]; }
+
+/* ---------------- un hueco para cada órgano ---------------- */
+// el sitio de la carne de una parte con más sitio para un órgano de radio r (lejos del borde y de los demás órganos)
+function freeSpotIn(L, r) {
+  const T = L.tpl, W = T.w, H = T.h, os = L.organs || [];
+  let best = null;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; if (!T.mask[i] || L.hole[i]) continue;
+    let e = 6;
+    for (let yy = y - 5; yy <= y + 5; yy++) for (let xx = x - 5; xx <= x + 5; xx++) {
+      if (xx >= 0 && yy >= 0 && xx < W && yy < H && T.mask[yy * W + xx]) continue;
+      const dd = Math.hypot(xx - x, yy - y); if (dd < e) e = dd;
+    }
+    const cx = x + 0.5, cy = y + 0.5;
+    let c = e - 0.5 - r * 0.6;
+    for (const g of os) c = Math.min(c, Math.hypot(g.x - cx, g.y - cy) - g.r - r);
+    c -= Math.hypot(cx - W / 2, cy - H / 2) * 0.01; // (a igualdad, hacia el centro)
+    if (!best || c > best.c) best = { x: cx, y: cy, c };
+  }
+  return best;
+}
+// dónde va un órgano más: su sitio de siempre si está libre; si no, el hueco más holgado de su parte, luego del resto
+// del tronco y luego de las partes cosidas de más; si ya no cabe en ninguna, donde menos se amontona
+function organSpot(h, t) {
+  const sl = ORGAN_SLOTS.find((q) => q.t === t), r = sl ? sl.r : 1;
+  const nat = h.limbs[ORGAN_TYPES[t].limb];
+  const ok = (L) => L && !L.destroyed && L.body && L.tpl && !L.frag && (L.connected || !h.alive);
+  if (ok(nat)) {
+    for (const q of ORGAN_SLOTS) {
+      if (q.t !== t || !nat.tpl.mask[Math.floor(q.y) * nat.tpl.w + Math.floor(q.x)]) continue;
+      if ((nat.organs || []).some((g) => g.t === t && Math.hypot(g.x - q.x, g.y - q.y) < q.r * 0.8)) continue;
+      return { L: nat, x: q.x, y: q.y, r: q.r, k: q.k };
+    }
+  }
+  const cands = h.limbList.filter((L) => ok(L) && (t === 'brain' ? limbBase(L) === 'head' : t === 'muscle' || TORSO_IDS.has(limbBase(L))));
+  const rank = (L) => (L === nat ? 0 : L.def.extra ? 2 : 1) + (t === 'muscle' && !TORSO_IDS.has(limbBase(L)) ? 3 : 0);
+  cands.sort((a, b) => rank(a) - rank(b));
+  let best = null;
+  for (const L of cands) {
+    const q = freeSpotIn(L, r); if (!q) continue;
+    if (q.c >= -r * 0.35) return { L, x: q.x, y: q.y, r };
+    if (!best || q.c > best.c) best = { L, x: q.x, y: q.y, r, c: q.c };
+  }
+  return best;
+}
+
+/* ---------------- las partes cosidas de más ---------------- */
+let SEW_N = 0;
+// cada una tiene su nombre («upperLegF~s3») y la definición de su parte: se puede rehacer sólo con el nombre
+function limbDefOf(id) {
+  if (LIMB_BY_ID[id]) return LIMB_BY_ID[id];
+  const m = /^(\w+)~s(\d+)$/.exec(String(id)); if (!m || !LIMB_BY_ID[m[1]]) return null;
+  SEW_N = Math.max(SEW_N, +m[2]);
+  const b = LIMB_BY_ID[m[1]];
+  // (un tronco o una cabeza de más necesitan algo de fuerza para sostenerse)
+  return (LIMB_BY_ID[id] = Object.assign({}, b, { id, base: m[1], extra: true, str: Math.max(b.str || 0, TORSO_IDS.has(m[1]) ? 160 : m[1] === 'head' ? 60 : 0) }));
+}
+function newExtraId(base) { let id; do id = base + '~s' + (++SEW_N); while (LIMB_BY_ID[id]); limbDefOf(id); return id; }
+function extraNum(id) { const m = /~s(\d+)$/.exec(String(id)); return m ? +m[1] : 0; }
+function extraLimbs(h) { return h.limbList.filter((L) => !L.destroyed && L.def.extra && !L.frag && L.body && h.bodies.includes(L.body)).sort((a, b) => extraNum(a.id) - extraNum(b.id)); }
+// los huecos vacíos que deja una parte de más (o un trozo) al irse no hacen falta
+function dropExtraHoles(h) {
+  if (!h || h.dead) return;
+  for (const L of [...h.limbList]) if (L.absent && String(L.id).includes('~')) { h.limbList.splice(h.limbList.indexOf(L), 1); if (h.limbs[L.id] === L) delete h.limbs[L.id]; }
+}
+// crea una parte de más (al pegar o cargar un cuerpo que la tenía)
+function buildExtraLimb(h, id, pal, fr) {
+  const d = limbDefOf(id); if (!d) return null;
+  const tpl = buildLimbTemplate(d.tpl, pal || h.pal, h.kind === 'skeleton' ? 'human' : h.kind);
+  const L = new Limb(h, d, tpl);
+  L.pal = pal || h.pal; L.flipRel = !!fr;
+  const c = h.root && h.root.body ? h.root.body.getPosition() : V(0, 0);
+  const body = Phys.world.createBody({ type: 'dynamic', position: V(c.x, c.y), angle: 0, angularDamping: 0.6, linearDamping: 0.02 });
+  const hw = (tpl.w / 2 - 0.45) * PX, hh = (tpl.h / 2 - 0.55) * PX;
+  let shape;
+  if (d.tpl === 'head') { const pts = []; for (let k = 0; k < 8; k++) { const a = (k / 8) * TAU + Math.PI / 8; pts.push(V(Math.cos(a) * hw * 1.02, Math.sin(a) * hh)); } shape = pl.Polygon(pts); }
+  else if (d.foot) shape = pl.Box((tpl.w / 2 - 0.2) * PX, (tpl.h / 2 - 0.3) * PX);
+  else { const k = Math.min(hw, hh) * 0.35; shape = pl.Polygon([V(-hw + k, -hh), V(hw - k, -hh), V(hw, -hh + k), V(hw, hh - k), V(hw - k, hh), V(-hw + k, hh), V(-hw, hh - k), V(-hw, -hh + k)]); }
+  const area = d.tpl === 'head' ? Math.PI * hw * hh * 0.95 : 4 * hw * hh;
+  const massMul = h.kind === 'android' ? 1.35 : h.kind === 'skeleton' ? 0.35 : 1, mat = MATERIALS[h.mat];
+  body.createFixture(shape, { density: (d.mass * massMul * HUMAN_MASS_MUL) / area, friction: d.foot ? 1.1 : mat.friction, restitution: mat.restitution, filterGroupIndex: h.group, userData: { thing: h, part: L, mat: h.mat } });
+  h.addBody(body, L);
+  L.body = body;
+  h.limbs[id] = L; h.limbList.push(L);
+  L.part = { body, spr: L.spr, ox: 0, oy: 0, flip: (h.facing < 0) !== L.flipRel, zOff: d.z, limb: L, noStain: true };
+  h.parts.push(L.part);
+  return L;
+}
+
+/* ---------------- partes reflejadas respecto al cuerpo ---------------- */
+// una parte cosida tal como la pusiste, aunque mirase hacia el otro lado: su dibujo y sus puntos, reflejados
+Limb.prototype.facingX = function () { return (this.h.facing < 0) !== !!this.flipRel ? -1 : 1; };
+Limb.prototype.localPx = function (x, y) {
+  const b = this.body, p = b.getPosition(), a = b.getAngle();
+  const dx = x - p.x, dy = y - p.y, c = Math.cos(-a), s = Math.sin(-a);
+  let lx = (dx * c - dy * s) / PX; const ly = (dx * s + dy * c) / PX;
+  if (this.facingX() < 0) lx = -lx;
+  return [lx + this.tpl.w / 2, ly + this.tpl.h / 2];
+};
+Limb.prototype.worldPt = function (sx, sy) {
+  let lx = sx - this.tpl.w / 2; const ly = sy - this.tpl.h / 2;
+  if (this.facingX() < 0) lx = -lx;
+  const b = this.body, p = b.getPosition(), r = rot(lx * PX, ly * PX, b.getAngle());
+  return [p.x + r[0], p.y + r[1]];
+};
+// una costura libre: sus puntos en cada parte, el ángulo con el que se cosió y lo que deja doblar
+function mirrorSpec(s) { s.la = [-s.la[0], s.la[1]]; s.lb = [-s.lb[0], s.lb[1]]; s.ref = -s.ref; const lo = s.lo; s.lo = -s.hi; s.hi = -lo; return s; }
+{
+  const mj = Human.prototype.makeJoint;
+  Human.prototype.makeJoint = function (L) {
+    if (L.sj) {
+      const P = L.parent, s = L.sj;
+      if (!P || !P.body || !L.body) return;
+      if (s.f !== this.facing) { mirrorSpec(s); s.f = this.facing; }
+      const j = Phys.world.createJoint(pl.RevoluteJoint({ bodyA: P.body, bodyB: L.body, localAnchorA: V(s.la[0], s.la[1]), localAnchorB: V(s.lb[0], s.lb[1]), referenceAngle: s.ref, enableLimit: true, lowerAngle: s.lo, upperAngle: s.hi, enableMotor: true, maxMotorTorque: 0, motorSpeed: 0 }));
+      L.joint = j; this.joints.push(j);
+      return;
+    }
+    if (!L.flipRel) return mj.call(this, L);
+    const f0 = this.facing; this.facing = -f0;
+    try { return mj.call(this, L); } finally { this.facing = f0; }
+  };
+  const ff = Human.prototype.flipFacing;
+  Human.prototype.flipFacing = function (...a) {
+    const r = ff.apply(this, a);
+    for (const L of this.limbList) if (L.part && L.flipRel) L.part.flip = this.facing > 0;
+    return r;
+  };
+  // los cortes de una parte reflejada (su forma y sus trozos) también van reflejados
+  const ch = cutHull;
+  cutHull = function (L, idx) {
+    if (!L.flipRel) return ch(L, idx);
+    const h = L.h, f0 = h.facing; h.facing = -f0;
+    try { return ch(L, idx); } finally { h.facing = f0; }
+  };
+  const mp = cutMakePiece;
+  cutMakePiece = function (h, L, idx) {
+    if (!L.flipRel) return mp(h, L, idx);
+    const f0 = h.facing; h.facing = -f0;
+    let F = null;
+    try { F = mp(h, L, idx); } finally { h.facing = f0; }
+    if (F) { F.flipRel = true; F.part.flip = f0 > 0; }
+    return F;
+  };
+  // al descoserse (arrancarla, una explosión...), el muñón queda donde estaba la costura
+  const sv = Human.prototype.sever;
+  Human.prototype.sever = function (L, why) {
+    if (!L || !L.sj || !L.joint || L.severed || L.destroyed) return sv.call(this, L, why);
+    if (this.immortal && why === 'tear') return;
+    const lh = L._lastHit;
+    if ((why === 'beam' || why === 'cut' || why === 'arc') && lh && Phys.time - lh.t < 0.08 && Settings.gore && !this.immortal && cutLimb(this, L, lh.x, lh.y, lh.dx, lh.dy)) return;
+    const j = L.joint, P = L.parent, wp = j.getAnchorB();
+    L.joint = null; L.severed = true; L.sj = null;
+    const ji = this.joints.indexOf(j); if (ji >= 0) this.joints.splice(ji, 1);
+    Phys.later(() => { try { Phys.world.destroyJoint(j); } catch (e) {} });
+    const a = L.localPx(wp.x, wp.y);
+    L.paint(a[0], a[1], 2.6, (i, dd) => { L.dmg[i] = Math.max(L.dmg[i], dd < 0.45 ? 0.95 : 0.7); });
+    this.addWound(L, a[0], a[1], 0.012, true);
+    if (P && !P.destroyed && P.body) {
+      const b = P.localPx(wp.x, wp.y);
+      P.paint(b[0], b[1], 2.6, (i, dd) => { P.dmg[i] = Math.max(P.dmg[i], dd < 0.45 ? 0.95 : 0.7); });
+      this.addWound(P, b[0], b[1], 0.018, true);
+    }
+    if (this.bleedKind) Effects.blood(wp.x, wp.y, 0, -1.5, 30, 2.5, this.bleedKind);
+    Sound.play('gore', wp.x, wp.y, 0.9);
+    if (this.alive) this.pain += 0.8 * this.painMul;
+    this.updateConnectivity();
+  };
+}
+
+/* ---------------- coser en su hueco (con lo que lleve cosido de más) ---------------- */
+// como antes, pero lo que cuelga de una costura libre sigue siendo una parte de más (con su nombre y su costura), y
+// una parte de más que va a un hueco de verdad pasa a ser esa parte (una pierna de más cosida en la cadera ya es su pierna)
+sewLimb = function (R, A, T, S) {
+  if (!R || R.destroyed || R.frag || R.joint || !T || T.dead || !A || A.dead) return false;
+  if (Phys.world.isLocked()) { Phys.later(() => sewLimb(R, A, T, S)); return false; }
+  const d = LIMB_BY_ID[S]; if (!d || !d.parent || d.tpl !== R.def.tpl) return false;
+  const P = T.limbs[d.parent]; if (!P || P.destroyed || P.frag) return false;
+  if (A === T) { if (T.limbs[S] !== R) return false; R.sj = null; const ok = reattachLimb(T, R); if (ok) sewFx(T, R); return ok; }
+  const side = /[FB]$/.test(S) ? S.slice(-1) : null;
+  const list = limbSubtree(R);
+  const custom = new Set();
+  for (const X of list) for (let Y = X; Y && Y !== R; Y = Y.parent) if (Y.sj || Y.frag) { custom.add(X); break; }
+  // (las de más conservan su nombre, salvo que el cuerpo ya tenga uno igual, de una copia; los trozos, uno nuevo)
+  const ids = new Map();
+  for (const X of list) {
+    if (custom.has(X)) ids.set(X, X.frag && !X.def.extra || (T.limbs[X.id] && T.limbs[X.id] !== X) ? newExtraId(limbBase(X)) : X.id);
+    else { const id = limbBase(X); ids.set(X, side && /[FB]$/.test(id) ? id.slice(0, -1) + side : id); }
+  }
+  const slotOf = (X) => ids.get(X);
+  // los huecos tienen que estar libres: lo que haya cortado se aparta (como una parte suelta)
+  for (const X of list) {
+    if (custom.has(X)) continue;
+    const cur = T.limbs[slotOf(X)];
+    if (!cur || cur.destroyed) continue;
+    if (cur.joint && (cur.connected || slotOf(X) === S)) { if (slotOf(X) === S || cur.parent && !cur.parent.destroyed && !list.some((Y) => slotOf(Y) === cur.parent.id)) return false; }
+    evictLimb(T, cur);
+  }
+  if (T.limbs[S] && !T.limbs[S].destroyed) return false;
+  const par = new Map(); for (const X of list) if (X !== R && X.parent) par.set(X, X.parent);
+  const tmp = [], frags = new Map();
+  for (const X of list) {
+    limbDefOf(slotOf(X));
+    if (X.frag) frags.set(X, X.def);
+    if (!LIMB_BY_ID[X.id]) { LIMB_BY_ID[X.id] = X.def; tmp.push(X.id); }
+  }
+  try { moveLimbs(list, A, T, slotOf); } finally { for (const id of tmp) delete LIMB_BY_ID[id]; }
+  dropExtraHoles(A);
+  for (const [X, d0] of frags) X.def = Object.assign({}, X.def, { frag: true, name: d0.name });
+  R.parent = P; for (const [X, Y] of par) X.parent = Y;
+  // a su hueco va mirando como el cuerpo: si estaba reflejada, se refleja otra vez
+  if (R.flipRel) {
+    const jp = R.worldPt(...jointPx(R));
+    for (const X of list) { mirrorBody(X.body, jp[0], X.body.getLinearVelocity().x); X.flipRel = !X.flipRel; if (X.sj) mirrorSpec(X.sj); }
+  }
+  for (const X of list) { if (!custom.has(X)) { X.flipRel = false; X.sj = null; } X.part.flip = (T.facing < 0) !== !!X.flipRel; }
+  placeAtSocket(T, R, list, S);
+  for (const X of list) T.makeJoint(X);
+  relinkLimbs(T);
+  const jp = jointPx(R), sp = socketPx(P, S);
+  stitchAt(R, jp[0], jp[1], R.tpl.w); stitchAt(P, sp[0], sp[1], 2.5);
+  if (A.part || A.frank) T.frank = T.frank || !!T.part;
+  T.updateConnectivity(); T.markDirty();
+  if (!A.limbList.some((L) => !L.destroyed)) A.destroy(true);
+  else A.updateConnectivity();
+  sewFx(T, R);
+  return true;
+};
+
+/* ---------------- coser en cualquier sitio ---------------- */
+const FREE_SEW_D = 0.05;
+// puntos del contorno de una parte (en el mundo)
+function fixPts(f) {
+  const s = f.getShape(), b = f.getBody(), vs = s.m_vertices, n = s.m_count, out = [];
+  if (!vs || !n) { const c = b.getWorldCenter(); return [[c.x, c.y]]; }
+  for (let i = 0; i < n; i++) {
+    const a = vs[i], c = vs[(i + 1) % n];
+    for (const k of [0, 0.25, 0.5, 0.75]) { const w = b.getWorldPoint(V(a.x + (c.x - a.x) * k, a.y + (c.y - a.y) * k)); out.push([w.x, w.y]); }
+  }
+  return out;
+}
+// lo lejos que está un punto de una parte (0 si está dentro) y el punto de la parte más cercano
+function ptGap(f, p) {
+  const s = f.getShape(), b = f.getBody(), vs = s.m_vertices, n = s.m_count;
+  if (f.testPoint(V(p[0], p[1]))) return { d: 0, q: p };
+  if (!vs || !n) { const c = b.getWorldCenter(), r = s.m_radius || 0, d = Math.hypot(p[0] - c.x, p[1] - c.y) || 1; return { d: Math.max(0, d - r), q: [c.x + (p[0] - c.x) * r / d, c.y + (p[1] - c.y) * r / d] }; }
+  const lp = b.getLocalPoint(V(p[0], p[1])), lx = lp.x, ly = lp.y;
+  let bd = 1e9, bx = 0, by = 0;
+  for (let i = 0; i < n; i++) {
+    const a = vs[i], c = vs[(i + 1) % n], ex = c.x - a.x, ey = c.y - a.y;
+    const t = clamp(((lx - a.x) * ex + (ly - a.y) * ey) / (ex * ex + ey * ey || 1), 0, 1);
+    const qx = a.x + ex * t, qy = a.y + ey * t, d = Math.hypot(lx - qx, ly - qy);
+    if (d < bd) { bd = d; bx = qx; by = qy; }
+  }
+  const w = b.getWorldPoint(V(bx, by));
+  return { d: bd, q: [w.x, w.y] };
+}
+// lo cerca que están dos partes: la distancia y un punto de cada una (a en Y, b en Q)
+function limbGap(Y, Q) {
+  const fy = Y.body.getFixtureList(), fq = Q.body.getFixtureList(); if (!fy || !fq) return null;
+  let best = null;
+  for (const p of fixPts(fy)) { const g = ptGap(fq, p); if (!best || g.d < best.d) best = { d: g.d, a: p, b: g.q }; }
+  for (const p of fixPts(fq)) { const g = ptGap(fy, p); if (!best || g.d < best.d) best = { d: g.d, a: g.q, b: p }; }
+  return best;
+}
+// lo que se puede coser en cualquier sitio: una parte suelta (o una parte del menú o un cuerpo montado a mano sin vida,
+// enteros); un cuerpo entero, vivo o muerto, no
+function freeComp(A, DL) {
+  if (!A || A.dead || !A.isHuman || !DL || DL.destroyed || DL.h !== A || !DL.body) return null;
+  if (A.kind === 'skeleton' || A.kind === 'dummy' || A.charred) return null;
+  let top = DL; while (top.joint && top.parent && !top.parent.destroyed) top = top.parent;
+  if (top.joint) return null;
+  const whole = A.part || (A.frank && !A.alive && !A._born);
+  if (top === A.root && !whole) return null;
+  if (A.alive && top.connected) return null;
+  return limbSubtree(top).filter((L) => L.body && !L.destroyed);
+}
+// la parte de lo que coses que toca a otro cuerpo (la más cercana, hasta maxD) y por dónde
+function findFreeSew(A, comp, maxD) {
+  if (!comp || !comp.length) return null;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const Y of comp) { const p = Y.body.getPosition(), R = Math.hypot(Y.tpl.w, Y.tpl.h) * PX / 2; x0 = Math.min(x0, p.x - R); y0 = Math.min(y0, p.y - R); x1 = Math.max(x1, p.x + R); y1 = Math.max(y1, p.y + R); }
+  let best = null;
+  for (const T of World.things) {
+    if (!T.isHuman || T.dead || T.kind === 'skeleton' || T.kind === 'dummy' || T.charred) continue;
+    for (const Q of T.limbList) {
+      if (Q.destroyed || !Q.body || !Q.tpl || comp.includes(Q) || !T.bodies.includes(Q.body)) continue;
+      const q = Q.body.getPosition(), R = Math.hypot(Q.tpl.w, Q.tpl.h) * PX / 2 + maxD;
+      if (q.x + R < x0 || q.x - R > x1 || q.y + R < y0 || q.y - R > y1) continue;
+      for (const Y of comp) {
+        const p = Y.body.getPosition();
+        if (Math.hypot(p.x - q.x, p.y - q.y) > R + Math.hypot(Y.tpl.w, Y.tpl.h) * PX / 2) continue;
+        const g = limbGap(Y, Q);
+        if (!g || g.d > maxD) continue;
+        // (a igualdad, por la parte de arriba de lo que coses: así no hay que darle la vuelta)
+        if (!best || g.d < best.d - 0.004 || (g.d <= best.d + 0.004 && Y === comp[0] && best.X !== comp[0])) best = { d: g.d, X: Y, P: Q, T, a: g.a, b: g.b };
+      }
+    }
+  }
+  return best;
+}
+// cose lo que arrastrabas (comp, del cuerpo A) donde su parte X toca la parte P del cuerpo T
+function freeSew(A, comp, c) {
+  const X = c.X, P = c.P, T = c.T;
+  if (Phys.world.isLocked()) { Phys.later(() => freeSew(A, comp, c)); return false; }
+  if (!X || X.destroyed || X.h !== A || !P || P.destroyed || P.h !== T || !T || T.dead || !A || A.dead || comp.includes(P)) return false;
+  if (comp.some((Y) => Y.h !== A || Y.destroyed || !Y.body)) return false;
+  const pt = [(c.a[0] + c.b[0]) / 2, (c.a[1] + c.b[1]) / 2];
+  // 1) cómo cuelgan unas de otras, empezando por la que toca: las articulaciones del camino hasta la de arriba, al revés
+  const par = new Map();
+  for (const Y of comp) if (Y.joint && Y.parent && comp.includes(Y.parent)) par.set(Y, Y.parent);
+  const path = [X];
+  while (par.has(path[path.length - 1])) path.push(par.get(path[path.length - 1]));
+  const rev = new Map();
+  for (let i = 0; i + 1 < path.length; i++) {
+    const C = path[i], Pa = path[i + 1], j = C.joint;
+    const la = j.getLocalAnchorA(), lb = j.getLocalAnchorB(), th = j.getJointAngle(), lo = j.getLowerLimit(), hi = j.getUpperLimit();
+    rev.set(Pa, { la: [lb.x, lb.y], lb: [la.x, la.y], ref: Pa.body.getAngle() - C.body.getAngle(), lo: Math.min(th - hi, 0), hi: Math.max(th - lo, 0), f: T.facing });
+  }
+  for (let i = 0; i + 1 < path.length; i++) par.set(path[i + 1], path[i]);
+  par.delete(X);
+  // 2) pasa al cuerpo T tal como está, sin reflejarla: si miraba al otro lado, queda reflejada respecto a él
+  const flip = A.facing !== T.facing;
+  for (const Y of comp) {
+    if (flip) Y.flipRel = !Y.flipRel;
+    if (rev.has(Y)) Y.sj = rev.get(Y);
+    else if (Y.sj && Y !== X) Y.sj.f = T.facing;
+  }
+  const ids = new Map(), tmp = [], frags = new Map();
+  for (const Y of comp) {
+    ids.set(Y, newExtraId(limbBase(Y)));
+    if (Y.frag) frags.set(Y, Y.def);
+    if (!LIMB_BY_ID[Y.id]) { LIMB_BY_ID[Y.id] = Y.def; tmp.push(Y.id); }
+  }
+  const f0 = A.facing; A.facing = T.facing;
+  try { moveLimbs(comp, A, T, (Y) => ids.get(Y)); } finally { A.facing = f0; for (const id of tmp) delete LIMB_BY_ID[id]; }
+  dropExtraHoles(A);
+  // (un trozo cortado sigue siendo un trozo, con su forma)
+  for (const [Y, d0] of frags) Y.def = Object.assign({}, Y.def, { frag: true, name: d0.name });
+  // 3) las articulaciones: la costura nueva, donde se tocan, y las de dentro, como estaban
+  for (const Y of comp) { Y.parent = par.get(Y) || null; Y.part.flip = (T.facing < 0) !== !!Y.flipRel; Y.severed = false; }
+  X.parent = P;
+  const wp = V(pt[0], pt[1]), la = P.body.getLocalPoint(wp), lb = X.body.getLocalPoint(wp);
+  X.sj = { la: [la.x, la.y], lb: [lb.x, lb.y], ref: X.body.getAngle() - P.body.getAngle(), lo: -0.5, hi: 0.5, f: T.facing };
+  for (const Y of comp) if (Y.parent) T.makeJoint(Y);
+  relinkLimbs(T);
+  const sx = X.localPx(pt[0], pt[1]), sp = P.localPx(pt[0], pt[1]);
+  stitchAt(X, sx[0], sx[1], 2.5); stitchAt(P, sp[0], sp[1], 2.5);
+  if (A.part || A.frank) T.frank = T.frank || !!T.part;
+  T.updateConnectivity(); T.markDirty();
+  if (A !== T) { if (!A.limbList.some((L) => !L.destroyed)) A.destroy(true); else A.updateConnectivity(); }
+  sewFx(T, X);
+  return true;
+}
+// «Coser al cuerpo más cercano» sin hueco cerca: la lleva hasta tocar el cuerpo más cercano y la cose ahí
+function sewNearest(A, comp) {
+  const c = findFreeSew(A, comp, 1.6); if (!c) return false;
+  const dx = c.b[0] - c.a[0], dy = c.b[1] - c.a[1], v = c.P.body.getLinearVelocity();
+  for (const Y of comp) { const p = Y.body.getPosition(); Y.body.setTransform(V(p.x + dx, p.y + dy), Y.body.getAngle()); Y.body.setLinearVelocity(V(v.x, v.y)); Y.body.setAngularVelocity(0); Y.body.setAwake(true); }
+  c.a = c.b.slice();
+  return freeSew(A, comp, c);
+}
+{
+  // al soltar una parte tocando otro cuerpo (y no junto a su hueco), se cose ahí
+  const ed = Input.endDrag.bind(Input);
+  Input.endDrag = function () {
+    const d = this.drag;
+    const r = ed();
+    if (d && d.kind === 'drag' && d.thing && d.thing.isHuman && !d.thing.dead && d.body) {
+      const A = d.thing, comp = freeComp(A, A.limbOfBody(d.body));
+      if (comp) { const c = findFreeSew(A, comp, FREE_SEW_D); if (c) freeSew(A, comp, c); }
+    }
+    return r;
+  };
+  // mientras la arrastras, dónde se coserá (su hueco o, si toca a otro cuerpo, ese punto)
+  const sh = sewHintNow;
+  sewHintNow = function () {
+    const p = sh(); if (p) return p;
+    const d = Input.drag;
+    if (!d || d.kind !== 'drag' || !d.thing || !d.thing.isHuman || d.thing.dead || !d.body) return null;
+    const comp = freeComp(d.thing, d.thing.limbOfBody(d.body)); if (!comp) return null;
+    const c = findFreeSew(d.thing, comp, FREE_SEW_D);
+    return c ? [(c.a[0] + c.b[0]) / 2, (c.a[1] + c.b[1]) / 2] : null;
+  };
+  // en el menú: si no hay un hueco cerca, al cuerpo más cercano, donde lo toque
+  const mn = Human.prototype.menu;
+  Human.prototype.menu = function (limb) {
+    const m = mn.call(this, limb);
+    const fr = freeRoots(this)[0];
+    const comp = freeComp(this, limb) || (fr && freeComp(this, fr)) || (this.part && freeComp(this, this.root));
+    const sewIt = () => { const c = findSew(this, null, 1.6); if (c) { sewLimb(c.R, c.A, c.T, c.S); return; } if (!comp || !sewNearest(this, comp)) UI.toast('No hay cerca ningún cuerpo donde coserla'); };
+    const it = m.find((o) => o && o.label === 'Coser al cuerpo más cercano');
+    if (it) it.fn = sewIt;
+    else if (comp) m.push({ label: 'Coser al cuerpo más cercano', fn: sewIt });
+    return m;
+  };
+  const inf = Human.prototype.info;
+  Human.prototype.info = function () {
+    const lines = inf.call(this);
+    const n = extraLimbs(this).length;
+    if (n && Array.isArray(lines)) lines.push([`Partes cosidas de más: ${n}`, '#9aa3ad']);
+    return lines;
+  };
 }
 
 /* ---- 99_main.js ---- */
