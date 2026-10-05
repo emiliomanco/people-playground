@@ -1,5 +1,22 @@
 # Historial de cambios
 
+## Versión 13.2: criaturas y poderes de los órganos (5 de octubre de 2026)
+
+- **Las criaturas viven con cualquier forma**: un cuerpo montado a mano sólo necesita una cabeza, cerebro, corazón, pulmón, riñón e hígado (dentro o unidos con venas). Los torsos, brazos y piernas son opcionales, y la sangre la pone en marcha la descarga.
+  - Vale cualquier cabeza: si falta la de su sitio, o no tiene cerebro, cuenta la que esté cosida en otro sitio (por ejemplo en el segundo torso). Lo mismo con el torso.
+  - Antes, una criatura de dos torsos y cuatro piernas no vivía: o su cabeza cosida en el segundo torso no contaba, o la descarga que le daba vida le paraba el corazón al seguir electrocutándola. Ahora a un Frankenstein la electricidad nunca le para el corazón ni le daña el cerebro, y vive y se levanta.
+  - Si a alguien le cortan la cabeza pero tiene otra cosida con cerebro, sigue vivo con ésa.
+- **Poderes de los órganos de más** (con Cuerpos realistas o en un Frankenstein; se ven en su información):
+  - **Corazones**: más fuerza (un 15 % por cada uno), aguanta mejor los golpes y las balas, recupera la sangre, las heridas dejan de sangrar antes, aguanta con menos sangre y no sufre paros cardíacos (ni por la electricidad ni por el veneno) mientras le quede un corazón sano.
+  - **Cerebros**: esquiva balas, puñetazos, tajos y mordiscos con un «sentido arácnido» (28 % con uno de más, 63 % con tres, hasta un 80 %) y, si esquiva un mordisco, no se contagia. Lanza con la mente lo que tiene cerca contra sus enemigos (telequinesis: más pesado y más a menudo cuantos más cerebros). Reacciona antes, se recupera antes de un golpe en la cabeza y no se asusta.
+  - **Pulmones**: corre más, salta más y aguanta mucho más sin respirar.
+  - **Músculos**: más fuerza (un 30 % por cada uno), corre y salta más y sus golpes hacen más daño.
+  - **Riñones e hígados**: los venenos le hacen menos efecto y los elimina antes; el virus zombi avanza más despacio. Con tres de más, inmunidad total a venenos, drogas y al virus zombi, y si ya estaba contagiado, se cura.
+  - **Estómagos**: aguanta el ácido; con tres de más, el ácido no le hace nada. **Intestinos**: se regenera, cierra las heridas, recupera la sangre y cura las partes dañadas.
+  - Nuevo **«Saltar»** en el menú de cada persona, para ver lo que salta.
+- **Descoser**: en el menú de una parte cosida (de una creación, o una de más en cualquiera) están **«Descoser esta parte»**, que la separa como una parte suelta que ya no cuenta como del cuerpo, y **«Eliminar sólo esta parte»**. La tecla de borrar señalando una parte cosida de una creación borra sólo esa parte, no la creación entera (y se puede deshacer con Z). Al coser, el aviso recuerda cómo separarla.
+  - En Entorno → Seres vivos, **«Coser las partes al soltarlas junto a otro cuerpo»** permite que no se cosan solas; entonces se cosen sólo con «Coser al cuerpo más cercano».
+
 ## Versión 13.1: rayos X y cirugía sin límites (5 de octubre de 2026)
 
 - **Rayos X** (tecla **X**, o el botón de arriba junto a la visión térmica): las personas y los zombis se ven por dentro, con la carne translúcida, los huesos (más oscuros si están rotos) y los órganos encima de todo, aunque los tape un brazo. Cada órgano tiene su color según su estado: los dañados, más oscuros y con el borde rojo, y los destrozados, grises.

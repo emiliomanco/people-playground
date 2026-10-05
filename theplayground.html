@@ -8098,7 +8098,7 @@ const UI = {
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones). Estos cables de activación son invisibles: sólo se ven, todos los colores a la vez, mientras tienes equipada una de sus herramientas.</div>
       <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo. Las armas con filo, las motosierras, los rotores y los láseres cortan por donde pasan, siguiendo la trayectoria del golpe: un tajo fuerte de katana parte a una persona en dos, y los trozos se pueden volver a cortar. Las explosiones y los aplastamientos rompen el cuerpo en trozos.</div>
-      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona; de cada órgano, todos los que quieras). Una parte se cose soltándola junto a su sitio de otro cuerpo (y se mueve como siempre) o tocando cualquier otro sitio, donde queda cosida tal como la pusiste: brazos en la cabeza, piernas en el pecho, varios torsos juntos... Con torso, cabeza, cerebro, corazón y un pulmón, una descarga eléctrica le da vida: tu propio Frankenstein.</div>
+      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona; de cada órgano, todos los que quieras). Una parte se cose soltándola junto a su sitio de otro cuerpo (y se mueve como siempre) o tocando cualquier otro sitio, donde queda cosida tal como la pusiste: brazos en la cabeza, piernas en el pecho, varios torsos juntos... Una parte cosida se separa con «Descoser esta parte» en su menú (o se borra sola con la tecla de borrar). Con una cabeza, cerebro, corazón, pulmón, riñón e hígado, una descarga eléctrica le da vida, tenga la forma que tenga: tu propio Frankenstein. Los órganos de más dan poderes: corazones (fuerza y aguante), cerebros (esquivar, reflejos y lanzar cosas con la mente), pulmones y músculos (correr y saltar), riñones e hígados (inmunidad a venenos y al virus zombi), estómagos (ácido) e intestinos (regeneración).</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
@@ -17524,9 +17524,10 @@ function organItemHp(it) { return it && !it.dead && it.def.hp ? clamp(it.hp / it
 /* ---------------- qué órganos le funcionan ---------------- */
 // los de dentro (en partes unidas al cuerpo) y los que tiene unidos con una vena artificial
 Human.prototype.orgScan = function () {
-  const S = { brain: 0, brainIn: null, brainExt: null, heart: 0, heartN: 0, lung: 0, liver: 0, kidney: 0, stomach: 0, intestines: 0, muscle: 0, cpb: false, ext: [] };
+  const S = { brain: 0, brainIn: null, brainExt: null, heart: 0, heartN: 0, lung: 0, liver: 0, kidney: 0, stomach: 0, intestines: 0, muscle: 0, cpb: false, ext: [], n: {} };
   const add = (t, hp) => {
     if (t === 'heart') S.heartN++;
+    if (hp > 0.25) S.n[t] = (S.n[t] || 0) + 1; // los que funcionan (ver los poderes en 51_v132_poderes.js)
     if (t === 'lung' || t === 'kidney') S[t] += hp;
     else if (t === 'muscle') S.muscle += hp > 0.2 ? 1 : 0;
     else S[t] = Math.max(S[t], hp);
@@ -18367,6 +18368,8 @@ Human.prototype.frankLife = function () {
   this.alive = true; this.consc = 0.35; this.deathReason = null; this.knock = 0; this.oxygen = 1; this.lowBloodT = 0;
   this.brain = S.brainIn ? S.brainIn.hp : S.brainExt ? organItemHp(S.brainExt) : 1;
   this.heart = Math.max(0.7, Math.min(1, S.heart || 0.7)); this.tox = 0;
+  // (la sangre no hace falta tenerla: la chispa la pone en marcha; y unos segundos la corriente ya no le hace daño)
+  this.blood = Math.max(this.blood, 0.7); this._lifeT = Phys.time;
   // la chispa de la vida: el cuerpo vuelve a estar a 37 °C y el corazón late
   for (const L of this.limbList) if (!L.destroyed) { L.temp = 37; L.frost = 0; }
   this.coreTemp = 37; this.bpm = 70;
@@ -18495,6 +18498,12 @@ function bodySnap(h) {
     if (!L || L.destroyed) continue;
     if (L.pal && L.pal !== h.pal) { let i = s.pals.indexOf(L.pal); if (i < 0) { i = s.pals.length; s.pals.push(L.pal); } s.pl[d.id] = i; odd = true; }
     if (L._st && L._st.length) { s.st[d.id] = L._st.map((q) => q.slice()); odd = true; }
+    // una parte de las de siempre cosida en otro sitio (una cabeza de más que pasó a ser la suya)
+    if ((L.sj && L.joint && L.parent && !L.parent.frag) || L.flipRel) {
+      const j = L.sj && L.joint ? L.sj : null;
+      (s.cj || (s.cj = {}))[d.id] = [j ? L.parent.id : '', j ? [j.la[0], j.la[1], j.lb[0], j.lb[1], j.ref, j.lo, j.hi, j.f].map((v) => +(+v).toFixed(4)) : null, L.flipRel ? 1 : 0];
+      odd = true;
+    }
     if (L.organs) for (const g of L.organs) s.org.push([d.id, g.t, +g.hp.toFixed(3), g.k || '', g.z ? 1 : 0, +g.x.toFixed(2), +g.y.toFixed(2), +g.r.toFixed(2)]);
   }
   // las partes cosidas de más (ver 50_v131_cirugia.js): su piel, de quién cuelgan, cómo y sus órganos
@@ -18555,6 +18564,16 @@ function applyBodySnap(h, s, r) {
     if (!L || L.destroyed || !q) return;
     L.body.setTransform(V(at[0] + q[0], at[1] + q[1]), q[2]); L.body.setLinearVelocity(V(0, 0)); L.body.setAngularVelocity(0);
   });
+  // las de siempre cosidas en otro sitio: su costura en vez de la articulación de siempre
+  if (s.cj) for (const id in s.cj) {
+    const L = h.limbs[id], [pid, sj, fr] = s.cj[id];
+    if (!L || L.destroyed) continue;
+    L.flipRel = !!fr; if (L.part) L.part.flip = (h.facing < 0) !== L.flipRel;
+    const P = pid && h.limbs[pid];
+    if (!sj || !P || P.destroyed) continue;
+    if (L.joint) { const j = L.joint; L.joint = null; const ji = h.joints.indexOf(j); if (ji >= 0) h.joints.splice(ji, 1); try { Phys.world.destroyJoint(j); } catch (e) {} }
+    xs.push([L, pid, sj]);
+  }
   // y, ya en su sitio, se cosen a lo que colgaban
   for (const [L, pid, sj] of xs) {
     const P = pid && h.limbs[pid]; if (!P || P.destroyed) continue;
@@ -19648,6 +19667,495 @@ function sewNearest(A, comp) {
     const n = extraLimbs(this).length;
     if (n && Array.isArray(lines)) lines.push([`Partes cosidas de más: ${n}`, '#9aa3ad']);
     return lines;
+  };
+}
+
+/* ---- 51_v132_poderes.js ---- */
+/* =========================================================================
+   VERSIÓN 13.2: CRIATURAS Y PODERES DE LOS ÓRGANOS.
+   - Un cuerpo montado a mano vive con cualquier forma: sólo hacen falta una
+     cabeza (si falta la de su sitio, vale una cosida en otro), cerebro,
+     corazón, pulmones, riñón e hígado. Lo demás es opcional. La descarga que
+     le da vida ya no le para el corazón: a un Frankenstein la electricidad
+     nunca se lo para.
+   - Si una persona pierde la cabeza pero tiene otra cosida con cerebro, sigue
+     viva con ésa.
+   - Los órganos de más dan poderes (con Cuerpos realistas o en un
+     Frankenstein):
+       corazones: más fuerza, aguanta más los golpes, recupera la sangre, la
+         hemorragia se corta antes, no sufre paros cardíacos y aguanta con
+         menos sangre;
+       cerebros: reacciona antes, esquiva balas y golpes (sentido arácnido),
+         lanza cosas con la mente contra sus enemigos (telequinesis), se
+         recupera antes de un golpe en la cabeza y no se asusta;
+       pulmones: corre más, salta más y aguanta mucho más sin respirar;
+       músculos: más fuerza, corre y salta más y sus golpes hacen más daño;
+       riñones e hígados: los venenos le hacen menos y los elimina antes; con
+         tres de más, inmunidad a venenos, drogas y al virus zombi;
+       estómagos: aguanta el ácido (con tres de más, inmune);
+       intestinos: se regenera (cierra heridas, recupera la sangre y cura las
+         partes dañadas).
+   ========================================================================= */
+
+/* ---------------- la parte principal: si falta, vale una de más ---------------- */
+// cuánto cerebro sano tiene una cabeza
+function brainIn(L) { let m = 0; if (L && L.organs) for (const g of L.organs) if (g.t === 'brain' && g.hp > m) m = g.hp; return m; }
+// una cabeza (o un torso) cosida de más pasa a ser la de verdad cuando falta (o, una cabeza, cuando la suya no
+// tiene cerebro y la otra sí). Con needBrain sólo vale una cabeza con cerebro (para seguir vivo sin la suya)
+function promoteBase(h, base, needBrain) {
+  const cur = h.limbs[base], curOk = cur && !cur.destroyed && !cur.absent && cur.connected;
+  const cands = h.limbList.filter((L) => L !== cur && !L.destroyed && L.connected && L.def.extra && !L.frag && L.body && limbBase(L) === base);
+  if (!cands.length) return false;
+  let pick = cands[0];
+  if (base === 'head') {
+    pick = cands.reduce((a, L) => (brainIn(L) > brainIn(a) ? L : a));
+    if (needBrain && brainIn(pick) <= 0.15) return false;
+    if (curOk && (brainIn(cur) > 0.15 || brainIn(pick) <= 0.15)) return false;
+  } else if (curOk) return false;
+  // la de antes (cortada, destrozada o sin cerebro) pasa a ser una de más; un hueco vacío, se quita
+  if (cur) {
+    if (cur.absent) { const i = h.limbList.indexOf(cur); if (i >= 0) h.limbList.splice(i, 1); }
+    else { const nid = newExtraId(base); cur.id = nid; cur.def = limbDefOf(nid); h.limbs[nid] = cur; if (cur.part) cur.part.zOff = cur.def.z; }
+  }
+  delete h.limbs[pick.id];
+  pick.id = base; pick.def = LIMB_BY_ID[base]; h.limbs[base] = pick;
+  if (pick.part) pick.part.zOff = pick.def.z;
+  return true;
+}
+function linkVisit(h) {
+  for (const L of h.limbList) L.connected = false;
+  const visit = (L) => { if (L.destroyed || L.connected) return; L.connected = true; for (const c of L.children) if (c.joint && !c.severed) visit(c); };
+  if (h.root && !h.root.destroyed) visit(h.root);
+}
+function promoteMain(h, living) {
+  let ch = false;
+  if (!living) ch = promoteBase(h, 'upperBody', false) || ch;
+  ch = promoteBase(h, 'head', living) || ch;
+  if (ch) { relinkLimbs(h); linkVisit(h); h.markDirty(); }
+  return ch;
+}
+{
+  // (la conectividad de siempre, pero antes de morir decapitado mira si tiene otra cabeza con cerebro)
+  Human.prototype.updateConnectivity = function () {
+    linkVisit(this);
+    if (this.alive && (!this.limbs.head || this.limbs.head.destroyed || !this.limbs.head.connected) && this.kind !== 'dummy' && this.kind !== 'skeleton') {
+      if (promoteMain(this, true)) { const p = this.limbs.head.body.getPosition(); UI.toast(`${this.name} sigue vivo con su otra cabeza`, 2200); Sound.play('heal', p.x, p.y, 0.5); }
+    }
+    if (!this.limbs.head || !this.limbs.head.connected) { if (this.alive) this.die('Decapitado'); }
+  };
+}
+
+/* ---------------- lo único imprescindible para vivir ---------------- */
+organMissing = function (h) {
+  if (!h.alive) { linkVisit(h); promoteMain(h, false); }
+  const S = h.orgScan(), out = [], hd = h.limbs.head;
+  if (!hd || hd.destroyed || !hd.connected) out.push('una cabeza');
+  if (!((S.brainIn && S.brainIn.hp > 0.15) || (S.brainExt && organItemHp(S.brainExt) > 0.15))) out.push('el cerebro');
+  if (!(h.zHard && h.zHard())) {
+    if (S.heart <= 0.2 && !S.cpb) out.push('el corazón');
+    if (S.lung < 0.3 && !S.cpb) out.push('un pulmón');
+    if (S.kidney < 0.2) out.push('un riñón');
+    if (S.liver < 0.2) out.push('el hígado');
+  }
+  return out;
+};
+{
+  // un cuerpo montado sin torso (que nunca lo tuvo) no muere «aplastado» por no tenerlo
+  const uv = Human.prototype.updateVitals;
+  Human.prototype.updateVitals = function (dt) {
+    const ub = this.limbs.upperBody;
+    if (!this.alive || !ub || !ub.absent) return uv.call(this, dt);
+    ub.destroyed = false;
+    try { return uv.call(this, dt); } finally { ub.destroyed = true; }
+  };
+  // a un Frankenstein la electricidad no le para el corazón ni le daña el cerebro (de ella sacó la vida), y
+  // nada más nacer la descarga tampoco lo deja temblando
+  const keepFrank = (h, fn) => {
+    if (!h || !h.frank || !h.alive) return fn();
+    const hr = h.heart, br = h.brain, sh = h.shock;
+    const r = fn();
+    if (h.alive) { h.heart = Math.max(h.heart, hr); h.brain = Math.max(h.brain, br); }
+    if (h._lifeT && Phys.time - h._lifeT < 3) h.shock = Math.min(h.shock, Math.max(sh, 0.4));
+    return r;
+  };
+  const sh = Human.prototype.shockHit;
+  Human.prototype.shockHit = function (...a) { return keepFrank(this, () => sh.apply(this, a)); };
+  const el = Power.electrocute.bind(Power);
+  Power.electrocute = (h, p) => keepFrank(h, () => el(h, p));
+}
+// los órganos van donde haya sitio: sin tronco, en cualquier parte (y siempre un poco más para un torso)
+{
+  const os = organSpot;
+  organSpot = function (h, t) {
+    const r = os(h, t);
+    if (r || t === 'brain') return r;
+    const L = h.limbList.find((X) => !X.destroyed && X.body && X.tpl && !X.frag && (X.connected || !h.alive) && limbBase(X) !== 'head');
+    if (!L) return null;
+    const sl = ORGAN_SLOTS.find((q) => q.t === t), rr = sl ? sl.r : 1, q = freeSpotIn(L, Math.min(rr, 1.4));
+    return q ? { L, x: q.x, y: q.y, r: Math.min(rr, 1.4) } : null;
+  };
+}
+
+/* ---------------- los poderes de los órganos de más ---------------- */
+// cuántos tiene de más (respecto a una persona normal: un corazón, un cerebro, dos pulmones, dos riñones, un
+// hígado, un estómago, unos intestinos y ningún músculo de más)
+function organPowers(h) {
+  const S = h._org; if (!S || !S.n) return null;
+  const n = S.n, x = (t, base) => Math.max(0, (n[t] || 0) - base);
+  const P = { h: x('heart', 1), b: x('brain', 1), l: x('lung', 2), m: n.muscle || 0, f: x('kidney', 2) + x('liver', 1), s: x('stomach', 1), i: x('intestines', 1) };
+  if (!P.h && !P.b && !P.l && !P.m && !P.f && !P.s && !P.i) return null;
+  const c = (v, k) => Math.min(v, k);
+  P.str = (1 + 0.3 * c(P.m, 10)) * (1 + 0.15 * c(P.h, 8));
+  P.spd = (1 + 0.1 * c(P.l, 10)) * (1 + 0.05 * c(P.m, 10));
+  P.jmp = Math.min(2.5, (1 + 0.08 * c(P.l, 10)) * (1 + 0.06 * c(P.m, 10)));
+  P.tough = 1 / (1 + 0.12 * c(P.h, 8));
+  P.dodge = P.b ? Math.min(0.8, 1 - Math.pow(0.72, P.b)) : 0;
+  P.react = 1 / (1 + 0.6 * c(P.b, 8));
+  P.melee = 1 + 0.1 * c(P.m, 10);
+  P.immune = P.f >= 3;
+  P.tox = P.immune ? 0 : 1 / (1 + 0.6 * P.f);
+  P.breath = 1 / (1 + 0.5 * c(P.l, 10));
+  P.acid = P.s >= 3 ? 0 : 1 / (1 + P.s);
+  return P;
+}
+Human.prototype.powers = function () { return this.alive && this.orgOn && this.orgOn() && this.kind !== 'android' ? this.pw || null : null; };
+// lo que dice el panel de información
+function powerLines(P) {
+  const out = [], pct = (k) => Math.round((k - 1) * 100);
+  if (P.str > 1.001) out.push(`fuerza +${pct(P.str)} %`);
+  if (P.h) out.push('aguante, sangre y corazón de repuesto');
+  if (P.b) out.push(`esquiva ${Math.round(P.dodge * 100)} %, telequinesis, reflejos`);
+  if (P.spd > 1.001) out.push(`corre +${pct(P.spd)} %`);
+  if (P.jmp > 1.001) out.push(`salta +${pct(P.jmp)} %`);
+  if (P.l) out.push('aguanta sin respirar');
+  if (P.melee > 1.001) out.push(`golpes +${pct(P.melee)} %`);
+  if (P.immune) out.push('inmune a venenos y al virus zombi');
+  else if (P.f) out.push(`venenos al ${Math.round(P.tox * 100)} %`);
+  if (P.s) out.push(P.acid === 0 ? 'inmune al ácido' : 'aguanta el ácido');
+  if (P.i) out.push('se regenera');
+  return out;
+}
+const TOXIC = new Set(['poison', 'death', 'knockout', 'boneEater']);
+{
+  const uv = Human.prototype.updateVitals;
+  Human.prototype.updateVitals = function (dt) {
+    const on = this.orgOn && this.orgOn() && this.kind !== 'android' && this.kind !== 'dummy' && this.kind !== 'skeleton';
+    const P = this.pw = on ? organPowers(this) : null;
+    if (!P || !this.alive || this.immortal) { const r = uv.call(this, dt); if (on && this.pw) this._musK = this.pw.str; return r; }
+    // venenos: inmune (o duran menos) y el virus zombi, igual
+    if (this.poison > 0) this.poison = P.immune ? 0 : this.poison - dt * (1 / P.tox - 1);
+    if (this.zombieT > 0 && !this.zombie) { if (P.immune) this.zombieT = 0; else if (P.f) this.zombieT += dt * (1 - 1 / (1 + P.f)); }
+    if (this.tox && P.f) this.tox = Math.max(0, this.tox - dt * 0.004 * P.f);
+    // corazones de más: el corazón no se para mientras le quede alguno sano y aguanta con menos sangre
+    const S = this._org;
+    if (P.h && S && S.heart > 0.2) this.heart = Math.max(Math.min(S.heart, this.heart + dt * 0.25 * P.h), 0.05);
+    let lift = 0;
+    if (P.h && this.blood < 0.3 && this.blood >= 0.3 - 0.05 * Math.min(P.h, 5)) { lift = 0.3 - this.blood; this.blood += lift; }
+    const ox = this.oxygen;
+    const r = uv.call(this, dt);
+    this.blood -= lift;
+    if (!this.alive) return r;
+    this._musK = P.str;
+    // pulmones de más: el aire dura mucho más
+    if (ox !== undefined && this.oxygen < ox) this.oxygen = ox - (ox - this.oxygen) * P.breath;
+    // sangre: la recuperan los corazones y los intestinos; las heridas se cierran antes
+    const regen = 0.006 * Math.min(P.h, 8) + 0.004 * Math.min(P.i, 8);
+    if (regen) this.blood = Math.min(1, this.blood + dt * regen);
+    const clot = 0.05 * Math.min(P.h, 8) + 0.08 * Math.min(P.i, 8);
+    if (clot) for (const L of this.limbList) for (const w of L.wounds) w.rate *= Math.max(0, 1 - dt * clot);
+    // intestinos: curan poco a poco las partes dañadas
+    if (P.i) for (const L of this.limbList) if (!L.destroyed && L.health < 1) L.health = Math.min(1, L.health + dt * 0.01 * Math.min(P.i, 8));
+    // cerebros: se recupera antes de un golpe en la cabeza y no se asusta
+    if (P.b) { this.knock = Math.max(0, this.knock - dt * 0.5 * P.b); this.fear = Math.max(0, this.fear - dt * P.b); }
+    return r;
+  };
+  // los riñones y los hígados de más eliminan antes los venenos (y con tres de más, ni les hacen efecto)
+  for (const id of TOXIC) {
+    const C = CHEM[id]; if (!C || !C.tick) continue;
+    const tk = C.tick;
+    C.tick = function (h, a, dt) { const P = h.powers && h.powers(); if (P && P.f) { if (P.immune) return; return tk.call(this, h, a, dt * P.tox); } return tk.call(this, h, a, dt); };
+  }
+  if (CHEM.zombie && CHEM.zombie.dose) { const zd = CHEM.zombie.dose; CHEM.zombie.dose = function (h, a) { const P = h.powers && h.powers(); if (P && P.immune) return; return zd.call(this, h, a); }; }
+  const ht = Liquids.humanTick.bind(Liquids);
+  Liquids.humanTick = function (h, dt) {
+    const r = ht(h, dt);
+    const P = h.powers && h.powers();
+    if (P && P.f && h.chem) for (const id in h.chem) if (TOXIC.has(id) || id === 'zombie') { h.chem[id] -= (CHEM[id] && CHEM[id].rate || 0.003) * dt * (P.immune ? 50 : P.f); if (h.chem[id] <= 1e-4) { delete h.chem[id]; if (CHEM[id] && CHEM[id].end) CHEM[id].end(h); } }
+    return r;
+  };
+}
+{
+  // corre más (pulmones y músculos)
+  const fo = Human.prototype.forces;
+  Human.prototype.forces = function (dt) {
+    const P = this.walking && this.powers();
+    if (!P || P.spd <= 1.001) return fo.call(this, dt);
+    const ws = this.walkSpeed; this.walkSpeed = (ws || 0.75) * P.spd;
+    try { return fo.call(this, dt); } finally { this.walkSpeed = ws; }
+  };
+  // salta más (pulmones y músculos)
+  const jumpMore = (h, k) => {
+    const P = h.powers(); if (!P || P.jmp <= 1.001 || h._hopT !== h.t) return;
+    for (const L of h.limbList) { if (L.destroyed || !L.connected) continue; const b = L.body, m = b.getMass(); b.applyLinearImpulse(V(0, -k * (P.jmp - 1) * m), b.getWorldCenter(), true); }
+  };
+  const jf = Human.prototype.aiJumpFor;
+  Human.prototype.aiJumpFor = function (g) { const t0 = this._hopT; const r = jf.call(this, g); if (this._hopT !== t0) jumpMore(this, 4.3); return r; };
+  const ho = Human.prototype.aiHop;
+  Human.prototype.aiHop = function (dir) { const t0 = this._hopT; const r = ho.call(this, dir); if (this._hopT !== t0) jumpMore(this, 3.7); return r; };
+}
+
+/* ---------------- aguante, golpes más fuertes y sentido arácnido ---------------- */
+const MELEE_T = new Set(['blunt', 'stab', 'slice', 'cut', 'bite']);
+// esquiva: un destello, un silbido y un paso rápido hacia un lado
+function dodgeFx(h, dx, dy) {
+  const L = h.limbs.upperBody && !h.limbs.upperBody.destroyed ? h.limbs.upperBody : h.root, p = L.body.getPosition();
+  Effects.wave(p.x, p.y, 0.45, 0.25, [140, 220, 255]);
+  Effects.sparks(p.x, p.y, 0, 0, 5, 1.5, 'blue');
+  Sound.play('whoosh', p.x, p.y, 0.6, { key: 'dodge' + h.id, gap: 80 });
+  // se aparta: hacia arriba si viene de lado, hacia un lado si viene de arriba
+  const sx = Math.abs(dx) > Math.abs(dy) ? 0 : (Math.random() < 0.5 ? -1 : 1), sy = Math.abs(dx) > Math.abs(dy) ? -1 : 0;
+  for (const X of h.limbList) { if (X.destroyed || !X.connected) continue; const b = X.body, m = b.getMass(); b.applyLinearImpulse(V((sx * 1.6 - dx * 0.6) * m, (sy * 1.2) * m), b.getWorldCenter(), true); }
+  h._dodgeAt = Phys.time;
+}
+function canDodge(h) { const P = h.powers(); return P && P.dodge > 0 && h.consc > 0.5 && !h.frozenSolid && !h.anyFrozen() && h.knock <= 0 ? P : null; }
+// cada bala, su número (para decidir una sola vez si la esquiva aunque atraviese varias partes)
+let BULLET_N = 0;
+{ const fb = fireBullet; fireBullet = function (...a) { BULLET_N++; return fb(...a); }; }
+{
+  const bh = Human.prototype.bulletHit;
+  Human.prototype.bulletHit = function (f, x, y, dx, dy, energy, ...rest) {
+    const P = canDodge(this);
+    if (P) {
+      // (una bala que atraviesa varias partes se decide una vez)
+      const key = BULLET_N;
+      if (this._dodgeKey !== key) { this._dodgeKey = key; this._dodged = Math.random() < P.dodge; if (this._dodged) dodgeFx(this, dx, dy); }
+      if (this._dodged) return energy;
+    }
+    return bh.call(this, f, x, y, dx, dy, energy, ...rest);
+  };
+  const hu = Human.prototype.hurt;
+  Human.prototype.hurt = function (L, amount, type, x, y, dx, dy, o) {
+    if (amount > 0 && L && !L.destroyed) {
+      const src = Combat.src, P = this.powers();
+      // un ataque de otro (un puñetazo, un tajo, un mordisco): lo ve venir
+      if (P && MELEE_T.has(type) && (type === 'bite' || (src && src !== this && src.isHuman)) && canDodge(this)) {
+        if (this._mDodgeT && Phys.time - this._mDodgeT < 0.15) return;
+        if (Math.random() < P.dodge) { this._mDodgeT = Phys.time; dodgeFx(this, (dx || 0) || (src ? Math.sign(AI.pos(this).x - AI.pos(src).x) : 0), dy || 0); return; }
+      }
+      // músculos de quien golpea: más daño
+      const SP = src && src !== this && src.isHuman && src.powers ? src.powers() : null;
+      if (SP && SP.melee > 1 && MELEE_T.has(type)) amount *= SP.melee;
+      if (P) {
+        if (type === 'acid') { if (!P.acid) return; amount *= P.acid; }
+        else if (type !== 'shock') amount *= P.tough;
+      }
+    }
+    return hu.call(this, L, amount, type, x, y, dx, dy, o);
+  };
+  // si esquiva el mordisco, tampoco se contagia
+  const za = Human.prototype.updateZombieAttack;
+  Human.prototype.updateZombieAttack = function (dt) {
+    const T = this.zAtk && this.zAtk.tgt, z0 = T ? T.zombieT : 0;
+    const r = Combat.with(this, () => za.call(this, dt));
+    if (T && T._mDodgeT === Phys.time) T.zombieT = z0;
+    return r;
+  };
+}
+
+/* ---------------- reflejos y telequinesis (cerebros de más) ---------------- */
+{
+  const up = Human.prototype.update;
+  Human.prototype.update = function (dt) {
+    const r = up.call(this, dt);
+    if (this.dead) return r;
+    const P = this.powers();
+    if (!P || !P.b) return r;
+    // decide antes lo que hace
+    if (this.aiT2 === 0.25) this.aiT2 = 0.25 * P.react;
+    if (this.zombie && this.aiT === 0.6) this.aiT = 0.6 * P.react;
+    tkTick(this, P, dt);
+    return r;
+  };
+}
+// a quién le tiraría algo: un zombi activo cerca, quien le ataca o, si es un zombi, su presa
+function tkEnemy(h) {
+  const p = AI.pos(h), ok = (t) => t && !t.dead && t.alive && t.root && !t.root.destroyed && t !== h;
+  const cand = [];
+  if (h.zombie) { if (ok(h.target)) cand.push(h.target); }
+  else {
+    if (!(h.aiOn && h.aiOn())) return null;
+    if (ok(h.aggressor)) cand.push(h.aggressor);
+    if (h.sense) for (const z of h.sense.zombies) if (z.active && ok(z.t)) cand.push(z.t);
+  }
+  let best = null, bd = 14;
+  for (const t of cand) { const q = AI.pos(t), d = Math.hypot(q.x - p.x, q.y - p.y); if (d > 1.6 && d < bd) { bd = d; best = t; } }
+  return best;
+}
+const TK = { fly: [] };
+function tkTick(h, P, dt) {
+  h._tkCd = (h._tkCd || rand(0.5, 1.5)) - dt;
+  if (h._tkCd > 0 || h.consc < 0.6 || h.frozenSolid || h.dragged) return;
+  h._tkCd = 3.5 / (1 + 0.35 * (P.b - 1));
+  const T = tkEnemy(h); if (!T) return;
+  // lo que tiene cerca y suelto, lo más pesado que puede mover (más cuantos más cerebros)
+  const hp = (h.limbs.head && !h.limbs.head.destroyed ? h.limbs.head : h.root).body.getPosition(), lim = 6 + 8 * P.b;
+  let it = null, bs = -1e9;
+  for (const t of World.things) {
+    if (t.dead || t.isHuman || t.isTerrain || t.mapObj || !t.main || !t.def || t.holder || t.conns.size) continue;
+    const b = t.main; if (b.getType() !== 'dynamic' || (t.anyFrozen && t.anyFrozen()) || Stuck.isStuck(t)) continue;
+    const m = t.mass(); if (m < 0.15 || m > lim) continue;
+    const q = b.getWorldCenter(), d = Math.hypot(q.x - hp.x, q.y - hp.y); if (d > 4.5) continue;
+    const s = Math.min(m, 8) - d * 0.8 + (t.def.sharp || t.def.blade ? 3 : 0);
+    if (s > bs) { bs = s; it = t; }
+  }
+  if (!it) return;
+  // lo lanza contra el pecho de su enemigo, con la curva justa para llegar
+  const tb = (T.limbs.upperBody && !T.limbs.upperBody.destroyed ? T.limbs.upperBody : T.root).body.getPosition();
+  const q = it.main.getWorldCenter(), dx = tb.x - q.x, dy = tb.y - q.y, d = Math.hypot(dx, dy) || 1;
+  const s = Math.min(24, 13 + 2 * P.b), t = d / s, g = GRAVITY * Settings.gravity * it.main.getGravityScale();
+  const v = V(dx / t, dy / t - 0.5 * g * t);
+  for (const b of it.bodies) { b.setAwake(true); b.setLinearVelocity(v); b.setAngularVelocity(rand(-8, 8)); }
+  it._thrower = h; it._thrownT = Phys.time;
+  // (sale sin chocar con quien lo lanza)
+  for (const ib of it.bodies) for (const hb of h.bodies) setNoCollide(ib, hb, true);
+  setTimeout(() => { for (const ib of it.bodies) for (const hb of h.bodies) if (ib._nc && ib._nc.has(hb)) Stuck.pend.push({ a: ib, b: hb, t: 0.05 }); }, 700);
+  TK.fly.push({ it, t: 0.6 });
+  Effects.wave(hp.x, hp.y, 0.35, 0.3, [190, 140, 255]);
+  Sound.play('whoosh', q.x, q.y, 0.8);
+}
+{
+  // la estela de lo que vuela con la mente
+  const ef = Effects.update.bind(Effects);
+  Effects.update = function (dt) {
+    for (let i = TK.fly.length - 1; i >= 0; i--) {
+      const f = TK.fly[i]; f.t -= dt;
+      if (f.t <= 0 || f.it.dead || !f.it.main) { TK.fly.splice(i, 1); continue; }
+      const q = f.it.main.getWorldCenter();
+      this.add(PT.ESPARK, q.x, q.y, rand(-0.3, 0.3), rand(-0.3, 0.3), rand(0.2, 0.4), rand(0.7, 1.1), [200, 150, 255]);
+    }
+    return ef(dt);
+  };
+}
+
+/* ---------------- en el menú y en la información ---------------- */
+{
+  const mn = Human.prototype.menu;
+  Human.prototype.menu = function (limb) {
+    const m = mn.call(this, limb);
+    // saltar (para ver lo que salta con pulmones y músculos de más)
+    if (this.alive && this.consc > 0.5 && !this.frozenSolid && this.kind !== 'dummy' && this.kind !== 'skeleton') m.push({ label: 'Saltar', fn: () => {
+      if (!this.grounded()) { UI.toast('Tiene que estar con los pies en el suelo'); return; }
+      const P = this.powers(), k = P ? P.jmp : 1;
+      this._hopT = this.t;
+      for (const L of this.limbList) { if (L.destroyed || !L.connected) continue; const b = L.body, ms = b.getMass(); b.applyLinearImpulse(V(this.facing * 0.6 * ms, -4.3 * k * ms), b.getWorldCenter(), true); }
+    } });
+    return m;
+  };
+  const inf = Human.prototype.info;
+  Human.prototype.info = function () {
+    const lines = inf.call(this);
+    const P = this.powers();
+    if (P && Array.isArray(lines)) { const pl = powerLines(P); if (pl.length) lines.push(['Poderes: ' + pl.join(', '), '#c9a6ff']); }
+    return lines;
+  };
+}
+
+/* ---- 52_v132_descoser.js ---- */
+/* =========================================================================
+   VERSIÓN 13.2 (2): DESCOSER. Una parte cosida (de una creación, o una de más
+   en cualquiera) se puede descoser desde su menú: vuelve a ser una parte
+   suelta, que ya no cuenta como del cuerpo. «Eliminar sólo esta parte» (y la
+   tecla de borrar señalándola) la quita sin borrar el resto, y se puede
+   deshacer. En Entorno se puede elegir que las partes no se cosan solas al
+   soltarlas junto a un cuerpo.
+   ========================================================================= */
+Settings.autoSew = true;
+// ¿se puede descoser? las partes de una creación (salvo su base) y las cosidas de más en cualquiera
+function canDetach(h, L) {
+  if (!h || !h.isHuman || h.dead || !L || L.destroyed || L.h !== h || L === h.root || !L.joint || !L.body) return false;
+  return !!(h.frank || h.part || L.def.extra || L.sj);
+}
+// la separa (con lo que cuelga de ella) y la deja como una parte suelta, aparte
+function detachPart(h, X) {
+  if (!canDetach(h, X)) return null;
+  if (Phys.world.isLocked()) return null;
+  const list = limbSubtree(X).filter((L) => L.body && !L.destroyed);
+  const par = new Map(); for (const Y of list) if (Y !== X && Y.parent) par.set(Y, Y.parent);
+  const p = X.body.getPosition();
+  const Q = new Human(p.x, p.y, { kind: h.kind === 'skeleton' ? 'human' : h.kind, flip: h.facing < 0, def: { name: X.def.name, part: [] } });
+  Q.name = 'Parte del cuerpo';
+  const tmp = [];
+  for (const Y of list) if (!LIMB_BY_ID[Y.id]) { LIMB_BY_ID[Y.id] = Y.def; tmp.push(Y.id); }
+  try { moveLimbs(list, h, Q, (Y) => Y.id); } finally { for (const id of tmp) delete LIMB_BY_ID[id]; }
+  dropExtraHoles(h);
+  // la que se separa ya no cuelga de nada; lo de dentro, como estaba
+  X.sj = null; X.parent = null;
+  for (const [Y, P] of par) Y.parent = P;
+  for (const Y of list) if (Y.parent) Q.makeJoint(Y);
+  Q.root = X; relinkLimbs(Q); Q.updateConnectivity();
+  const q = X.body.getPosition();
+  Sound.play('impact_flesh', q.x, q.y, 0.6);
+  if (h.bleedKind && h.alive) Effects.blood(q.x, q.y, 0, -0.5, 4, 0.5, h.bleedKind);
+  if (!h.limbList.some((L) => !L.destroyed)) h.destroy(true); else { relinkLimbs(h); h.updateConnectivity(); h.markDirty(); }
+  return Q;
+}
+{
+  // en el menú de la parte señalada
+  const mn = Human.prototype.menu;
+  Human.prototype.menu = function (limb) {
+    const m = mn.call(this, limb);
+    if (canDetach(this, limb)) {
+      const name = limb.def.name;
+      m.unshift(
+        { label: `Descoser esta parte (${name})`, fn: () => { const Q = detachPart(this, limb); if (Q) UI.toast(`Descosida: ${name}`, 1400); } },
+        { label: `Eliminar sólo esta parte (${name})`, fn: () => { const Q = detachPart(this, limb); if (Q) Input.deleteThings([Q]); } },
+        '-');
+    }
+    return m;
+  };
+  // la tecla de borrar señalando una parte cosida de una creación: sólo esa parte (se puede deshacer)
+  const da = Input.doAction.bind(Input);
+  Input.doAction = function (id, key) {
+    if ((id === 'delete' || id === 'delete2') && !this.drag) {
+      const hv = this.hover, t = hv && hv.thing;
+      const sel = this.selection.size && (!hv || this.selection.has(t));
+      if (!sel && t && t.isHuman && hv.limb && canDetach(t, hv.limb)) { const Q = detachPart(t, hv.limb); if (Q) { this.deleteThings([Q]); return; } }
+    }
+    return da(id, key);
+  };
+  // al coser, cómo deshacerlo
+  sewFx = function (T, R) {
+    const p = R.body.getPosition();
+    Sound.play('impact_flesh', p.x, p.y, 0.8);
+    if (T.bleedKind) Effects.blood(p.x, p.y, 0, -0.5, 4, 0.5, T.bleedKind);
+    UI.toast(`Cosido: ${R.def.name} · para separarlo: clic derecho → Descoser`, 2200);
+  };
+  // sin coser solo: al soltar una parte junto a un cuerpo no se cose (sólo con «Coser al cuerpo más cercano»)
+  const sl = sewLimb, fs = freeSew, hint = sewHintNow;
+  let byMenu = false;
+  sewLimb = function (...a) { if (!Settings.autoSew && !byMenu && Input._endingDrag) return false; return sl(...a); };
+  freeSew = function (...a) { if (!Settings.autoSew && !byMenu && Input._endingDrag) return false; return fs(...a); };
+  sewHintNow = function () { return Settings.autoSew ? hint() : null; };
+  const ed = Input.endDrag.bind(Input);
+  Input.endDrag = function () { this._endingDrag = true; try { return ed(); } finally { this._endingDrag = false; } };
+  const mn2 = Human.prototype.menu;
+  Human.prototype.menu = function (limb) {
+    const m = mn2.call(this, limb);
+    const it = m.find((o) => o && o.label === 'Coser al cuerpo más cercano');
+    if (it) { const f0 = it.fn; it.fn = () => { byMenu = true; try { f0(); } finally { byMenu = false; } }; }
+    return m;
+  };
+  // la opción, en Entorno → Seres vivos
+  const oe = UI.openEnvironment;
+  UI.openEnvironment = function () {
+    oe.call(this);
+    const top = this.modals[this.modals.length - 1], box = top && top.box;
+    const div = box && [...box.querySelectorAll('.settings')].find((d) => d.querySelector('[data-k="realBodies"]'));
+    if (!div) return;
+    const d2 = document.createElement('div'); d2.className = 'settings';
+    d2.innerHTML = this.settingsRows([['check', 'autoSew', 'Coser las partes al soltarlas junto a otro cuerpo']]);
+    div.after(d2);
+    this.bindSettings(d2);
   };
 }
 
