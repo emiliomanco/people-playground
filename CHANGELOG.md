@@ -1,5 +1,32 @@
 # Historial de cambios
 
+## Versión 13.4: texturas nuevas (5 de octubre de 2026)
+
+- **Armas antiguas redibujadas**: las armas de antes de las armas reales (versión 11) tienen texturas nuevas con el mismo estilo que las reales. Tienen luz arriba y sombra abajo, contorno, miras, guardamontes, cargadores, vetas de la madera, empuñaduras rugosas, remaches y bobinas que brillan.
+  - **Pistolas**: pistola, pistola de 9 mm, pistola con silenciador, revólver, Magnum, cañón de mano, pistola de chispa, táser, aturdidor, pistola de bengalas y bláster.
+  - **Subfusiles, fusiles y escopeta**:
+    - Subfusiles: el normal, el de tambor (con su tambor y el compensador), el compacto y el de cañón largo.
+    - Fusil de asalto y fusil clásico (con el cargador curvo y el guardamanos de madera).
+    - Fusil semiautomático (con el peine de latón) y escopeta de corredera.
+  - **Armas pesadas y de precisión**: minigun (con sus seis cañones y el conducto de munición), ametralladora pesada sobre su trípode, rifle de francotirador y rifle antimaterial (con visor, bípode y freno de boca).
+  - **Armas de energía**: rifle láser, desintegrador, rifle de rayos, rayo calorífico, rayo congelante, repetidor de haces, fusil bláster y bláster automático, con la energía que brilla.
+  - **Lanzadores y cañones**:
+    - Arpón, lanzallamas, bazuca, ballesta y lanzamisiles guiados.
+    - Cañón de hierro fundido sobre su cureña, con rueda de radios.
+    - Cañón acelerador, cañón de iones, cañón de tormenta, tambor de pulsos, lanzador de arcos y lanzafragmentos.
+    - Fusiles de clavos y cañón automático de 30 mm.
+    - Los cuatro cañones montados: rayos, láser, haz y 120 mm.
+- **Armas cuerpo a cuerpo**:
+  - Hojas con lomo, filo brillante y acanaladura: cuchillo, machete, espada, katana con su hamon y espada legendaria con la runa que brilla.
+  - Mangos con vetas, cintas y remaches, y cabezas de acero en el hacha, el mazo y el martillo.
+  - Motosierra con su cadena, cristal tallado y lanza de justa en espiral.
+- **Explosivos, proyectiles y accesorios**:
+  - Explosivos: granadas con su espoleta y anilla, cóctel molotov, dinamita, C4 con el detonador, barril explosivo con la etiqueta de peligro, bombona de propano, bomba aérea, bomba nuclear y de fusión, mina naval con sus cuernos y recipiente de energía.
+  - Proyectiles: cohetes, misiles, proyectiles y clavos.
+  - Accesorios de las armas: mira, láser, linterna, silenciador y munición especial.
+  - Pistolas médicas: curativa, reconstructor y rigidificador.
+- Se usan exactamente igual que antes: los 115 objetos conservan su tamaño, su forma física y los puntos de la boca y la empuñadura.
+
 ## Versión 13.3: criaturas que saben andar y cirugía (5 de octubre de 2026)
 
 - **Las criaturas saben usar su cuerpo**: una creación con patas de más (un «caballo» de cuatro patas, una araña de seis, dos torsos con cuatro piernas...) se pone de pie sobre todas y anda moviéndolas al paso, la mitad hacia delante mientras la otra mitad empuja. Antes, un caballo de cuatro patas no sabía andar.

@@ -20577,6 +20577,1351 @@ def('scalpel', {
   };
 }
 
+/* ---- 55_v134_tex_armas.js ---- */
+/* =========================================================================
+   VERSIÓN 13.4 (1): TEXTURAS NUEVAS DE LAS ARMAS ANTIGUAS.
+   Las armas de antes de las armas reales (v11) se redibujan con el mismo
+   juego de piezas (GK) y acabados (GP): luz arriba y sombra abajo, miras,
+   guardamontes, cargadores, vetas de la madera, remaches, bobinas...
+   Cada una conserva su tamaño, sus puntos (boca, empuñadura y expulsión) y
+   su forma física, así que se usa exactamente igual que antes.
+   ========================================================================= */
+const RETEX = [];
+// cambia el dibujo de un objeto sin tocar nada más
+function retex(id, fn, o = {}) {
+  const d = DEFS[id]; if (!d) return null;
+  const old = d._spr || (typeof d.sprite === 'function' ? d.sprite() : d.sprite);
+  const w = o.w || (old && old.w), h = o.h || (old && old.h);
+  // sin forma física propia, usaba el contorno del dibujo de antes: se queda ése
+  if (!d.shapes && old && !o.newHull) d.shapes = [{ poly: old.hull(8) }];
+  const edge = o.edge === undefined ? 0.78 : o.edge;
+  d.sprite = () => drawSprite(w, h, (a) => { fn(a, w, h); if (edge) a.edge(edge); if (o.after) o.after(a, w, h); }, o.seed || 1);
+  delete d._spr; delete d._sprF; delete d._thumb;
+  RETEX.push(id);
+  return d;
+}
+// acabados de más
+const GX = {
+  maroon: { b: '#6a2730', h: '#93414a', d: '#3e1419', m: '#55202a' },
+  orange: { b: '#e0702a', h: '#f7a35c', d: '#9a4313', m: '#c25b1f' },
+  yellow: { b: '#e1b928', h: '#f6dc6a', d: '#97790f', m: '#c49f1d' },
+  white: { b: '#d7dce1', h: '#f4f6f8', d: '#9aa3ad', m: '#bcc3ca' },
+  navy: { b: '#2e4560', h: '#4a6688', d: '#1a2838', m: '#253a52' },
+  purple: { b: '#4f3a6e', h: '#6f5694', d: '#2c1f40', m: '#3f2e59' },
+  copper: { b: '#a8592c', h: '#d07f4a', d: '#6a3517', m: '#8d4823' },
+  brass: { b: '#b8913a', h: '#e2c46d', d: '#7a5e1f', m: '#9d7a2d' },
+  iron: { b: '#3b3d41', h: '#5d6066', d: '#1f2023', m: '#2f3135' },
+  rubber: { b: '#2a2b2e', h: '#3f4145', d: '#151618', m: '#222326' },
+  olive: { b: '#5d6a3a', h: '#7c8a52', d: '#3b4423', m: '#4c5730' },
+  red: { b: '#b8322a', h: '#e0584c', d: '#78201a', m: '#9a2a23' },
+};
+// luz de energía: núcleo claro, borde del color
+function glowLine(a, x0, x1, y, c, core) { a.hline(x0, x1, y, c); if (core) for (let x = x0 + 1; x < x1; x += 2) a.px(x, y, core); }
+// empuñadura con rugosidad (puntos sueltos, sólo donde ya hay pieza)
+function checker(a, x0, y0, x1, y1, c) { for (let y = y0; y <= y1; y += 2) for (let x = x0 + ((y >> 1) & 1); x <= x1; x += 2) if (a.s.a(x, y)) a.px(x, y, c); }
+// vetas de la madera: trazos cortos y desiguales (sólo donde ya hay madera)
+function woodGrain(a, x0, x1, y0, y1, p) {
+  for (let y = y0; y <= y1; y++) {
+    let x = x0 + Math.floor(a.R() * 4);
+    while (x <= x1) {
+      const L = 2 + Math.floor(a.R() * 4), c = a.R() < 0.5 ? p.m : p.d;
+      for (let k = 0; k < L && x + k <= x1; k++) if (a.s.a(x + k, y)) a.px(x + k, y, c);
+      x += L + 3 + Math.floor(a.R() * 6);
+    }
+  }
+}
+// remaches en fila
+function rivets(a, x0, x1, y, step, c) { for (let x = x0; x <= x1; x += step) a.px(x, y, c); }
+
+/* =========================================================================
+   PISTOLAS
+   ========================================================================= */
+retex('pistol', (a) => {
+  // acero y armazón negro, cachas de polímero rugosas
+  pistolGun(a, { x0: 2, y: 1, L: 15, H: 3, p: GP.steel, f: GP.black, gp: GP.black, gl: 7, gw: 5, serr: 3, hammer: true });
+  checker(a, 1, 6, 4, 9, GP.black.d);
+  a.px(9, 2, '#1d1e21'); a.px(10, 2, '#1d1e21');
+  a.px(5, 1, GP.steel.h); a.px(12, 1, '#9aa1a9');
+});
+retex('pistol9', (a) => {
+  // corredera plateada, armazón negro y cachas de madera
+  pistolGun(a, { x0: 2, y: 1, L: 14, H: 3, p: GP.silver, f: GP.black, gp: GP.walnut, gl: 7, gw: 5, wood: true, round: true, hammer: true });
+  a.px(3, 6, '#c9a46a'); a.px(2, 8, '#c9a46a');
+  a.px(13, 1, '#f2f4f6');
+});
+retex('silenced', (a) => {
+  pistolGun(a, { x0: 2, y: 1, L: 14, H: 3, p: GP.black, f: GP.black, gp: GP.black, gl: 7, gw: 5, rail: false });
+  checker(a, 1, 6, 4, 9, GP.black.d);
+  // silenciador grueso, con juntas y boca
+  a.rect(16, 0, 11, 5, '#1c1d20'); a.hline(16, 26, 0, '#3a3d42'); a.hline(17, 25, 1, '#2b2d31'); a.hline(16, 26, 4, '#111214');
+  a.vline(16, 0, 4, '#111214'); a.vline(19, 1, 3, '#111214'); a.vline(24, 1, 3, '#111214');
+  a.px(26, 0, CLR); a.px(26, 4, CLR); a.px(26, 2, '#08090a');
+});
+retex('revolver', (a) => {
+  const P = GP.blued, W = GP.walnut;
+  // cañón con nervio, varilla del extractor y punto de mira
+  a.rect(11, 1, 11, 2, P.b); a.hline(11, 21, 1, P.h); a.hline(12, 21, 0, P.d); a.px(20, 0, P.h);
+  a.hline(12, 18, 3, P.m); a.px(18, 3, P.d); a.px(21, 2, '#0b0c0e');
+  // armazón, tambor estriado y martillo
+  a.rect(5, 0, 6, 2, P.b); a.hline(5, 10, 0, P.h);
+  a.rect(6, 2, 5, 5, P.m); a.hline(6, 10, 2, P.h); a.vline(7, 3, 5, P.d); a.vline(9, 3, 5, P.d); a.px(8, 3, '#8c96a6'); a.hline(6, 10, 6, P.d);
+  a.rect(4, 0, 2, 2, P.d); a.px(3, 0, P.d); a.px(3, 1, CLR);
+  a.rect(4, 2, 2, 4, P.b); a.vline(4, 2, 5, P.h);
+  // guardamonte y gatillo
+  a.hline(8, 11, 8, P.d); a.vline(11, 7, 8, P.d); a.vline(9, 7, 7, '#8a9099');
+  // cachas de nogal con vetas y medallón
+  a.poly([[3, 6], [8, 6], [6, 12], [1, 12]], W.b); a.line(3, 6, 1, 11, W.h); a.hline(1, 5, 11, W.d);
+  a.px(4, 8, W.d); a.px(3, 10, W.d); a.px(5, 7, W.m); a.px(4, 9, '#d6b25c');
+});
+retex('magnum', (a) => {
+  const P = GP.silver, R = GX.rubber;
+  // cañón pesado con nervio ventilado y guardamonte del extractor (todo el largo)
+  a.rect(11, 0, 15, 4, P.b); a.hline(11, 25, 0, P.h); a.hline(11, 25, 3, P.d);
+  for (let x = 13; x < 25; x += 3) a.px(x, 0, P.m);
+  a.hline(12, 24, 2, P.m); a.px(25, 1, '#0b0c0e'); a.px(25, 2, P.d); a.px(24, 0, '#f4f6f8');
+  // armazón, tambor y martillo
+  a.rect(5, 0, 6, 2, P.b); a.hline(5, 10, 0, P.h);
+  a.rect(6, 1, 5, 6, P.m); a.hline(6, 10, 1, P.h); a.vline(7, 2, 5, P.d); a.vline(9, 2, 5, P.d); a.px(8, 2, '#f4f6f8'); a.hline(6, 10, 6, P.d);
+  a.rect(3, 0, 2, 2, P.d); a.px(2, 0, P.d);
+  a.rect(4, 2, 2, 4, P.b); a.vline(4, 2, 5, P.h);
+  a.hline(9, 12, 8, P.d); a.vline(12, 7, 8, P.d); a.vline(10, 7, 7, '#6f767f');
+  // empuñadura de goma con huecos para los dedos
+  a.poly([[3, 6], [9, 6], [7, 12], [1, 12]], R.b); a.line(3, 6, 1, 11, R.h); a.hline(1, 6, 11, R.d);
+  a.px(8, 8, CLR); a.px(7, 10, CLR); a.px(6, 8, R.d); a.px(5, 10, R.d);
+});
+retex('hand_cannon', (a) => {
+  const I = GX.iron, B = GX.brass, W = GP.wood;
+  // cañón de hierro enorme con aros
+  a.rect(10, 0, 18, 7, I.b); a.hline(10, 27, 0, I.h); a.hline(10, 27, 6, I.d); a.hline(10, 27, 1, I.m);
+  for (const x of [13, 19, 25]) { a.vline(x, 0, 6, B.b); a.px(x, 0, B.h); a.px(x, 6, B.d); }
+  a.rect(26, 2, 2, 3, '#0b0c0e'); a.px(27, 1, I.m); a.px(27, 5, I.m);
+  // recámara con pernos y martillo
+  a.rect(4, 0, 7, 7, I.m); a.hline(4, 10, 0, I.h); a.hline(4, 10, 6, I.d); a.px(6, 2, B.h); a.px(9, 2, B.h); a.px(6, 4, B.h); a.px(9, 4, B.h);
+  a.rect(2, 0, 2, 2, I.d); a.px(1, 0, I.d);
+  // guardamonte de latón y empuñadura de madera con pomo
+  a.hline(10, 13, 9, B.d); a.vline(13, 7, 9, B.d); a.vline(11, 7, 8, B.h);
+  a.poly([[6, 7], [11, 7], [9, 12], [4, 12]], W.b); a.line(6, 7, 4, 11, W.h); woodGrain(a, 5, 9, 8, 10, W);
+  a.hline(4, 8, 11, B.b); a.px(5, 11, B.h);
+});
+retex('flintlock', (a) => {
+  const W = GP.walnut, B = GX.brass, S = GP.steel;
+  // caja de nogal: culata curva y caña bajo el cañón
+  a.poly([[0, 6], [6, 2], [14, 2], [14, 5], [8, 6], [5, 10], [0, 10]], W.b);
+  a.line(1, 6, 6, 3, W.h); a.hline(6, 13, 2, W.h); woodGrain(a, 1, 12, 4, 9, W);
+  a.rect(14, 3, 13, 2, W.m); a.hline(14, 26, 4, W.d);
+  // cañón octogonal con abrazaderas de latón
+  a.rect(8, 1, 22, 2, S.b); a.hline(8, 29, 1, S.h); a.hline(10, 29, 2, S.m);
+  for (const x of [17, 24]) a.vline(x, 1, 4, B.b);
+  a.rect(28, 1, 2, 2, B.b); a.px(29, 1, '#0b0c0e'); a.px(27, 0, S.d);
+  // baqueta
+  a.hline(15, 27, 5, '#5a3b22'); a.px(27, 5, B.h);
+  // llave de chispa: pie de gato, rastrillo y pletina
+  a.rect(8, 3, 6, 2, S.m); a.hline(8, 13, 3, S.h);
+  a.px(8, 0, S.d); a.px(9, 0, S.b); a.vline(9, 1, 2, S.d); a.px(10, 2, '#2a2b2e');
+  a.vline(12, 0, 2, S.d); a.px(13, 0, S.b);
+  // guardamonte, gatillo y cantonera de latón
+  a.hline(7, 11, 7, B.b); a.vline(11, 6, 7, B.b); a.px(8, 6, '#c8ccd2');
+  a.hline(0, 4, 10, B.b); a.vline(0, 7, 10, B.b); a.px(1, 9, B.h);
+});
+retex('taser', (a) => {
+  const Y = GX.yellow, K = GX.rubber;
+  // cuerpo amarillo con franjas y cartucho negro delante
+  a.rect(1, 1, 12, 5, Y.b); a.hline(1, 12, 1, Y.h); a.hline(1, 12, 5, Y.d); a.px(1, 1, CLR);
+  a.hline(3, 9, 3, K.b); a.px(10, 3, Y.d);
+  a.rect(12, 0, 4, 6, K.b); a.hline(12, 15, 0, K.h); a.hline(12, 15, 5, K.d);
+  a.px(15, 2, '#c8ccd2'); a.px(15, 4, '#c8ccd2'); a.px(13, 1, '#5fd0ff');
+  // empuñadura de goma y gatillo
+  a.poly([[1, 5], [6, 5], [5, 10], [0, 10]], K.b); a.line(1, 5, 0, 9, K.h); a.hline(0, 4, 9, K.d); checker(a, 1, 6, 4, 8, K.d);
+  a.hline(6, 8, 8, K.d); a.vline(9, 6, 8, K.d); a.vline(7, 6, 7, '#8a9099');
+});
+retex('stunner', (a) => {
+  const Y = GX.yellow, K = GX.rubber, N = GX.navy;
+  // cuerpo grueso con ventana del condensador
+  a.rect(2, 1, 16, 7, Y.b); a.hline(3, 17, 1, Y.h); a.hline(2, 17, 7, Y.d); a.vline(2, 1, 7, Y.m);
+  a.rect(6, 3, 8, 3, N.d); a.hline(7, 12, 4, '#5fd0ff'); a.px(8, 4, '#d9f6ff'); a.px(11, 4, '#d9f6ff');
+  rivets(a, 4, 16, 2, 4, Y.d);
+  // horquilla del emisor
+  a.rect(18, 2, 2, 5, K.b); a.vline(18, 2, 6, K.h);
+  a.hline(19, 21, 2, '#9aa3ad'); a.hline(19, 21, 6, '#9aa3ad'); a.px(21, 3, '#8fe8ff'); a.px(21, 5, '#8fe8ff'); a.px(20, 4, '#5fd0ff');
+  // empuñadura y gatillo
+  a.poly([[3, 8], [8, 8], [7, 12], [2, 12]], K.b); a.line(3, 8, 2, 11, K.h); a.hline(2, 6, 11, K.d);
+  a.hline(8, 10, 10, K.d); a.vline(11, 8, 10, K.d); a.vline(9, 8, 9, '#8a9099');
+});
+retex('flare_gun', (a) => {
+  const O = GX.orange, K = GX.rubber;
+  // cañón ancho que se abre por la bisagra
+  a.rect(7, 1, 13, 5, O.b); a.hline(7, 19, 1, O.h); a.hline(7, 19, 5, O.d); a.hline(8, 18, 2, O.m);
+  a.rect(18, 2, 2, 3, '#1a1b1d'); a.px(19, 1, O.m); a.px(19, 5, O.m); a.vline(17, 1, 5, O.d);
+  a.rect(7, 2, 2, 3, K.b); a.px(8, 3, '#9aa3ad');
+  // armazón, martillo y gatillo
+  a.rect(3, 0, 5, 4, O.m); a.hline(3, 7, 0, O.h); a.rect(1, 0, 2, 2, K.b); a.px(1, 0, CLR);
+  a.hline(7, 10, 8, O.d); a.vline(10, 6, 8, O.d); a.vline(8, 6, 7, '#8a9099');
+  // empuñadura con cachas negras
+  a.poly([[2, 4], [8, 4], [7, 11], [1, 11]], O.b); a.line(2, 4, 1, 10, O.h); a.hline(1, 6, 10, O.d);
+  a.poly([[3, 5], [6, 5], [5, 9], [2, 9]], K.b); a.px(4, 7, K.h);
+});
+retex('blaster', (a) => {
+  const M = GX.maroon;
+  // cuerpo granate con aletas y bobina que brilla
+  a.rect(2, 1, 15, 4, M.b); a.hline(3, 16, 1, M.h); a.hline(2, 16, 4, M.d);
+  a.px(5, 0, M.d); a.px(6, 0, M.m); a.px(10, 0, M.d); a.px(11, 0, M.m);
+  a.rect(5, 2, 9, 2, '#2a0f13'); glowLine(a, 6, 12, 2, '#ff5a4f', '#ffd0c8'); a.hline(6, 12, 3, '#b8302a');
+  // emisor
+  a.rect(16, 1, 3, 4, '#2b2d31'); a.hline(16, 18, 1, '#4a4d54'); a.rect(19, 2, 1, 2, '#ff7a6a'); a.px(18, 2, '#ffd0c8');
+  // empuñadura con nervios y gatillo
+  a.poly([[2, 5], [7, 5], [6, 11], [1, 11]], '#2b2d31'); a.line(2, 5, 1, 10, '#44474e'); a.hline(1, 5, 10, '#17181b');
+  for (let y = 6; y <= 9; y += 2) a.hline(2, 5, y, '#1f2023');
+  a.hline(7, 9, 7, M.d); a.vline(10, 5, 7, M.d); a.vline(8, 5, 6, '#8a9099');
+});
+
+/* =========================================================================
+   SUBFUSILES
+   ========================================================================= */
+retex('smg', (a) => {
+  const P = GP.black, S = GP.steel;
+  // culata plegable de varilla
+  a.hline(0, 7, 2, S.h); a.line(1, 6, 7, 4, S.b); a.rect(0, 2, 2, 5, P.b); a.vline(0, 2, 6, P.d); a.px(1, 2, S.h);
+  // cajón con raíl y ventana de expulsión
+  GK.box(a, 7, 2, 16, 5, P); GK.rail(a, 9, 21, 1, P);
+  a.rect(17, 3, 3, 1, '#151618'); a.px(20, 3, S.h); a.hline(8, 15, 5, P.m);
+  a.rect(9, 0, 2, 1, '#1d1e21'); a.rect(21, 0, 2, 1, '#1d1e21');
+  // guardamanos, cañón y bocacha
+  GK.box(a, 22, 3, 4, 4, S); GK.barrel(a, 26, 27, 3, S, 2); GK.muzzle(a, 'hk', 27, 4, P);
+  // empuñadura, guardamonte y cargador
+  GK.grip(a, 9, 7, 6, P, 4); checker(a, 8, 8, 10, 10, P.d);
+  a.hline(11, 12, 9, P.d); a.vline(12, 7, 8, '#8a9099');
+  GK.mag(a, 'smg', 13, 7, 7, P);
+});
+retex('drum_smg', (a) => {
+  const W = GP.wood, P = GP.blued, D = GX.iron;
+  // culata de madera
+  a.poly([[0, 3], [9, 4], [9, 8], [0, 10]], W.b); a.line(0, 3, 8, 4, W.h); woodGrain(a, 1, 8, 4, 8, W); a.vline(0, 3, 9, '#2a1d12');
+  // cajón, alza, palanca de carga y cañón con aletas
+  GK.box(a, 9, 2, 16, 5, P); a.rect(10, 1, 2, 1, '#1d1e21'); a.px(20, 1, '#9aa1a9'); a.px(21, 1, P.h); a.rect(18, 3, 3, 1, '#151618');
+  a.rect(25, 3, 10, 3, P.m); a.hline(25, 34, 3, P.h); for (let x = 26; x < 35; x += 2) a.vline(x, 3, 5, P.d);
+  // compensador Cutts con ranuras
+  a.rect(35, 2, 5, 4, P.b); a.hline(35, 39, 2, P.h); a.px(36, 2, '#151618'); a.px(38, 2, '#151618'); a.px(39, 4, '#0b0c0e'); a.px(36, 1, '#1d1e21');
+  // empuñadura y empuñadura delantera de madera
+  a.poly([[10, 7], [14, 7], [13, 13], [9, 13]], W.b); a.line(10, 7, 9, 12, W.h); a.hline(9, 12, 12, W.d);
+  a.poly([[27, 6], [31, 6], [31, 11], [27, 11]], W.b); a.vline(27, 6, 10, W.h); a.hline(27, 31, 10, W.d); a.px(29, 8, W.m);
+  // tambor con su llave
+  a.circle(19, 11, 4.8, D.b); a.ring(19, 11, 4.8, 1, D.d); a.circle(18.5, 10, 3, D.m); a.ring(19, 11, 3.2, 1, D.h);
+  a.circle(19, 11, 1.2, '#9aa1a9'); a.px(18, 10, '#c8ccd2');
+});
+retex('compact_smg', (a) => {
+  const P = GP.black, S = GP.steel;
+  // cajón cuadrado con culata de alambre plegada encima
+  GK.box(a, 2, 1, 15, 5, P); a.hline(4, 15, 0, S.m); a.vline(4, 0, 1, S.m); a.rect(0, 1, 2, 5, P.b); a.vline(0, 1, 5, P.d);
+  a.rect(9, 2, 3, 1, '#151618'); a.px(12, 2, S.h); a.hline(3, 15, 4, P.m);
+  // cañón roscado y punto de mira
+  GK.barrel(a, 17, 21, 2, S, 2); for (let x = 18; x <= 21; x += 2) a.px(x, 3, S.d); a.px(20, 1, '#1d1e21');
+  // empuñadura, guardamonte y cargador largo
+  GK.grip(a, 4, 6, 5, P, 4); checker(a, 2, 7, 5, 9, P.d);
+  a.hline(7, 9, 8, P.d); a.vline(9, 6, 7, P.d); a.vline(8, 6, 7, '#8a9099');
+  GK.mag(a, 'straight', 10, 6, 8, P); a.hline(10, 12, 13, '#17181b');
+});
+retex('g1_smg', (a) => {
+  const P = GP.black, S = GP.steel, B = { b: '#4a3326', h: '#6a4a36', d: '#2c1d15', m: '#3c2a1f' };
+  // culata plegable
+  a.hline(0, 6, 2, S.h); a.hline(1, 6, 6, S.b); a.rect(0, 2, 2, 6, P.b); a.vline(0, 2, 7, P.d); a.vline(4, 3, 5, S.m);
+  // cajón cilíndrico con palanca de carga
+  GK.box(a, 6, 2, 17, 5, P); a.hline(7, 21, 3, P.m); a.rect(13, 4, 3, 1, '#151618'); a.px(11, 1, S.h); a.px(12, 1, S.m);
+  a.rect(7, 1, 2, 1, '#1d1e21');
+  // camisa del cañón con agujeros y cañón largo
+  GK.box(a, 22, 2, 9, 4, S); for (let x = 23; x < 30; x += 2) a.px(x, 3, '#151618');
+  GK.barrel(a, 31, 35, 3, S, 2); a.rect(36, 2, 2, 4, P.d); a.px(37, 4, '#0b0c0e'); a.px(34, 1, '#1d1e21');
+  // empuñadura de baquelita, guardamonte y cargador recto
+  a.poly([[7, 7], [11, 7], [10, 13], [6, 13]], B.b); a.line(7, 7, 6, 12, B.h); a.hline(6, 9, 12, B.d); checker(a, 7, 8, 9, 11, B.m);
+  a.hline(11, 13, 9, P.d); a.vline(13, 7, 9, P.d); a.vline(12, 7, 8, '#8a9099');
+  GK.mag(a, 'straight', 15, 7, 8, P); a.hline(15, 18, 14, '#17181b');
+});
+
+/* =========================================================================
+   FUSILES Y ESCOPETA
+   ========================================================================= */
+retex('rifle', (a) => {
+  const P = GP.black, F = { b: '#4b4e55', h: '#6b6f77', d: '#2b2d32', m: '#3c3f45' };
+  // culata ajustable
+  a.poly([[0, 3], [10, 3], [10, 6], [4, 9], [0, 9]], F.b); a.hline(0, 9, 3, F.h); a.vline(0, 3, 8, F.d); a.rect(2, 5, 4, 1, F.d); a.hline(5, 9, 7, P.m);
+  // cajón con raíl y miras abatibles
+  GK.box(a, 10, 3, 17, 5, P); GK.rail(a, 11, 25, 2, P); a.rect(22, 4, 3, 1, '#151618'); a.px(25, 4, '#9aa1a9'); a.hline(11, 20, 6, P.m);
+  GK.optic(a, 'irons', 12, 2); a.rect(34, 0, 2, 2, '#1d1e21'); a.px(34, 2, '#1d1e21');
+  // guardamanos con ranuras, cañón y bocacha
+  GK.box(a, 27, 3, 10, 5, F); GK.rail(a, 27, 36, 2, F); for (let x = 29; x < 36; x += 3) a.hline(x, x + 1, 5, F.d);
+  GK.barrel(a, 37, 40, 5, P); GK.muzzle(a, 'bird', 41, 5, P);
+  // empuñadura, guardamonte y cargador
+  GK.grip(a, 13, 8, 5, F, 3); a.hline(15, 18, 10, P.d); a.vline(18, 8, 10, P.d); a.vline(16, 8, 9, '#9aa1a9');
+  GK.mag(a, 'stanag', 20, 8, 7, P);
+});
+retex('ak_rifle', (a) => {
+  const W = GP.wood, P = GP.blued, M = { b: '#8a4a26', h: '#a8643a', d: '#5a2e16', m: '#74401f' };
+  // culata de madera con cantonera
+  a.poly([[0, 3], [12, 4], [12, 8], [0, 11]], W.b); a.line(0, 3, 11, 4, W.h); woodGrain(a, 1, 11, 5, 9, W); a.vline(0, 3, 10, '#2a1d12'); a.vline(1, 3, 10, P.d);
+  // cajón estampado con tapa, palanca y alza
+  GK.box(a, 12, 3, 16, 5, P); a.hline(12, 27, 4, P.m); a.px(14, 6, '#9aa1a9'); a.hline(14, 18, 5, P.d);
+  a.rect(22, 4, 3, 1, '#151618'); a.px(25, 4, '#c8ccd2'); a.px(25, 5, '#9aa1a9');
+  a.rect(27, 2, 3, 2, P.d); a.px(28, 1, P.d);
+  // guardamanos de madera (arriba y abajo) con el tubo de gases
+  a.rect(29, 2, 9, 2, W.b); a.hline(29, 37, 2, W.h); a.px(31, 3, W.d); a.px(35, 3, W.d);
+  a.rect(29, 4, 9, 3, W.b); a.hline(29, 37, 6, W.d); a.vline(31, 5, 5, W.d); a.vline(35, 5, 5, W.d);
+  a.rect(38, 2, 2, 4, P.b); a.hline(38, 39, 2, P.h);
+  // cañón, punto de mira y freno de boca inclinado
+  GK.barrel(a, 40, 46, 4, P); a.hline(40, 43, 5, P.d);
+  a.rect(43, 2, 2, 2, P.b); a.vline(44, 0, 1, P.d);
+  GK.muzzle(a, 'slant', 47, 4, P);
+  // empuñadura, guardamonte y cargador curvo de baquelita
+  a.poly([[13, 8], [17, 8], [15, 13], [11, 13]], M.b); a.line(13, 8, 11, 12, M.h); a.hline(11, 14, 12, M.d); checker(a, 12, 9, 15, 11, M.m);
+  a.hline(17, 19, 10, P.d); a.vline(20, 8, 10, P.d); a.vline(18, 8, 9, '#9aa1a9');
+  GK.mag(a, 'ak', 21, 8, 7, M); for (let i = 0; i < 6; i += 2) a.px(22 + Math.round(i * 0.6), 9 + i, M.d);
+});
+retex('m1_rifle', (a) => {
+  const W = GP.walnut, S = GP.blued;
+  // caja larga de nogal con garganta y cantonera de acero
+  a.poly([[0, 3], [40, 4], [40, 7], [2, 10], [0, 10]], W.b); a.line(0, 3, 39, 4, W.h); woodGrain(a, 1, 38, 5, 9, W);
+  a.vline(0, 3, 10, S.d); a.vline(1, 3, 10, S.m);
+  a.poly([[12, 6], [19, 5], [19, 8], [13, 9]], W.m); a.hline(14, 18, 8, W.d);
+  // cajón con alza y peine de latón
+  GK.box(a, 18, 2, 12, 3, S); a.rect(20, 0, 2, 2, S.d); a.px(21, 0, S.m); a.rect(25, 2, 3, 1, '#c9a24a'); a.px(26, 2, '#e8cc7a'); a.px(28, 3, '#9aa1a9');
+  // guardamanos de arriba, cañón, cilindro de gases y punto de mira
+  a.rect(30, 1, 12, 1, W.b); a.hline(30, 41, 1, W.h);
+  GK.barrel(a, 30, 59, 2, S, 2); a.hline(30, 41, 2, W.m);
+  a.rect(51, 2, 5, 3, S.b); a.hline(51, 55, 2, S.h); a.vline(57, 0, 1, S.d); a.px(56, 1, S.d);
+  a.px(59, 2, '#0b0c0e');
+  // guardamonte y gatillo; anillas de la correa
+  a.hline(17, 20, 9, S.d); a.vline(20, 7, 9, S.d); a.vline(18, 7, 8, '#9aa1a9');
+  a.px(8, 10, S.m); a.px(46, 5, S.m);
+});
+retex('shotgun', (a) => {
+  const W = GP.walnut, S = GP.blued;
+  // culata de nogal con empuñadura de pistola y cantonera de goma
+  a.poly([[0, 3], [12, 4], [12, 8], [0, 10]], W.b); a.line(0, 3, 11, 4, W.h); woodGrain(a, 2, 11, 5, 8, W);
+  a.vline(0, 3, 9, '#1d1e21'); a.vline(1, 3, 9, '#2c2d30');
+  a.poly([[12, 7], [16, 7], [15, 11], [11, 11]], W.b); a.line(12, 7, 11, 10, W.h); a.hline(11, 14, 10, W.d); checker(a, 12, 8, 14, 9, W.m);
+  // cajón pavonado con ventana de expulsión
+  GK.box(a, 12, 3, 11, 4, S); a.rect(17, 4, 4, 1, '#151618'); a.px(13, 4, S.h); a.hline(12, 22, 5, S.m);
+  // cañón con nervio, depósito tubular y corredera de madera
+  GK.barrel(a, 23, 43, 3, S, 2); a.hline(23, 43, 2, S.d); a.px(42, 2, '#d8dde2'); a.px(43, 3, '#0b0c0e');
+  a.hline(23, 37, 5, S.m); a.hline(23, 37, 6, S.d); a.rect(37, 5, 2, 2, S.b);
+  a.rect(25, 5, 9, 3, W.b); a.hline(25, 33, 5, W.h); a.hline(25, 33, 7, W.d); for (let x = 26; x < 33; x += 2) a.px(x, 6, W.d);
+  // guardamonte y gatillo
+  a.hline(16, 19, 8, S.d); a.vline(19, 7, 8, S.d); a.vline(17, 7, 7, '#9aa1a9');
+});
+
+/* =========================================================================
+   ARMAS PESADAS Y DE PRECISIÓN
+   ========================================================================= */
+retex('minigun', (a) => {
+  const I = GX.iron, S = GP.steel, O = GX.olive;
+  // carcasa del motor con paneles y remaches
+  a.rect(1, 4, 19, 12, I.b); a.hline(1, 19, 4, I.h); a.hline(1, 19, 15, I.d); a.vline(1, 4, 15, I.m);
+  a.rect(0, 6, 3, 8, I.m); a.vline(0, 6, 13, I.d); a.px(1, 7, I.h);
+  a.vline(7, 5, 14, I.d); a.vline(14, 5, 14, I.d); rivets(a, 3, 19, 6, 4, I.h); rivets(a, 3, 19, 13, 4, I.h);
+  a.rect(9, 8, 4, 3, I.d); a.hline(9, 12, 8, '#e04a3a');
+  // asa de transporte arriba
+  a.hline(6, 13, 1, S.b); a.hline(6, 13, 0, S.h); a.vline(6, 1, 3, S.m); a.vline(13, 1, 3, S.m);
+  // empuñaduras y gatillo debajo
+  a.rect(5, 16, 2, 4, I.d); a.rect(9, 16, 2, 4, I.d); a.hline(5, 10, 19, I.m); a.px(8, 17, '#e04a3a');
+  // conducto de munición con eslabones
+  for (let k = 0; k < 4; k++) { a.rect(14 + k, 16 + k, 3, 1, O.b); a.px(14 + k, 16 + k, O.h); }
+  a.px(18, 19, '#c9a24a'); a.px(19, 19, '#e8cc7a');
+  // haz de cañones con abrazaderas
+  a.rect(20, 6, 36, 9, '#1b1c1f');
+  for (const y of [6, 9, 12]) { a.hline(20, 55, y, S.h); a.hline(20, 55, y + 1, S.b); }
+  for (const y of [8, 11, 14]) a.hline(20, 55, y, S.d);
+  for (const x of [22, 37, 51]) { a.rect(x, 5, 3, 11, I.b); a.hline(x, x + 2, 5, I.h); a.hline(x, x + 2, 15, I.d); }
+  // bocas
+  a.rect(56, 6, 4, 9, I.b); a.hline(56, 59, 6, I.h); a.hline(56, 59, 14, I.d);
+  a.px(59, 7, '#08090a'); a.px(59, 10, '#08090a'); a.px(59, 13, '#08090a');
+});
+retex('heavy_mg', (a) => {
+  const O = GX.olive, I = GX.iron, S = GP.steel;
+  // empuñaduras de pala con el gatillo de mariposa
+  a.rect(0, 5, 2, 8, I.b); a.vline(0, 5, 12, I.h); a.hline(0, 1, 12, I.d); a.rect(2, 7, 4, 3, I.m); a.px(3, 8, '#c9a24a');
+  // cajón de acero con la tapa del alimentador, placa lateral, palanca de carga y alza
+  a.rect(5, 4, 23, 9, I.b); a.hline(5, 27, 4, I.h); a.hline(5, 27, 12, I.d); a.vline(5, 4, 12, I.m);
+  a.rect(6, 3, 15, 2, I.m); a.hline(6, 20, 3, I.h); a.hline(5, 27, 6, I.d);
+  a.rect(7, 7, 11, 4, I.m); a.hline(7, 17, 7, I.h); a.hline(7, 17, 10, I.d);
+  for (const [x, y] of [[8, 8], [16, 8], [8, 10], [16, 10], [25, 8], [25, 11]]) a.px(x, y, '#7a7e86');
+  a.rect(20, 7, 4, 2, S.b); a.hline(20, 23, 7, S.h); a.px(24, 8, S.d); a.vline(8, 0, 2, I.b); a.px(9, 1, I.d);
+  // cinta de munición que entra por el costado
+  for (let k = 0; k < 4; k++) { a.rect(14 + k, 12 + k, 3, 1, '#c9a24a'); a.px(16 + k, 12 + k, '#8a6a2a'); }
+  // camisa perforada y cañón grueso con apagallamas
+  a.rect(28, 5, 9, 7, S.m); a.hline(28, 36, 5, S.h); a.hline(28, 36, 11, S.d);
+  for (let x = 29; x < 36; x += 2) { a.px(x, 7, '#141517'); a.px(x + 1, 9, '#141517'); }
+  a.rect(37, 6, 29, 4, S.b); a.hline(37, 65, 6, S.h); a.hline(37, 65, 9, S.d); a.hline(38, 64, 8, S.m);
+  a.rect(30, 2, 2, 3, I.d);
+  a.poly([[66, 6], [72, 4], [72, 12], [66, 10]], I.b); a.vline(71, 6, 10, '#08090a'); a.hline(66, 71, 6, I.h);
+  // trípode
+  a.rect(15, 13, 9, 3, O.m); a.hline(15, 23, 13, O.h);
+  a.line(19, 15, 8, 29, O.d); a.line(20, 15, 9, 29, O.b); a.line(21, 15, 30, 29, O.d); a.line(22, 15, 31, 29, O.b);
+  a.line(20, 15, 22, 29, O.m);
+  a.hline(6, 10, 29, I.b); a.hline(29, 33, 29, I.b); a.hline(21, 23, 29, I.b);
+});
+retex('sniper', (a) => {
+  const O = GX.olive, P = GP.black, S = GP.steel;
+  // culata de tirador con agujero para el pulgar y almohadilla
+  a.poly([[0, 5], [20, 5], [20, 9], [17, 9], [15, 12], [0, 12]], O.b); a.hline(0, 19, 5, O.h); a.vline(0, 5, 12, '#1d1e21'); a.vline(1, 5, 12, '#2c2d30');
+  a.rect(9, 7, 4, 3, CLR); a.hline(8, 13, 10, O.d); a.hline(2, 8, 11, O.d); a.px(5, 6, O.m);
+  // cajón, cerrojo, cargador y raíl con visor
+  GK.box(a, 20, 5, 11, 4, P); a.px(24, 9, S.h); a.vline(24, 9, 10, S.b); a.px(25, 10, S.h);
+  a.rect(27, 9, 3, 2, P.b); a.hline(27, 29, 10, P.d);
+  GK.optic(a, 'scope', 15, 5);
+  // cañón estriado con freno de boca y bípode abierto
+  GK.barrel(a, 31, 55, 6, S, 2); for (let x = 34; x < 54; x += 3) a.px(x, 7, S.d);
+  a.rect(56, 5, 4, 4, P.b); a.hline(56, 59, 5, P.h); a.px(57, 6, '#141517'); a.px(57, 7, '#141517'); a.px(59, 6, '#08090a'); a.px(59, 7, '#08090a');
+  a.rect(31, 8, 6, 2, O.b); a.hline(31, 36, 8, O.h);
+  GK.bipod(a, 35, 9, P, true);
+  // empuñadura y gatillo
+  a.hline(20, 22, 10, P.d); a.vline(22, 9, 10, P.d); a.vline(21, 9, 9, '#9aa1a9');
+});
+retex('antimaterial', (a) => {
+  const P = GP.black, S = GP.steel, K = '#1d1e21', k = '#2e3035';
+  // culata con almohadilla y monópode
+  a.poly([[0, 6], [16, 5], [16, 12], [0, 13]], P.b); a.line(0, 6, 15, 5, P.h); a.rect(0, 6, 2, 8, '#141517'); a.hline(4, 15, 8, P.m);
+  a.rect(8, 13, 2, 3, P.m); a.hline(7, 10, 15, P.d);
+  // cajón superior con raíl y visor grande
+  GK.box(a, 16, 4, 18, 6, P); GK.rail(a, 17, 33, 3, P); a.rect(26, 5, 4, 2, '#141517'); a.px(30, 5, S.h);
+  a.rect(19, 2, 2, 1, K); a.rect(29, 2, 2, 1, K);
+  a.rect(16, 0, 3, 3, k); a.rect(19, 0, 10, 2, k); a.hline(19, 28, 0, '#4c5058'); a.rect(29, 0, 5, 3, k); a.vline(33, 0, 2, GLASS); a.rect(23, 0, 2, 1, K);
+  // cajón inferior, empuñadura y cargador
+  a.rect(17, 10, 16, 2, P.m); a.hline(17, 32, 11, P.d);
+  GK.grip(a, 20, 12, 4, P, 3); a.hline(22, 24, 13, P.d); a.vline(24, 12, 13, P.d); a.vline(23, 12, 12, '#9aa1a9');
+  a.rect(26, 12, 5, 3, P.b); a.hline(26, 30, 12, P.h); a.hline(26, 30, 14, P.d);
+  // camisa del cañón con huecos, cañón y freno de boca de dos cámaras
+  a.rect(34, 6, 16, 5, P.b); a.hline(34, 49, 6, P.h); a.hline(34, 49, 10, P.d); for (let x = 36; x < 49; x += 3) a.rect(x, 8, 2, 1, '#141517');
+  GK.barrel(a, 50, 63, 7, S, 3);
+  a.rect(64, 5, 8, 7, P.b); a.hline(64, 71, 5, P.h); a.hline(64, 71, 11, P.d);
+  for (const x of [66, 69]) { a.vline(x, 6, 7, '#141517'); a.vline(x, 9, 10, '#141517'); }
+  a.px(71, 8, '#08090a');
+  // bípode abierto
+  a.line(46, 11, 43, 15, P.d); a.line(47, 11, 50, 15, P.d); a.px(46, 11, P.m);
+});
+
+/* =========================================================================
+   ARMAS DE ENERGÍA
+   ========================================================================= */
+// ventanas de energía: una franja que brilla con el núcleo más claro
+function energyWin(a, x0, x1, y0, y1, dark, glow, core) {
+  a.rect(x0, y0, x1 - x0 + 1, y1 - y0 + 1, dark);
+  for (let y = y0 + 1; y < y1; y++) a.hline(x0 + 1, x1 - 1, y, glow);
+  if (core && y1 - y0 >= 2) a.hline(x0 + 2, x1 - 2, (y0 + y1) >> 1, core);
+}
+// emisor: anillo oscuro con la lente encendida
+function emitter(a, x, y0, y1, P, glow, len = 3) {
+  a.rect(x, y0, len, y1 - y0 + 1, P.d); a.hline(x, x + len - 1, y0, P.m);
+  a.vline(x + len - 1, y0 + 1, y1 - 1, glow); a.px(x + len - 2, (y0 + y1) >> 1, glow);
+}
+// culata de energía (angulosa y con hueco)
+function sciStock(a, x1, y0, y1, P, hole = true) {
+  a.poly([[0, y0 + 1], [x1, y0], [x1, y1], [3, y1 + 1], [0, y1 + 1]], P.m);
+  a.line(0, y0 + 1, x1 - 1, y0, P.h); a.vline(0, y0 + 1, y1 + 1, P.d);
+  if (hole && x1 > 9) a.rect(3, y0 + 2, x1 - 7, Math.max(1, y1 - y0 - 3), CLR);
+}
+retex('laser_rifle', (a) => {
+  const P = GX.white, K = GX.rubber;
+  sciStock(a, 9, 3, 7, P);
+  // cuerpo blanco con paneles y franja roja que brilla
+  a.rect(9, 2, 26, 6, P.b); a.hline(10, 34, 2, P.h); a.hline(9, 34, 7, P.d); a.vline(9, 2, 7, P.m);
+  for (const x of [16, 27]) a.vline(x, 3, 6, P.m);
+  energyWin(a, 17, 26, 4, 6, '#5a1414', '#ff4a3a', '#ffd0c8');
+  a.rect(18, 1, 6, 1, K.b); a.px(23, 1, '#ff4a3a');
+  // cañón y emisor
+  a.rect(35, 3, 4, 4, P.m); a.hline(35, 38, 3, P.h); a.hline(35, 38, 6, P.d);
+  emitter(a, 39, 3, 6, K, '#ff5a4a');
+  // empuñadura negra y gatillo
+  a.poly([[11, 8], [15, 8], [14, 11], [10, 11]], K.b); a.line(11, 8, 10, 10, K.h); a.hline(10, 13, 11, K.d);
+  a.hline(15, 17, 9, P.d); a.vline(17, 8, 9, P.d); a.vline(16, 8, 8, '#8a9099');
+});
+retex('disintegrator', (a) => {
+  const P = GX.purple, K = GX.rubber;
+  // cuerpo con nervios
+  a.rect(2, 2, 19, 6, P.b); a.hline(3, 20, 2, P.h); a.hline(2, 20, 7, P.d); a.vline(2, 2, 7, P.m);
+  for (let x = 4; x < 12; x += 2) a.vline(x, 3, 6, P.d);
+  // cámara con la esfera que brilla
+  a.rect(19, 1, 7, 8, '#1e1530'); a.hline(19, 25, 1, P.m); a.hline(19, 25, 8, P.d);
+  a.circle(22.5, 4.5, 2.6, '#b07ad8'); a.circle(22, 4, 1.4, '#e8d0ff'); a.px(21, 3, '#ffffff');
+  // horquilla del emisor
+  a.rect(26, 3, 3, 1, P.m); a.rect(26, 7, 3, 1, P.m); a.hline(26, 29, 5, '#b07ad8'); a.px(29, 5, '#f0e0ff'); a.px(28, 4, '#6f5694'); a.px(28, 6, '#6f5694');
+  // empuñadura y gatillo
+  a.poly([[3, 8], [8, 8], [7, 11], [2, 11]], K.b); a.line(3, 8, 2, 10, K.h); a.hline(2, 6, 11, K.d);
+  a.hline(8, 10, 9, P.d); a.vline(10, 8, 9, P.d); a.vline(9, 8, 8, '#8a9099');
+});
+retex('beam_rifle', (a) => {
+  const P = GX.navy, K = GX.rubber;
+  sciStock(a, 9, 2, 8, P);
+  a.rect(9, 2, 26, 7, P.b); a.hline(10, 34, 2, P.h); a.hline(9, 34, 8, P.d); a.vline(9, 2, 8, P.m);
+  energyWin(a, 13, 31, 4, 6, '#0f1c2a', '#62c3ff', '#dff4ff'); a.vline(22, 4, 6, '#0f1c2a');
+  a.rect(14, 1, 7, 1, K.b); a.px(20, 1, '#62c3ff'); rivets(a, 11, 33, 7, 4, P.m);
+  a.rect(35, 3, 5, 5, P.m); a.hline(35, 39, 3, P.h); a.hline(35, 39, 7, P.d);
+  emitter(a, 40, 3, 7, K, '#8fe0ff', 4);
+  a.poly([[12, 9], [16, 9], [15, 12], [11, 12]], K.b); a.line(12, 9, 11, 11, K.h);
+  a.hline(16, 18, 10, P.d); a.vline(18, 9, 10, P.d); a.vline(17, 9, 9, '#8a9099');
+});
+retex('heat_ray', (a) => {
+  const P = GX.maroon, C = GX.copper, K = GX.rubber;
+  sciStock(a, 8, 2, 8, { b: '#4a2a1e', h: '#6a3e2c', d: '#2a160f', m: '#3a2118' });
+  // núcleo con bobinas de cobre
+  a.rect(8, 2, 22, 7, '#3a1a12'); a.hline(8, 29, 2, '#5a2c1e'); a.hline(8, 29, 8, '#20100a');
+  a.rect(11, 4, 17, 3, '#ff8a3a'); a.hline(12, 26, 5, '#ffd08a');
+  for (let x = 11; x <= 27; x += 3) { a.vline(x, 2, 8, C.b); a.px(x, 2, C.h); a.px(x, 8, C.d); a.vline(x + 1, 3, 7, C.m); }
+  // cañón con aletas y boca al rojo
+  a.rect(30, 3, 5, 5, '#3b3d41'); for (let x = 31; x < 35; x += 2) a.vline(x, 3, 7, '#5d6066');
+  emitter(a, 35, 3, 7, GX.iron, '#ffb05a', 3);
+  a.poly([[11, 9], [15, 9], [14, 12], [10, 12]], K.b); a.line(11, 9, 10, 11, K.h);
+  a.hline(15, 17, 10, K.d); a.vline(17, 9, 10, K.d); a.vline(16, 9, 9, '#8a9099');
+});
+retex('freeze_ray', (a) => {
+  const P = GX.navy, K = GX.rubber;
+  sciStock(a, 8, 2, 8, P);
+  // depósito con bobinas heladas
+  a.rect(8, 2, 22, 7, '#0f2236'); a.hline(8, 29, 2, P.m); a.hline(8, 29, 8, '#081420');
+  a.rect(11, 4, 17, 3, '#5fc8ff'); a.hline(12, 26, 5, '#e8f8ff');
+  for (let x = 11; x <= 27; x += 3) { a.vline(x, 2, 8, '#a9d8f0'); a.px(x, 2, '#e8f8ff'); a.px(x, 8, '#5f8aa8'); a.vline(x + 1, 3, 7, '#7fb6d8'); }
+  // cañón escarchado y boca helada
+  a.rect(30, 3, 5, 5, '#3a4a5a'); a.hline(30, 34, 3, '#e8f8ff'); a.px(32, 4, '#e8f8ff');
+  emitter(a, 35, 3, 7, P, '#bff0ff', 3);
+  a.poly([[11, 9], [15, 9], [14, 12], [10, 12]], K.b); a.line(11, 9, 10, 11, K.h);
+  a.hline(15, 17, 10, K.d); a.vline(17, 9, 10, K.d); a.vline(16, 9, 9, '#8a9099');
+});
+retex('beam_repeater', (a) => {
+  const P = GX.navy, K = GX.rubber;
+  sciStock(a, 9, 2, 9, P);
+  a.rect(9, 2, 28, 8, P.b); a.hline(10, 36, 2, P.h); a.hline(9, 36, 9, P.d); a.vline(9, 2, 9, P.m);
+  // celdas de energía en fila
+  a.rect(12, 4, 22, 4, '#0f1c2a');
+  for (let x = 13; x < 33; x += 4) { a.rect(x, 5, 2, 2, '#62c3ff'); a.px(x, 5, '#dff4ff'); }
+  a.rect(15, 1, 8, 1, K.b); a.px(22, 1, '#62c3ff');
+  a.rect(37, 3, 5, 6, P.m); a.hline(37, 41, 3, P.h); a.hline(37, 41, 8, P.d); a.vline(39, 4, 7, P.d);
+  emitter(a, 42, 4, 8, K, '#8fe0ff', 4);
+  a.poly([[12, 10], [16, 10], [15, 13], [11, 13]], K.b); a.line(12, 10, 11, 12, K.h);
+  a.hline(16, 18, 11, P.d); a.vline(18, 10, 11, P.d); a.vline(17, 10, 10, '#8a9099');
+});
+retex('blaster_rifle', (a) => {
+  const P = GX.maroon, K = GX.rubber;
+  sciStock(a, 9, 2, 8, P);
+  a.rect(9, 2, 26, 7, P.b); a.hline(10, 34, 2, P.h); a.hline(9, 34, 8, P.d); a.vline(9, 2, 8, P.m);
+  energyWin(a, 14, 31, 4, 6, '#2a0f13', '#ff5a4f', '#ffd0c8');
+  for (const x of [12, 33]) a.vline(x, 3, 7, P.d);
+  a.px(16, 1, P.d); a.px(17, 1, P.m); a.px(26, 1, P.d); a.px(27, 1, P.m);
+  a.rect(35, 3, 4, 5, '#2b2d31'); for (let x = 35; x < 39; x += 2) a.vline(x, 4, 6, '#44474e');
+  emitter(a, 39, 3, 7, K, '#ff7a6a', 3);
+  a.poly([[12, 9], [16, 9], [15, 12], [11, 12]], K.b); a.line(12, 9, 11, 11, K.h);
+  a.hline(16, 18, 10, P.d); a.vline(18, 9, 10, P.d); a.vline(17, 9, 9, '#8a9099');
+});
+retex('machine_blaster', (a) => {
+  const P = GX.maroon, K = GX.rubber;
+  sciStock(a, 9, 2, 9, P);
+  a.rect(9, 2, 27, 8, P.b); a.hline(10, 35, 2, P.h); a.hline(9, 35, 9, P.d); a.vline(9, 2, 9, P.m);
+  // núcleo grande con rejillas a los lados
+  a.circle(22, 6, 3.6, '#2a0f13'); a.circle(22, 6, 2.6, '#ff5a4f'); a.circle(21.6, 5.6, 1.4, '#ffd0c8');
+  for (let x = 12; x < 18; x += 2) a.vline(x, 4, 8, P.d);
+  for (let x = 27; x < 34; x += 2) a.vline(x, 4, 8, P.d);
+  a.rect(36, 4, 4, 5, '#2b2d31'); a.hline(36, 39, 4, '#44474e');
+  emitter(a, 40, 4, 8, K, '#ff7a6a', 4);
+  a.poly([[12, 10], [16, 10], [15, 13], [11, 13]], K.b); a.line(12, 10, 11, 12, K.h);
+  a.hline(16, 18, 11, P.d); a.vline(18, 10, 11, P.d); a.vline(17, 10, 10, '#8a9099');
+});
+
+/* =========================================================================
+   LANZADORES Y CAÑONES
+   ========================================================================= */
+retex('harpoon_gun', (a) => {
+  const N = GX.navy, S = GP.silver, K = GX.rubber, Y = '#f0b23c';
+  // culata redondeada y empuñadura
+  a.rect(1, 3, 10, 5, N.b); a.hline(2, 10, 3, N.h); a.hline(1, 10, 7, N.d); a.px(0, 4, N.m); a.px(0, 5, N.m); a.px(0, 6, N.d); a.px(1, 3, CLR);
+  a.poly([[10, 7], [14, 7], [13, 11], [9, 11]], K.b); a.line(10, 7, 9, 10, K.h); a.hline(9, 12, 11, K.d);
+  a.hline(14, 16, 9, K.d); a.vline(16, 8, 9, K.d); a.vline(15, 7, 8, '#8a9099');
+  // tubo de aluminio y cabeza con las gomas
+  a.rect(10, 6, 25, 2, S.m); a.hline(10, 34, 6, S.h); a.hline(10, 34, 7, S.d);
+  a.rect(33, 4, 3, 5, K.b); a.hline(33, 35, 4, K.h);
+  a.line(34, 4, 22, 5, Y); a.line(34, 8, 22, 6, '#c98a1e'); a.px(22, 5, '#5a5d63');
+  // arpón cargado con punta de lengüetas
+  a.hline(12, 38, 5, '#d6dbe0'); a.px(12, 5, '#6f767f');
+  a.poly([[38, 4], [41, 5], [41, 6], [38, 7]], '#c8ccd2'); a.px(39, 4, '#f4f6f8'); a.px(37, 4, '#9aa1a9'); a.px(37, 7, '#9aa1a9');
+});
+retex('cannon', (a) => {
+  const I = GX.iron, W = GP.wood, B = GX.brass;
+  // cureña de madera con pernos
+  a.poly([[2, 21], [36, 18], [36, 22], [4, 24], [0, 24]], W.b); a.line(2, 21, 35, 18, W.h); woodGrain(a, 2, 34, 20, 23, W);
+  rivets(a, 10, 32, 20, 7, '#2a2b2e');
+  // cañón de hierro fundido: cascabel, refuerzos y boca ensanchada
+  a.circle(3, 11, 3.2, I.b); a.px(2, 10, I.h);
+  a.poly([[5, 5], [50, 7], [50, 15], [5, 18]], I.b);
+  a.line(5, 5, 49, 7, I.h); a.line(5, 7, 49, 9, '#4a4d53'); a.line(5, 17, 49, 15, I.d);
+  for (const x of [9, 21, 34]) { a.vline(x, 5 + Math.round((x - 5) / 22), 18 - Math.round((x - 5) / 16), I.m); a.vline(x + 1, 5 + Math.round((x - 5) / 22), 18 - Math.round((x - 5) / 16), I.h); }
+  a.rect(50, 6, 6, 11, I.b); a.hline(50, 55, 6, I.h); a.hline(50, 55, 16, I.d); a.vline(50, 6, 16, I.m);
+  a.rect(54, 9, 2, 5, '#08090a'); a.px(55, 8, I.d); a.px(55, 14, I.d);
+  a.px(14, 6, B.h); a.px(15, 6, B.b);
+  // rueda de radios con llanta de hierro
+  a.circle(18, 22, 7.6, W.d); a.ring(18, 22, 7.6, 1.4, I.b); a.ring(18, 22, 7.6, 0.6, I.h);
+  for (let k = 0; k < 8; k++) { const t = k * Math.PI / 4; a.line(18, 22, Math.round(18 + Math.cos(t) * 6), Math.round(22 + Math.sin(t) * 6), W.h); }
+  a.circle(18, 22, 1.8, I.m); a.px(17, 21, I.h);
+});
+retex('flamethrower', (a) => {
+  const R = GX.red, S = GP.steel, K = GX.rubber, I = GX.iron;
+  // depósito de combustible con abrazaderas y manómetro
+  a.rect(4, 8, 25, 7, R.b); a.hline(4, 28, 8, R.h); a.hline(4, 28, 14, R.d); a.vline(3, 9, 13, R.m); a.vline(29, 9, 13, R.d);
+  for (const x of [9, 22]) a.vline(x, 8, 14, S.m);
+  a.circle(15.5, 11, 1.6, '#e8e4d8'); a.px(16, 10, '#2a2b2e');
+  // manguera hasta el arma
+  a.line(29, 10, 33, 6, K.b); a.line(30, 10, 34, 6, K.m);
+  // cuerpo del arma, culata y tubo
+  a.rect(0, 2, 6, 5, I.b); a.hline(0, 5, 2, I.h); a.vline(0, 2, 6, I.d);
+  a.rect(6, 2, 34, 4, S.b); a.hline(6, 39, 2, S.h); a.hline(6, 39, 5, S.d);
+  for (let x = 24; x < 38; x += 3) a.vline(x, 3, 4, S.d);
+  // boquilla con el piloto encendido
+  a.rect(40, 3, 6, 4, I.b); a.hline(40, 45, 3, I.h); a.rect(46, 4, 2, 2, '#1a1b1d'); a.px(47, 6, '#ff9a3a'); a.px(46, 7, '#ffd08a');
+  // empuñaduras
+  a.poly([[13, 6], [17, 6], [16, 11], [12, 11]], K.b); a.line(13, 6, 12, 10, K.h); a.hline(12, 15, 11, K.d);
+  a.rect(33, 6, 3, 4, K.b); a.vline(33, 6, 9, K.h);
+});
+retex('accelerator', (a) => {
+  const P = GX.navy, I = GX.iron;
+  // carcasa trasera con rejillas
+  a.rect(0, 3, 15, 10, I.b); a.hline(0, 14, 3, I.h); a.hline(0, 14, 12, I.d); a.vline(0, 3, 12, I.m);
+  for (let x = 3; x < 13; x += 2) a.vline(x, 5, 9, I.d);
+  // bobinas magnéticas que brillan
+  a.rect(15, 4, 28, 7, '#101722');
+  for (let k = 0; k < 7; k++) { const x = 16 + k * 4; a.rect(x, 2, 2, 11, '#4a90c8'); a.vline(x, 2, 12, '#9ad8ff'); a.px(x + 1, 2, '#2a5a88'); a.px(x + 1, 12, '#2a5a88'); }
+  a.hline(15, 42, 7, '#3a6fa0'); a.hline(15, 42, 8, '#2a5a88');
+  // raíles gemelos con el arco entre ellos
+  a.rect(43, 4, 21, 2, P.b); a.hline(43, 63, 4, P.h); a.rect(43, 10, 21, 2, P.b); a.hline(43, 63, 11, P.d);
+  for (let x = 45; x < 63; x += 4) { a.px(x, 7, '#62c3ff'); a.px(x + 2, 8, '#62c3ff'); }
+  a.vline(63, 6, 9, '#dff4ff');
+  // empuñadura
+  a.poly([[15, 12], [19, 12], [18, 15], [14, 15]], I.b); a.line(15, 12, 14, 14, I.h);
+});
+retex('ion_cannon', (a) => {
+  const W = GX.white, K = GX.rubber;
+  // cuerpo trasero blanco
+  a.rect(0, 4, 13, 8, W.b); a.hline(1, 12, 4, W.h); a.hline(0, 12, 11, W.d); a.vline(0, 4, 11, W.m); a.rect(2, 6, 7, 2, W.m);
+  // reactor con el núcleo de iones
+  a.rect(12, 2, 19, 12, W.b); a.hline(12, 30, 2, W.h); a.hline(12, 30, 13, W.d); a.vline(12, 2, 13, W.m); a.vline(30, 2, 13, W.m);
+  a.circle(21.5, 8, 4.6, '#1d2a38'); a.circle(21.5, 8, 3.4, '#3fb0f0'); a.circle(21, 7.5, 1.8, '#d9f6ff'); a.px(20, 6, '#ffffff');
+  rivets(a, 14, 29, 3, 5, W.m); rivets(a, 14, 29, 12, 5, W.m);
+  // cañón con anillos y emisor
+  a.rect(31, 5, 13, 6, W.m); a.hline(31, 43, 5, W.h); a.hline(31, 43, 10, W.d);
+  for (const x of [34, 38, 42]) { a.vline(x, 4, 11, '#5a6672'); a.px(x, 7, '#62c3ff'); }
+  emitter(a, 44, 5, 10, K, '#8fe8ff', 4);
+  a.poly([[12, 13], [16, 13], [15, 16], [11, 16]], K.b);
+});
+retex('spike_rifle', (a) => {
+  const O = GX.olive, Y = GX.yellow, I = GX.iron;
+  // culata y cuerpo industrial con franjas de aviso
+  a.poly([[0, 3], [8, 2], [8, 8], [0, 8]], O.m); a.hline(0, 7, 3, O.h); a.vline(0, 3, 8, O.d); a.rect(2, 4, 4, 2, CLR);
+  a.rect(8, 2, 24, 7, O.b); a.hline(8, 31, 2, O.h); a.hline(8, 31, 8, O.d);
+  for (let x = 10; x < 18; x += 3) { a.vline(x, 3, 7, Y.b); a.px(x + 1, 3, Y.b); }
+  a.rect(20, 3, 9, 3, I.b); a.hline(20, 28, 3, I.h);
+  // cañón y boca
+  a.rect(32, 4, 8, 3, I.m); a.hline(32, 39, 4, I.h); a.rect(40, 4, 2, 3, I.d); a.px(41, 5, '#08090a');
+  // cargador de clavos inclinado y empuñadura
+  for (let k = 0; k < 5; k++) { a.hline(27 + k, 30 + k, 8 + k, '#9aa1a9'); a.px(27 + k, 8 + k, '#d6dbe0'); }
+  a.poly([[21, 9], [25, 9], [24, 12], [20, 12]], I.b); a.line(21, 9, 20, 11, I.h);
+  a.hline(18, 20, 10, O.d);
+});
+retex('auto_spike_gun', (a) => {
+  const O = GX.olive, Y = GX.yellow, I = GX.iron;
+  a.poly([[0, 3], [8, 2], [8, 9], [0, 9]], O.m); a.hline(0, 7, 3, O.h); a.vline(0, 3, 9, O.d); a.rect(2, 4, 4, 3, CLR);
+  a.rect(8, 2, 26, 8, O.b); a.hline(8, 33, 2, O.h); a.hline(8, 33, 9, O.d);
+  for (let x = 10; x < 20; x += 3) { a.vline(x, 3, 8, Y.b); a.px(x + 1, 3, Y.b); }
+  // tambor de clavos
+  a.circle(28, 10, 4, I.b); a.ring(28, 10, 4, 1, I.d); a.circle(28, 10, 2, '#9aa1a9'); a.px(27, 9, '#d6dbe0');
+  // cañón con camisa ventilada
+  a.rect(34, 4, 7, 3, I.m); a.hline(34, 40, 4, I.h); for (let x = 35; x < 41; x += 2) a.px(x, 5, '#141517');
+  a.rect(41, 3, 3, 5, I.d); a.px(43, 5, '#08090a');
+  a.poly([[23, 10], [27, 10], [26, 14], [22, 14]], I.b); a.line(23, 10, 22, 13, I.h);
+});
+retex('missile_launcher', (a) => {
+  const O = GX.olive, K = GX.rubber, I = GX.iron;
+  // tubo de lanzamiento con tapas
+  a.rect(2, 2, 54, 8, O.b); a.hline(2, 55, 2, O.h); a.hline(2, 55, 3, O.m); a.hline(2, 55, 9, O.d);
+  a.rect(0, 1, 3, 10, K.b); a.vline(0, 1, 10, K.d); a.rect(55, 1, 3, 10, K.b); a.vline(57, 2, 9, '#101113');
+  a.rect(7, 2, 2, 8, '#c9a24a'); a.rect(46, 2, 2, 8, O.d);
+  // unidad de mando con su lente y empuñaduras
+  a.rect(18, 0, 13, 4, I.b); a.hline(18, 30, 0, I.h); a.rect(27, 1, 3, 2, '#1a1b1d'); a.px(29, 1, GLASS); a.px(20, 2, '#e04a3a');
+  a.rect(20, 10, 3, 4, K.b); a.vline(20, 10, 13, K.h); a.rect(28, 10, 3, 3, K.b);
+});
+retex('auto_cannon', (a) => {
+  const O = GX.olive, I = GX.iron, S = GP.steel;
+  // cajón con caja de munición y paneles
+  a.rect(0, 6, 34, 18, O.b); a.hline(0, 33, 6, O.h); a.hline(0, 33, 23, O.d); a.vline(0, 6, 23, O.m);
+  a.rect(3, 4, 14, 6, O.m); a.hline(3, 16, 4, O.h); a.rect(5, 6, 10, 2, '#c9a24a'); a.hline(5, 14, 7, '#8a6a2a');
+  a.hline(1, 32, 12, O.d); a.vline(18, 7, 22, O.d);
+  for (const [x, y] of [[3, 14], [15, 14], [21, 14], [31, 14], [3, 21], [15, 21], [21, 21], [31, 21]]) a.px(x, y, O.h);
+  a.rect(22, 8, 8, 3, I.b); a.hline(22, 29, 8, I.h);
+  // camisa del cañón, cañón largo y freno de boca
+  a.rect(34, 8, 15, 8, I.b); a.hline(34, 48, 8, I.h); a.hline(34, 48, 15, I.d); for (let x = 36; x < 48; x += 3) a.vline(x, 9, 14, I.d);
+  a.rect(49, 10, 31, 4, S.b); a.hline(49, 79, 10, S.h); a.hline(49, 79, 13, S.d);
+  a.rect(80, 8, 10, 8, I.b); a.hline(80, 89, 8, I.h); a.hline(80, 89, 15, I.d);
+  for (const x of [82, 85]) { a.vline(x, 9, 10, '#141517'); a.vline(x, 13, 14, '#141517'); }
+  a.px(89, 11, '#08090a'); a.px(89, 12, '#08090a');
+});
+retex('storm_gun', (a) => {
+  const C = GX.copper, I = GX.iron, K = GX.rubber;
+  // cuerpo con la bobina de cobre
+  a.rect(0, 4, 10, 6, I.b); a.hline(0, 9, 4, I.h); a.vline(0, 4, 9, I.d);
+  a.rect(10, 3, 15, 8, '#2a1a12');
+  for (let x = 10; x <= 24; x += 2) { a.vline(x, 3, 10, C.b); a.px(x, 3, C.h); a.px(x, 10, C.d); }
+  // vástago y esfera de descarga con chispas
+  a.rect(25, 6, 9, 2, I.m); a.hline(25, 33, 6, I.h);
+  a.circle(36.5, 7, 3, '#c8ccd2'); a.circle(36, 6.5, 1.6, '#f4f6f8'); a.px(35, 5, '#ffffff');
+  a.px(39, 3, '#8fe0ff'); a.px(38, 2, '#8fe0ff'); a.px(39, 11, '#8fe0ff');
+  a.poly([[10, 10], [14, 10], [13, 13], [9, 13]], K.b); a.line(10, 10, 9, 12, K.h);
+});
+retex('pulse_drum', (a) => {
+  const I = GX.iron, W = GX.white, K = GX.rubber;
+  // empuñadura trasera
+  a.rect(1, 7, 9, 6, I.b); a.hline(1, 9, 7, I.h); a.vline(1, 7, 12, I.d);
+  // tambor con segmentos que brillan
+  a.circle(15.5, 8.5, 6, I.b); a.ring(15.5, 8.5, 6, 1, I.h); a.circle(15.5, 8.5, 3.6, '#1d2a38'); a.ring(15.5, 8.5, 3.6, 1, '#62c3ff'); a.circle(15.5, 8.5, 1.2, '#dff4ff');
+  // bocina acampanada con anillos
+  a.poly([[21, 6], [34, 0], [36, 0], [36, 17], [34, 17], [21, 11]], W.m);
+  a.line(21, 6, 34, 0, W.h); a.line(21, 11, 34, 17, W.d);
+  for (const x of [25, 29, 33]) { const t = (x - 21) / 13, h = Math.round(2.5 + t * 6); a.vline(x, 9 - h, 8 + h, W.d); }
+  a.vline(35, 1, 16, '#8fe0ff'); a.vline(34, 3, 14, '#3fb0f0');
+  a.poly([[9, 13], [13, 13], [12, 16], [8, 16]], K.b);
+});
+retex('arc_caster', (a) => {
+  const P = GX.purple, K = GX.rubber;
+  a.rect(0, 4, 12, 5, P.b); a.hline(0, 11, 4, P.h); a.hline(0, 11, 8, P.d); a.vline(0, 4, 8, P.m);
+  // anillo de arco
+  a.circle(17, 5.5, 5, P.d); a.ring(17, 5.5, 5, 1.6, '#c58cf0'); a.ring(17, 5.5, 5, 0.7, '#f0e0ff'); a.circle(17, 5.5, 2, '#2c1f40'); a.px(17, 5, '#f0e0ff');
+  // cañón y púas del emisor
+  a.rect(22, 5, 9, 3, P.m); a.hline(22, 30, 5, P.h); a.hline(22, 30, 7, P.d);
+  a.hline(30, 33, 4, '#9aa3ad'); a.hline(30, 33, 8, '#9aa3ad'); a.px(33, 6, '#f0e0ff'); a.px(32, 6, '#c58cf0');
+  a.poly([[9, 9], [13, 9], [12, 13], [8, 13]], K.b); a.line(9, 9, 8, 12, K.h);
+});
+retex('bazooka', (a) => {
+  const O = GX.olive, W = GP.wood, I = GX.iron;
+  // tubo con los dos ensanchamientos
+  a.rect(3, 2, 53, 7, O.b); a.hline(3, 55, 2, O.h); a.hline(3, 55, 3, O.m); a.hline(3, 55, 8, O.d);
+  a.rect(0, 1, 4, 9, O.m); a.vline(0, 1, 9, O.d); a.hline(0, 3, 1, O.h);
+  a.rect(55, 1, 5, 9, O.m); a.hline(55, 59, 1, O.h); a.vline(59, 2, 8, '#101113');
+  for (const x of [12, 36]) a.vline(x, 2, 8, O.d);
+  // alza y punto de mira, caja de cables
+  a.rect(15, 0, 4, 2, I.b); a.px(16, 0, I.h); a.vline(47, 0, 1, I.b);
+  a.rect(39, 9, 6, 2, I.m);
+  // culata de madera y empuñaduras
+  a.rect(17, 8, 11, 2, W.b); a.hline(17, 27, 8, W.h);
+  a.rect(22, 9, 3, 3, I.b); a.vline(22, 9, 11, I.h); a.rect(30, 9, 3, 3, W.b); a.vline(30, 9, 11, W.h);
+});
+retex('shard_launcher', (a) => {
+  const S = GP.steel, I = GX.iron, K = GX.rubber;
+  a.rect(0, 4, 10, 6, I.b); a.hline(0, 9, 4, I.h); a.vline(0, 4, 9, I.d);
+  a.rect(10, 2, 22, 10, S.b); a.hline(10, 31, 2, S.h); a.hline(10, 31, 11, S.d);
+  // cámara con los cristales
+  a.rect(13, 4, 15, 6, '#122a2a');
+  for (const [x, h] of [[14, 4], [17, 5], [20, 3], [23, 5], [26, 4]]) { a.poly([[x, 9], [x + 1, 9 - h], [x + 2, 9]], '#5fe0d0'); a.px(x + 1, 9 - h + 1, '#d9fff8'); }
+  // cañón con púas
+  a.rect(32, 5, 10, 4, S.m); a.hline(32, 41, 5, S.h); a.hline(32, 41, 8, S.d);
+  a.poly([[42, 3], [46, 6], [42, 6]], S.h); a.poly([[42, 8], [46, 8], [42, 11]], S.m); a.px(45, 7, '#5fe0d0');
+  a.poly([[11, 11], [15, 11], [14, 14], [10, 14]], K.b);
+});
+// cañones montados (rayos, láser, haz y 120 mm): torreta blindada y cañón grueso
+function bigCannon(a, kind) {
+  const A = { b: '#4a4f57', h: '#6d737c', d: '#2b2e33', m: '#3c4047' };
+  // torreta con frente inclinado, escotilla, rejillas y remaches
+  a.poly([[0, 5], [30, 3], [36, 8], [36, 24], [0, 25]], A.b);
+  a.line(0, 5, 29, 3, A.h); a.line(30, 3, 35, 8, A.h); a.hline(0, 35, 24, A.d); a.vline(0, 5, 24, A.m);
+  a.rect(6, 2, 12, 3, A.m); a.hline(6, 17, 2, A.h); a.rect(9, 1, 6, 1, A.d);
+  a.hline(2, 33, 13, A.d); for (let x = 4; x < 20; x += 3) a.vline(x, 16, 21, A.d);
+  for (const [x, y] of [[3, 7], [26, 7], [3, 11], [26, 11], [24, 16], [32, 16], [24, 22], [32, 22]]) a.px(x, y, A.h);
+  a.rect(22, 15, 12, 8, A.m); a.hline(22, 33, 15, A.h);
+  if (kind === 'shell') {
+    // cañón de acero con extractor de humos y freno de boca
+    const S = GP.steel;
+    a.rect(36, 9, 60, 8, S.b); a.hline(36, 95, 9, S.h); a.hline(36, 95, 16, S.d); a.hline(36, 95, 10, '#5d636b');
+    a.rect(36, 7, 10, 12, A.m); a.hline(36, 45, 7, A.h); a.hline(36, 45, 18, A.d);
+    a.rect(58, 8, 12, 10, S.m); a.hline(58, 69, 8, S.h); a.hline(58, 69, 17, S.d);
+    a.rect(88, 7, 8, 12, A.b); a.hline(88, 95, 7, A.h); a.hline(88, 95, 18, A.d); for (const x of [90, 93]) { a.vline(x, 8, 10, '#141517'); a.vline(x, 15, 17, '#141517'); }
+    a.vline(95, 11, 14, '#08090a');
+    return;
+  }
+  const G = { ray: ['#2a1640', '#9a5ad8', '#f0d8ff'], laser: ['#3a0e0e', '#e0402e', '#ffd0c8'], beam: ['#0f2236', '#3fa0e8', '#dff4ff'] }[kind];
+  // cañón de energía: camisa con anillos y el canal que brilla
+  a.rect(36, 7, 54, 12, A.b); a.hline(36, 89, 7, A.h); a.hline(36, 89, 18, A.d);
+  a.rect(38, 10, 50, 6, G[0]); a.hline(39, 87, 12, G[1]); a.hline(39, 87, 13, G[1]); a.hline(40, 86, 12, G[2]);
+  for (let x = 42; x < 88; x += 6) { a.vline(x, 6, 19, A.m); a.px(x, 6, A.h); a.px(x, 19, A.d); }
+  // emisor
+  a.rect(90, 6, 6, 14, A.d); a.hline(90, 95, 6, A.m); a.vline(95, 9, 16, G[1]); a.vline(94, 11, 14, G[2]);
+}
+retex('ray_cannon', (a) => bigCannon(a, 'ray'));
+retex('laser_cannon', (a) => bigCannon(a, 'laser'));
+retex('beam_cannon', (a) => bigCannon(a, 'beam'));
+retex('cannon_120', (a) => bigCannon(a, 'shell'));
+retex('crossbow', (a) => {
+  const W = GP.wood, S = GP.steel, I = GX.iron;
+  // caja de madera con la guía del virote
+  a.poly([[0, 9], [33, 8], [33, 12], [3, 12], [0, 13]], W.b); a.line(0, 9, 32, 8, W.h); woodGrain(a, 1, 31, 10, 12, W);
+  a.hline(12, 33, 8, W.d);
+  // estribo delantero
+  a.rect(33, 7, 2, 5, I.b); a.vline(35, 8, 11, I.d);
+  // arco recurvado de acero
+  for (let y = 0; y <= 21; y++) { const t = Math.abs(y - 10.5) / 10.5, x = Math.round(28 + 3 * t * t); a.rect(x, y, 2, 1, S.b); a.px(x, y, S.h); }
+  a.px(31, 0, S.d); a.px(31, 21, S.d);
+  // cuerda tensada hasta la nuez
+  a.line(31, 0, 15, 8, '#e8e2cf'); a.line(31, 21, 15, 9, '#e8e2cf');
+  a.rect(14, 8, 2, 2, I.b);
+  // virote cargado con punta ancha
+  a.hline(15, 34, 8, '#8a6a46'); a.poly([[33, 7], [36, 8], [36, 9], [33, 10]], '#c8ccd2'); a.px(34, 8, '#f4f6f8');
+  // empuñadura y gatillo
+  a.poly([[8, 13], [12, 13], [11, 18], [7, 18]], W.b); a.line(8, 13, 7, 17, W.h); a.hline(7, 10, 18, W.d);
+  a.hline(12, 14, 15, I.d); a.vline(14, 13, 15, I.d); a.vline(13, 13, 14, '#9aa1a9');
+});
+
+/* =========================================================================
+   PISTOLAS MÉDICAS
+   ========================================================================= */
+retex('heal_gun', (a) => {
+  const W = GX.white, K = GX.rubber;
+  // cuerpo blanco con la cruz verde y el depósito
+  a.rect(2, 1, 16, 5, W.b); a.hline(3, 17, 1, W.h); a.hline(2, 17, 5, W.d); a.vline(2, 1, 5, W.m);
+  a.rect(5, 2, 5, 3, '#2f8a44'); a.hline(6, 8, 3, '#8af0a0'); a.vline(7, 2, 4, '#8af0a0');
+  a.rect(12, 2, 4, 2, '#1d4a2a'); a.hline(12, 15, 2, '#4fd16a');
+  // emisor verde
+  a.rect(18, 2, 3, 3, '#5d636b'); a.hline(18, 20, 2, '#8a929b'); a.vline(21, 2, 4, '#6fe08a'); a.px(21, 3, '#d8ffe0');
+  // empuñadura y gatillo
+  a.poly([[3, 6], [8, 6], [7, 12], [2, 12]], '#b9bfc7'); a.line(3, 6, 2, 11, '#d7dce1'); a.hline(2, 6, 11, '#8a929b');
+  a.hline(8, 10, 8, W.d); a.vline(10, 6, 8, W.d); a.vline(9, 6, 7, '#5d636b');
+});
+retex('reconstructor', (a) => {
+  const W = GX.white;
+  a.rect(2, 2, 18, 6, W.b); a.hline(3, 19, 2, W.h); a.hline(2, 19, 7, W.d); a.vline(2, 2, 7, W.m);
+  // depósito con el líquido curativo encima
+  a.rect(6, 0, 8, 3, '#2a6a3a'); a.rect(7, 0, 6, 2, '#5ae080'); a.px(8, 0, '#c8ffd8');
+  a.hline(4, 18, 5, W.m); a.px(16, 4, '#4fd16a');
+  // boquilla de rociar
+  a.rect(20, 3, 6, 3, '#8a929b'); a.hline(20, 25, 3, '#c3cad2'); a.rect(26, 4, 2, 1, '#4fd16a'); a.px(27, 4, '#c8ffd8');
+  a.poly([[4, 8], [9, 8], [8, 12], [3, 12]], '#b9bfc7'); a.line(4, 8, 3, 11, '#d7dce1');
+  a.hline(9, 11, 9, W.d); a.vline(11, 8, 9, W.d);
+}, { edge: 0.82 });
+retex('rigidifier', (a) => {
+  const N = { b: '#2b3a4a', h: '#3f566e', d: '#18222c', m: '#22303d' };
+  a.rect(2, 2, 18, 6, N.b); a.hline(3, 19, 2, N.h); a.hline(2, 19, 7, N.d); a.vline(2, 2, 7, N.m);
+  a.rect(6, 0, 8, 3, '#1a2a4a'); a.rect(7, 0, 6, 2, '#7fa8ff'); a.px(8, 0, '#dfe8ff');
+  a.hline(4, 18, 5, N.m); rivets(a, 4, 18, 4, 4, N.h);
+  a.rect(20, 3, 6, 3, '#8a929b'); a.hline(20, 25, 3, '#c3cad2'); a.rect(26, 4, 2, 1, '#7fa8ff'); a.px(27, 4, '#dfe8ff');
+  a.poly([[4, 8], [9, 8], [8, 12], [3, 12]], '#1f2a36'); a.line(4, 8, 3, 11, '#3f566e');
+  a.hline(9, 11, 9, N.d); a.vline(11, 8, 9, N.d);
+}, { edge: 0.82 });
+
+/* ---- 56_v134_tex_cuerpo.js ---- */
+/* =========================================================================
+   VERSIÓN 13.4 (2): TEXTURAS NUEVAS DE LAS ARMAS CUERPO A CUERPO.
+   Hojas con lomo, filo brillante y acanaladura; mangos con vetas, cintas,
+   remaches y pomos; cabezas de acero con caras biseladas. Mismo tamaño,
+   puntos y forma física que antes.
+   ========================================================================= */
+const BL = { b: '#b9c0c8', h: '#eef2f5', d: '#7c848e', m: '#9aa3ad' }; // acero de hoja
+const MO = { edge: 0.82 };
+// hoja horizontal: lomo arriba (y0), filo abajo (y1), de x0 a x1; la punta en (tx, ty)
+function blade(a, x0, x1, y0, y1, tx, ty, P = BL) {
+  a.poly([[x0, y0], [x1, y0], [tx + 1, ty], [tx + 1, ty + 1], [x1, y1 + 1], [x0, y1 + 1]], P.b);
+  a.hline(x0, x1, y0, P.d); a.line(x1, y0, tx, ty, P.d);
+  a.hline(x0, x1, y1, P.h); a.line(x1, y1, tx, ty, P.h);
+  if (y1 - y0 >= 3) a.hline(x0 + 1, x1 - 2, y0 + 1, P.m);
+}
+// aclara u oscurece lo que ya está dibujado a lo largo de una línea
+function shadeLine(a, x0, y0, x1, y1, f) {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+  for (let i = 0; i <= n; i++) { const x = Math.round(lerp(x0, x1, i / n)), y = Math.round(lerp(y0, y1, i / n)); if (a.s.a(x, y)) a.px(x, y, shadeRgb(a.s.get(x, y), f)); }
+}
+// mango envuelto en cinta (rombos)
+function wrap(a, x0, x1, y0, y1, c1, c2) {
+  a.rect(x0, y0, x1 - x0 + 1, y1 - y0 + 1, c1);
+  for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) if (((x + y) % 3 === 0) || ((x - y + 30) % 3 === 0)) a.px(x, y, c2);
+}
+
+retex('knife', (a) => {
+  const H = GX.rubber;
+  a.rect(0, 1, 6, 3, H.b); a.hline(0, 5, 1, H.h); a.hline(0, 5, 3, H.d); a.px(2, 2, '#9aa1a9'); a.px(4, 2, '#9aa1a9');
+  a.rect(6, 0, 2, 4, GP.steel.b); a.vline(6, 0, 3, GP.steel.h);
+  blade(a, 8, 13, 1, 2, 15, 2);
+}, MO);
+retex('machete', (a) => {
+  const H = GP.walnut;
+  a.rect(0, 2, 8, 3, H.b); a.hline(0, 7, 2, H.h); a.hline(0, 7, 4, H.d); a.px(2, 3, '#d6b25c'); a.px(5, 3, '#d6b25c'); a.vline(0, 2, 4, '#2a1d12');
+  // hoja ancha con el lomo que sube hacia la punta
+  a.poly([[8, 1], [24, 0], [28, 2], [26, 5], [8, 5]], BL.b);
+  a.line(8, 1, 23, 0, BL.d); a.hline(8, 25, 5, BL.h); a.line(25, 5, 27, 3, BL.h); a.px(27, 2, BL.h);
+  a.line(9, 2, 22, 1, BL.m); a.hline(9, 22, 4, '#d4dae0');
+  a.rect(8, 1, 2, 5, '#5d636b');
+}, MO);
+retex('sword', (a) => {
+  const B = GX.brass, L = { b: '#5a3a26', m: '#3e2818' };
+  // pomo, puño de cuero y gavilanes de latón
+  a.rect(0, 2, 2, 3, B.b); a.px(0, 2, B.h); a.px(1, 4, B.d);
+  wrap(a, 2, 9, 2, 4, L.b, L.m);
+  a.rect(10, 0, 2, 7, B.b); a.vline(10, 0, 6, B.h); a.px(11, 6, B.d); a.px(11, 0, B.d);
+  // hoja con acanaladura
+  blade(a, 12, 41, 2, 4, 45, 3);
+  a.hline(14, 34, 3, BL.m); a.hline(15, 33, 3, '#a5adb6');
+}, MO);
+retex('katana', (a) => {
+  const T = '#e8e2cf', K = '#1d1e21';
+  // tsuka con el ito trenzado, kashira y tsuba
+  a.rect(0, 1, 13, 4, K); a.vline(0, 1, 4, '#3a3d42');
+  for (let x = 1; x < 13; x += 3) { a.px(x, 1, T); a.px(x + 1, 2, T); a.px(x + 1, 3, T); a.px(x, 4, T); }
+  a.rect(13, 0, 2, 6, '#2b2a2e'); a.px(13, 0, '#5d5a52'); a.px(14, 5, '#141416');
+  a.px(15, 2, '#c9a24a'); a.px(15, 3, '#c9a24a');
+  // hoja curva con hamon
+  a.poly([[16, 2], [46, 1], [48, 1], [46, 3], [16, 4]], BL.b);
+  a.line(16, 2, 46, 1, BL.d); a.line(16, 4, 46, 3, BL.h);
+  for (let x = 18; x < 44; x += 4) a.px(x, 3, '#f4f7fa');
+  a.px(47, 1, BL.h);
+}, MO);
+retex('axe', (a) => {
+  const W = { b: '#a07a4a', h: '#c49a62', d: '#6a4e2c', m: '#8a6a3e' };
+  // mango de nogal americano y empuñadura
+  a.rect(0, 6, 22, 2, W.b); a.hline(0, 21, 6, W.h); a.hline(0, 21, 7, W.d); woodGrain(a, 4, 20, 6, 7, W);
+  a.rect(0, 5, 5, 4, '#2a2b2e'); a.hline(0, 4, 5, '#3f4145'); a.px(2, 7, '#3f4145');
+  // cabeza de acero: ojo, mejilla y filo brillante
+  a.poly([[21, 3], [26, 2], [30, 0], [30, 14], [26, 12], [21, 11]], '#5d636b');
+  a.poly([[24, 3], [29, 1], [29, 13], [24, 11]], '#8a929b');
+  a.vline(29, 1, 13, '#e8edf2'); a.vline(28, 2, 12, '#c3cad2');
+  a.rect(21, 5, 3, 4, '#3a3d42'); a.px(22, 6, W.b);
+  a.line(21, 3, 29, 0, '#a8b0b8');
+}, MO);
+retex('bat', (a) => {
+  const W = { b: '#c49a62', h: '#e0bb85', d: '#8a6a3e', m: '#a8824e' };
+  // pomo, mango con cinta y el cuerpo que engorda
+  a.rect(0, 0, 2, 5, W.d); a.vline(0, 0, 4, W.m);
+  a.poly([[2, 1], [16, 1], [37, 0], [37, 4], [16, 3], [2, 3]], W.b);
+  a.line(16, 1, 36, 0, W.h); a.hline(2, 15, 1, W.h); a.line(16, 3, 36, 4, W.d); a.hline(2, 15, 3, W.d);
+  for (let x = 2; x < 13; x += 2) { a.px(x, 1, '#2a2b2e'); a.px(x + 1, 2, '#2a2b2e'); a.px(x, 3, '#2a2b2e'); }
+  woodGrain(a, 17, 35, 1, 3, W);
+  a.rect(24, 1, 4, 2, '#1d4f8a'); a.px(25, 1, '#4a8ad0');
+  a.vline(37, 0, 4, W.d);
+}, MO);
+retex('crowbar', (a) => {
+  const R = GX.red, S = GP.silver;
+  // barra pintada de rojo, punta de cincel y uña doble
+  a.rect(2, 4, 29, 3, R.b); a.hline(2, 30, 4, R.h); a.hline(2, 30, 6, R.d);
+  for (let x = 6; x < 28; x += 7) a.px(x, 5, R.m);
+  a.poly([[0, 3], [3, 4], [3, 7], [0, 6]], S.b); a.vline(0, 3, 5, S.h);
+  a.poly([[30, 4], [33, 0], [34, 0], [34, 2], [32, 6], [30, 7]], R.b); a.line(30, 4, 33, 0, R.h);
+  a.px(34, 0, S.h); a.px(34, 1, S.b); a.px(33, 1, '#2a2b2e');
+}, MO);
+retex('sledgehammer', (a) => {
+  const W = { b: '#a07a4a', h: '#c49a62', d: '#6a4e2c', m: '#8a6a3e' }, I = GX.iron;
+  // mango con empuñadura de goma
+  a.rect(0, 5, 33, 4, W.b); a.hline(0, 32, 5, W.h); a.hline(0, 32, 8, W.d); woodGrain(a, 10, 31, 6, 7, W);
+  a.rect(0, 5, 9, 4, '#2a2b2e'); a.hline(0, 8, 5, '#3f4145'); for (let x = 1; x < 9; x += 2) a.vline(x, 6, 7, '#1d1e21');
+  // cabeza de acero con las caras biseladas
+  a.rect(32, 1, 10, 12, I.m); a.rect(33, 0, 8, 14, I.m);
+  a.rect(33, 0, 8, 2, '#8a929b'); a.hline(33, 40, 0, '#c3cad2'); a.rect(33, 12, 8, 2, '#5d636b'); a.hline(33, 40, 13, '#2a2b2e');
+  a.vline(32, 2, 11, I.h); a.vline(41, 2, 11, I.d); a.rect(35, 5, 4, 4, I.b); a.px(36, 6, I.h);
+}, MO);
+retex('wrench', (a) => {
+  const C = GP.silver;
+  // mango cromado con el agujero
+  a.rect(0, 3, 17, 4, C.b); a.hline(0, 16, 3, C.h); a.hline(0, 16, 6, C.d); a.rect(2, 4, 3, 2, CLR); a.hline(6, 14, 5, C.m);
+  // tornillo sin fin moleteado
+  a.rect(15, 6, 4, 3, C.d); for (let x = 15; x < 19; x += 2) a.vline(x, 6, 8, '#3a3d42');
+  // mordazas
+  a.rect(17, 0, 9, 4, C.b); a.hline(17, 25, 0, C.h); a.rect(21, 2, 5, 2, CLR);
+  a.rect(17, 6, 9, 4, C.m); a.hline(17, 25, 9, C.d); a.rect(21, 6, 5, 2, CLR); a.hline(21, 25, 8, C.b);
+}, MO);
+retex('pan', (a) => {
+  const I = GX.iron;
+  // mango con el agujero para colgar
+  a.rect(0, 2, 12, 2, '#4a4d53'); a.hline(0, 11, 2, '#6a6e75'); a.hline(0, 11, 3, I.d); a.px(2, 2, CLR); a.px(2, 3, CLR);
+  // sartén de hierro fundido vista de lado, con el borde que brilla
+  a.poly([[11, 0], [30, 0], [28, 6], [13, 6]], I.b); a.hline(11, 29, 0, '#9aa0a8'); a.hline(12, 28, 1, '#6a6e75'); a.hline(13, 27, 5, I.d);
+  a.hline(14, 26, 3, I.m); a.px(26, 1, '#c3cad2');
+}, MO);
+retex('baton', (a) => {
+  const K = GX.rubber;
+  // mango con estrías y botón rojo
+  a.rect(0, 0, 10, 4, K.b); a.hline(0, 9, 0, K.h); a.hline(0, 9, 3, K.d); for (let x = 1; x < 9; x += 2) a.vline(x, 1, 2, K.d); a.px(7, 0, '#ff4a3a');
+  // vara con anilla y electrodos
+  a.rect(10, 1, 16, 2, '#2e3035'); a.hline(10, 25, 1, '#4c5058'); a.vline(17, 0, 3, GP.silver.b);
+  a.rect(26, 0, 2, 4, '#e1b928'); a.px(27, 0, '#f6dc6a'); a.px(27, 3, '#f6dc6a'); a.px(26, 1, '#97790f'); a.px(26, 2, '#97790f');
+}, MO);
+retex('chainsaw', (a) => {
+  const O = GX.orange, I = GX.iron;
+  // asa superior y cuerpo con el motor
+  a.rect(2, 0, 11, 2, I.b); a.hline(2, 12, 0, I.h); a.vline(2, 0, 4, I.b); a.vline(12, 0, 4, I.b);
+  a.rect(0, 3, 16, 11, O.b); a.hline(0, 15, 3, O.h); a.hline(0, 15, 13, O.d); a.vline(0, 3, 13, O.m);
+  a.rect(3, 6, 8, 5, I.b); for (let y = 6; y < 11; y += 2) a.hline(3, 10, y, I.h);
+  a.rect(1, 11, 4, 2, '#e8e2cf'); a.rect(12, 4, 3, 2, I.d);
+  a.px(14, 9, '#2a2b2e'); a.px(14, 10, '#2a2b2e');
+  // espada con la cadena (dientes arriba y abajo) y la punta redonda
+  a.rect(16, 5, 26, 6, '#8a929b'); a.hline(16, 41, 6, '#c3cad2'); a.hline(16, 41, 9, '#5d636b');
+  a.circle(41.5, 8, 2.6, '#8a929b'); a.px(43, 7, '#c3cad2');
+  for (let x = 16; x < 42; x += 2) { a.px(x, 5, '#2a2b2e'); a.px(x + 1, 5, '#5d636b'); a.px(x, 10, '#2a2b2e'); a.px(x + 1, 10, '#5d636b'); }
+  rivets(a, 20, 38, 8, 9, '#3a3d42');
+}, MO);
+retex('energy_sword', (a) => {
+  const I = GX.iron, S = GP.silver;
+  // empuñadura con estrías, botón y emisor (la hoja se ve al encenderla)
+  a.rect(0, 1, 12, 4, I.b); a.hline(0, 11, 1, I.h); a.hline(0, 11, 4, I.d);
+  for (let x = 2; x < 8; x += 2) a.vline(x, 2, 3, I.d);
+  a.rect(0, 1, 2, 4, S.m); a.vline(0, 1, 4, S.d); a.px(9, 2, '#6fe0ff'); a.px(9, 3, '#3aa0d0');
+  a.rect(12, 0, 2, 6, S.b); a.vline(12, 0, 5, S.h); a.px(13, 2, '#9adfff'); a.px(13, 3, '#9adfff');
+}, MO);
+retex('hammer', (a) => {
+  const W = { b: '#a07a4a', h: '#c49a62', d: '#6a4e2c', m: '#8a6a3e' }, S = GP.steel;
+  a.rect(0, 4, 18, 2, W.b); a.hline(0, 17, 4, W.h); a.hline(0, 17, 5, W.d); woodGrain(a, 7, 16, 4, 5, W);
+  a.rect(0, 3, 6, 4, '#2a2b2e'); a.hline(0, 5, 3, '#3f4145'); for (let x = 1; x < 6; x += 2) a.px(x, 5, '#1d1e21');
+  // cabeza de acero: cuello, cara de golpeo abajo y uña curva arriba
+  a.rect(18, 3, 5, 4, S.b); a.vline(18, 3, 6, S.h); a.vline(22, 3, 6, S.d);
+  a.rect(17, 6, 7, 4, S.m); a.hline(17, 23, 6, S.h); a.hline(17, 23, 9, '#c3cad2'); a.vline(23, 6, 9, S.d);
+  a.poly([[18, 3], [23, 3], [23, 1], [21, 0], [19, 1]], S.b); a.line(19, 1, 21, 0, S.h); a.px(23, 0, '#c3cad2'); a.px(20, 2, S.d);
+}, MO);
+retex('iron_spike', (a) => {
+  const I = { b: '#4d5157', h: '#73787f', d: '#2b2d31', m: '#3d4045' };
+  a.rect(0, 0, 18, 4, I.b); a.hline(0, 17, 0, I.h); a.hline(0, 17, 3, I.d);
+  for (let x = 2; x < 17; x += 4) { a.px(x, 1, I.m); a.px(x + 1, 2, I.h); }
+  a.rect(0, 0, 2, 4, I.m);
+  a.poly([[18, 0], [24, 2], [18, 4]], '#5d636b'); a.line(18, 0, 23, 2, '#8a929b'); a.px(23, 2, '#c3cad2');
+}, MO);
+retex('crystal', (a) => {
+  // cristal tallado: cara izquierda oscura, derecha clara y destellos
+  a.poly([[5, 0], [10, 8], [8, 26], [2, 26], [0, 8]], [120, 60, 200, 230]);
+  a.poly([[5, 0], [10, 8], [8, 26], [5, 26], [5, 8]], [170, 100, 235, 235]);
+  a.poly([[5, 1], [7, 8], [5, 24], [3, 8]], [220, 180, 255, 240]);
+  a.line(5, 0, 0, 8, [235, 210, 255, 255]); a.line(5, 8, 5, 25, [245, 230, 255, 245]);
+  a.px(6, 4, [255, 255, 255, 255]); a.px(3, 14, [255, 255, 255, 230]); a.px(7, 18, [255, 240, 255, 230]);
+}, { edge: 0.85 });
+retex('legend_sword', (a) => {
+  const G = GP.gold, P = { b: '#3a2a6a', m: '#2a1d4a' };
+  // pomo con gema, puño envuelto y guarda alada de oro
+  a.rect(0, 3, 3, 3, G.b); a.px(0, 3, G.h); a.px(1, 4, '#5fc8ff'); a.px(2, 5, G.d);
+  wrap(a, 3, 14, 3, 5, P.b, '#b08a2a');
+  a.poly([[15, 4], [16, 0], [18, 1], [18, 8], [16, 9], [15, 5]], G.b); a.vline(15, 1, 8, G.h); a.px(17, 0, G.h); a.px(17, 8, G.d);
+  a.px(16, 4, '#5fc8ff'); a.px(17, 4, '#2a80d0');
+  // hoja con la runa que brilla
+  blade(a, 18, 67, 3, 6, 73, 4);
+  a.hline(20, 60, 4, '#7ab0ff'); a.hline(21, 59, 5, '#c8dcff'); for (let x = 24; x < 58; x += 6) a.px(x, 4, '#ffffff');
+}, MO);
+retex('tentacle_staff', (a) => {
+  const P = { b: '#4a2f5e', h: '#6a4a7e', d: '#2a1a38', m: '#3a2448' };
+  // vara retorcida con ventosas
+  a.rect(0, 1, 46, 4, P.b); a.hline(0, 45, 1, P.h); a.hline(0, 45, 4, P.d);
+  for (let x = 0; x < 46; x += 4) { a.px(x, 2, P.m); a.px(x + 1, 3, P.m); a.px(x + 2, 4, P.d); }
+  for (let x = 6; x < 44; x += 7) a.px(x, 4, '#c98ad8');
+  // bulbo de tentáculos con un ojo
+  a.circle(48.5, 3, 3.2, P.h); a.circle(48.5, 3, 2.2, P.b);
+  a.px(51, 0, P.h); a.px(51, 5, P.h); a.px(46, 0, P.m); a.px(46, 5, P.m);
+  a.rect(48, 2, 2, 2, '#f6dc6a'); a.px(49, 2, '#2a1a10');
+}, MO);
+retex('bolt', (a) => {
+  a.hline(3, 20, 1, '#8a6a46'); a.hline(3, 20, 2, '#6a4e2c');
+  a.rect(0, 0, 4, 3, '#c8382c'); a.px(1, 1, '#f4f0e8'); a.px(3, 1, '#f4f0e8');
+  a.poly([[20, 0], [24, 1], [24, 2], [20, 3]], '#c3cad2'); a.px(21, 1, '#f4f6f8');
+}, MO);
+retex('spear', (a) => {
+  const W = { b: '#a07a4a', h: '#c49a62', d: '#6a4e2c', m: '#8a6a3e' }, I = GX.iron;
+  // asta de fresno con regatón y ligaduras de cuero
+  a.rect(0, 1, 70, 3, W.b); a.hline(0, 69, 1, W.h); a.hline(0, 69, 3, W.d); woodGrain(a, 3, 67, 2, 2, W);
+  a.rect(0, 1, 2, 3, I.b); a.px(0, 1, I.h);
+  for (let x = 17; x < 24; x += 2) a.vline(x, 1, 3, '#4a3020');
+  a.rect(66, 1, 4, 3, I.m); a.hline(66, 69, 1, I.h);
+  // punta de hoja de laurel con nervio
+  a.poly([[70, 1], [72, 0], [80, 2], [80, 3], [72, 5], [70, 4]], BL.b);
+  a.line(72, 0, 79, 2, BL.h); a.line(72, 4, 79, 3, BL.d); a.hline(70, 78, 2, '#e3e8ed');
+}, MO);
+retex('iron_rod', (a) => {
+  const I = { b: '#4d5157', h: '#73787f', d: '#2b2d31', m: '#3d4045' };
+  a.rect(0, 0, 64, 3, I.b); a.hline(0, 63, 0, I.h); a.hline(0, 63, 2, I.d);
+  for (let x = 1; x < 63; x += 3) a.px(x, 1, I.m);
+  for (const x of [11, 30, 47]) { a.px(x, 1, '#7a4a2a'); a.px(x + 1, 2, '#8a5a32'); }
+}, MO);
+retex('stick', (a) => {
+  const W = { b: '#7a5634', h: '#9a7046', d: '#4f3620', m: '#664629' };
+  a.rect(0, 0, 48, 3, W.b); a.hline(0, 47, 0, W.h); a.hline(0, 47, 2, W.d); woodGrain(a, 1, 46, 1, 1, W);
+  for (const x of [13, 29, 40]) { a.px(x, 1, W.d); a.px(x + 1, 1, '#3a2814'); }
+  a.px(47, 1, '#c49a62');
+}, MO);
+retex('lance', (a) => {
+  const S = GP.silver, R = '#b8322a', Wt = '#ece6d6';
+  // puño y arandela de acero (cono que protege la mano)
+  a.rect(0, 3, 12, 3, '#5a3a26'); a.hline(0, 11, 3, '#7a5a40'); for (let x = 1; x < 12; x += 2) a.px(x, 4, '#3e2818');
+  a.poly([[12, 3], [23, 0], [24, 0], [24, 9], [23, 9], [12, 6]], S.b); a.line(12, 3, 23, 0, S.h); a.line(12, 6, 23, 9, S.d); a.vline(24, 0, 8, S.d);
+  a.px(18, 3, S.h); a.px(20, 2, S.h);
+  // asta que se estrecha, con espiral roja y blanca
+  a.poly([[24, 2], [104, 3], [104, 6], [24, 7]], Wt);
+  for (let x = 24; x < 104; x += 8) a.poly([[x, 2.2], [x + 4, 2.2], [x + 7, 7], [x + 3, 7]], R);
+  shadeLine(a, 24, 2, 103, 3, 1.12); shadeLine(a, 24, 7, 103, 6, 0.72);
+  // punta de acero
+  a.poly([[104, 3], [118, 4.5], [104, 6]], S.b); a.line(104, 3, 117, 4, S.h); a.rect(103, 3, 2, 3, S.d);
+}, MO);
+
+/* ---- 57_v134_tex_explosivos.js ---- */
+/* =========================================================================
+   VERSIÓN 13.4 (3): TEXTURAS NUEVAS DE LOS EXPLOSIVOS, LOS PROYECTILES Y LOS
+   ACCESORIOS DE LAS ARMAS. Volumen con luz y sombra, espoletas, anillas,
+   etiquetas y aletas. Mismo tamaño y forma física que antes.
+   ========================================================================= */
+const EX = { edge: 0.82 };
+// esfera con luz arriba a la izquierda
+function sphere(a, cx, cy, r, P) {
+  a.circle(cx, cy, r, P.d); a.circle(cx - r * 0.12, cy - r * 0.12, r * 0.86, P.b);
+  a.circle(cx - r * 0.3, cy - r * 0.3, r * 0.45, P.h); a.px(Math.round(cx - r * 0.45), Math.round(cy - r * 0.5), '#ffffff');
+}
+// cilindro vertical con luz a la izquierda
+function cylV(a, x, y, w, h, P) {
+  a.rect(x, y, w, h, P.b); a.vline(x, y, y + h - 1, P.m); a.vline(x + 1, y, y + h - 1, P.h);
+  a.vline(x + w - 1, y, y + h - 1, P.d); if (w > 5) a.vline(x + w - 2, y, y + h - 1, P.m);
+}
+// espoleta de granada: cuerpo, palanca y anilla
+function fuse(a, x, y, lever = true) {
+  a.rect(x, y, 3, 3, '#7a7e86'); a.hline(x, x + 2, y, '#a8adb5'); a.px(x + 1, y + 2, '#4a4d53');
+  if (lever) { a.vline(x + 3, y, y + 6, '#8a9099'); a.px(x + 3, y, '#c3cad2'); }
+  a.ring(x - 1, y + 1, 1.6, 0.8, '#c3cad2');
+}
+
+retex('grenade', (a) => {
+  const O = GX.olive;
+  sphere(a, 4.5, 7.5, 4.4, O);
+  a.hline(1, 7, 7, O.d); a.vline(4, 4, 11, O.d);
+  fuse(a, 3, 1);
+}, EX);
+retex('smoke_grenade', (a) => {
+  const G = { b: '#7d8a7a', h: '#a3b0a0', d: '#4f5a4d', m: '#687565' };
+  cylV(a, 1, 3, 6, 10, G); a.hline(1, 6, 5, '#e8e8e2'); a.hline(1, 6, 10, '#e8e8e2'); a.px(3, 7, '#4f5a4d'); a.px(4, 8, '#4f5a4d');
+  a.hline(1, 6, 12, G.d);
+  fuse(a, 2, 0);
+}, EX);
+retex('flashbang', (a) => {
+  const K = { b: '#3a3d42', h: '#5d6066', d: '#1f2023', m: '#2f3135' };
+  cylV(a, 1, 3, 6, 10, K);
+  for (let y = 5; y < 12; y += 2) for (let x = 2; x < 6; x += 2) a.px(x + ((y >> 1) & 1), y, '#0f1012');
+  a.hline(1, 6, 4, '#c9a24a'); a.hline(1, 6, 12, K.d);
+  fuse(a, 2, 0);
+}, EX);
+retex('molotov', (a) => {
+  const G = { b: '#3f7a3a', h: '#6fb064', d: '#24502a', m: '#33652f' };
+  // trapo en el cuello y botella verde con el líquido
+  a.rect(3, 0, 2, 4, '#e8e2cf'); a.px(3, 0, '#f4f0e8'); a.px(4, 3, '#b8ae94'); a.px(2, 2, '#e8e2cf');
+  a.rect(3, 4, 2, 3, G.m); a.vline(3, 4, 6, G.h);
+  a.poly([[3, 7], [5, 7], [7, 10], [7, 20], [1, 20], [1, 10]], G.b);
+  a.vline(2, 10, 19, G.h); a.vline(6, 10, 19, G.d);
+  a.rect(2, 13, 4, 6, '#d9832a'); a.hline(2, 5, 13, '#f2b25a'); a.vline(5, 13, 18, '#a85a1a');
+  a.px(2, 11, '#d8f0d0'); a.hline(1, 7, 19, G.d);
+}, EX);
+retex('dynamite', (a) => {
+  const R = GX.red;
+  // mecha que se enrosca y cartucho de papel
+  a.px(3, 0, '#3a2a1a'); a.px(2, 1, '#5a4030'); a.px(3, 2, '#5a4030'); a.px(3, 3, '#5a4030');
+  cylV(a, 0, 4, 6, 18, R);
+  a.hline(0, 5, 4, '#e8c8a0'); a.hline(0, 5, 21, '#e8c8a0'); a.hline(0, 5, 5, R.d);
+  a.hline(1, 4, 11, '#2a1a14'); a.hline(1, 4, 14, '#2a1a14'); a.px(2, 12, '#2a1a14'); a.px(3, 13, '#2a1a14');
+}, EX);
+retex('c4', (a) => {
+  // bloque de explosivo plástico envuelto, con el detonador y sus cables
+  a.rect(0, 2, 14, 6, '#e3dcc6'); a.hline(0, 13, 2, '#f4efe0'); a.hline(0, 13, 7, '#b8ae94'); a.vline(0, 2, 7, '#cfc7ae');
+  a.rect(1, 4, 12, 2, '#6a7448'); a.hline(1, 12, 4, '#88925e');
+  a.rect(4, 0, 5, 3, '#2a2b2e'); a.hline(4, 8, 0, '#4a4d53'); a.px(7, 1, '#ff3b30'); a.px(5, 1, '#5fd0ff');
+  a.line(3, 1, 0, 3, '#d8382c'); a.line(9, 1, 13, 3, '#2a5ad0');
+}, EX);
+retex('landmine', (a) => {
+  const O = GX.olive;
+  a.poly([[0, 3], [2, 1], [16, 1], [18, 3], [18, 5], [0, 5]], O.b); a.hline(2, 15, 1, O.h); a.hline(0, 17, 4, O.d);
+  a.rect(6, 0, 6, 2, O.m); a.hline(6, 11, 0, O.h); a.px(9, 0, '#e04a3a');
+  rivets(a, 2, 16, 3, 3, O.m);
+}, EX);
+retex('barrel_explosive', (a) => {
+  const R = GX.red, Y = '#f2c230';
+  cylV(a, 0, 0, 18, 26, R);
+  a.hline(0, 17, 0, R.h); a.hline(0, 17, 25, R.d);
+  for (const y of [5, 20]) { a.hline(0, 17, y, R.d); a.hline(0, 17, y + 1, R.h); }
+  // etiqueta de peligro con la llama
+  a.rect(4, 9, 10, 8, Y); a.hline(4, 13, 9, '#f8dc70'); a.hline(4, 13, 16, '#b8901a');
+  a.poly([[9, 10], [12, 15], [6, 15]], '#1d1e21'); a.px(9, 12, Y); a.px(9, 13, '#e8501a');
+  a.rect(12, 1, 3, 2, '#3a3d42');
+}, EX);
+retex('propane', (a) => {
+  const W = { b: '#e2ddd0', h: '#f6f3ec', d: '#a8a294', m: '#cbc5b6' }, S = GP.steel;
+  // asa protectora y válvula de latón
+  a.rect(3, 0, 10, 2, S.b); a.hline(3, 12, 0, S.h); a.vline(3, 0, 5, S.b); a.vline(12, 0, 5, S.b);
+  a.rect(7, 1, 2, 4, '#b8913a'); a.px(7, 1, '#e2c46d');
+  // botella con hombros redondos y aro de apoyo
+  a.poly([[2, 6], [5, 4], [11, 4], [14, 6], [15, 9], [15, 24], [1, 24], [1, 9]], W.b);
+  a.vline(2, 7, 23, W.h); a.vline(3, 6, 23, W.m); a.vline(14, 7, 23, W.d); a.line(5, 4, 2, 6, W.h);
+  a.hline(1, 15, 14, W.m); a.rect(5, 16, 6, 3, '#d8382c'); a.px(6, 17, '#ffd0c8');
+  a.rect(2, 24, 12, 4, S.m); a.hline(2, 13, 24, S.h); a.rect(5, 26, 6, 2, CLR);
+}, EX);
+retex('bomb', (a) => {
+  const O = GX.olive, I = GX.iron;
+  // aletas con el anillo de cola
+  a.rect(1, 0, 24, 3, I.b); a.hline(1, 24, 0, I.h); a.hline(1, 24, 2, I.d);
+  a.poly([[2, 3], [5, 3], [11, 16], [8, 16]], O.m); a.poly([[24, 3], [21, 3], [15, 16], [18, 16]], O.m);
+  a.rect(11, 3, 4, 14, O.b); a.vline(11, 3, 16, O.h);
+  // cuerpo redondeado con luz a la izquierda, la franja amarilla y la nariz
+  a.ellipse(13, 38, 11, 22, O.d); a.ellipse(12.4, 37.4, 10, 21, O.b);
+  a.ellipse(9, 34, 4.5, 15, O.m); a.ellipse(8, 33, 2.2, 12, O.h); a.px(7, 26, '#a8b878');
+  a.hline(3, 23, 30, '#e1b928'); a.hline(3, 23, 31, '#b8901a'); a.px(3, 30, O.b); a.px(23, 30, O.d);
+  a.ellipse(13, 56, 4, 3.6, I.b); a.px(12, 54, I.h);
+  rivets(a, 6, 20, 44, 7, O.d);
+}, EX);
+retex('nuke', (a) => {
+  const Y = { b: '#d6c64a', h: '#f0e27a', d: '#9a8c22', m: '#bcae36' }, I = GX.iron;
+  // cuerpo gordo con nariz redonda y la cola en caja
+  a.ellipse(26, 14, 26, 13, Y.d); a.ellipse(25, 13, 24.5, 11.5, Y.b); a.ellipse(21, 9, 16, 5, Y.h); a.ellipse(17, 7, 7, 2, '#fff6c0');
+  a.rect(46, 6, 4, 16, Y.m); a.vline(46, 6, 21, Y.d);
+  a.rect(48, 3, 12, 22, I.b); a.hline(48, 59, 3, I.h); a.hline(48, 59, 24, I.d);
+  a.rect(50, 0, 10, 3, I.m); a.rect(50, 25, 10, 3, I.m); a.rect(52, 6, 6, 16, '#1b1c1f'); a.vline(55, 6, 21, I.m);
+  // trébol radiactivo
+  a.circle(22, 14, 6, '#1b1c1f'); a.circle(22, 14, 2.2, Y.b); a.circle(22, 14, 1.2, '#1b1c1f');
+  a.poly([[22, 14], [18, 8], [26, 8]], Y.b); a.poly([[22, 14], [15, 17], [19, 21]], Y.b); a.poly([[22, 14], [29, 17], [25, 21]], Y.b);
+  rivets(a, 40, 40, 4, 1, Y.d); rivets(a, 40, 40, 24, 1, Y.d);
+}, EX);
+retex('fusion_bomb', (a) => {
+  const W = GX.white, I = GX.iron;
+  a.ellipse(30, 17, 30, 16, W.d); a.ellipse(29, 16, 28.5, 14.5, W.b); a.ellipse(24, 11, 18, 5.5, W.h); a.ellipse(20, 8, 8, 2, '#ffffff');
+  a.rect(57, 4, 15, 26, I.b); a.hline(57, 71, 4, I.h); a.hline(57, 71, 29, I.d); a.rect(60, 0, 12, 4, I.m); a.rect(60, 30, 12, 4, I.m);
+  a.rect(62, 8, 7, 18, '#1b1c1f'); a.vline(65, 8, 25, I.m);
+  // franja roja con la ventana del núcleo
+  a.rect(5, 14, 50, 6, '#c8382c'); a.hline(5, 54, 14, '#e8584c'); a.hline(5, 54, 19, '#8a2018');
+  a.circle(30, 17, 5, '#1b1c1f'); a.circle(30, 17, 3.4, '#ff9a3a'); a.circle(29.5, 16.5, 1.8, '#fff0c8');
+}, EX);
+retex('energy_vessel', (a) => {
+  const S = GP.steel;
+  // tapas de metal y varillas laterales
+  a.rect(2, 0, 26, 5, S.b); a.hline(2, 27, 0, S.h); a.hline(2, 27, 4, S.d); a.rect(6, 0, 18, 2, S.m);
+  a.rect(2, 41, 26, 5, S.b); a.hline(2, 27, 41, S.h); a.hline(2, 27, 45, S.d);
+  a.rect(0, 3, 3, 40, S.m); a.vline(0, 3, 42, S.d); a.rect(27, 3, 3, 40, S.m); a.vline(29, 3, 42, S.d);
+  // cristal con la energía que brilla
+  a.rect(4, 5, 22, 36, '#2a1a4a'); a.rect(5, 5, 20, 36, '#5a3ab0');
+  a.rect(8, 7, 14, 32, '#7a5ae0'); a.rect(11, 9, 8, 28, '#b8a0ff'); a.vline(14, 10, 35, '#f0e8ff');
+  a.rect(6, 7, 2, 30, '#c8b8ff'); a.px(6, 7, '#ffffff');
+}, EX);
+retex('pink_explosive', (a) => {
+  const P = { b: '#e05aa8', h: '#f88ac8', d: '#a03478', m: '#c84a94' };
+  a.rect(0, 2, 20, 12, P.b); a.hline(0, 19, 2, P.h); a.hline(0, 19, 13, P.d); a.vline(0, 2, 13, P.m); a.vline(19, 2, 13, P.d);
+  a.rect(3, 6, 14, 5, '#fbe6f2'); a.hline(4, 15, 8, '#c84a94'); a.px(5, 7, '#c84a94'); a.px(14, 9, '#c84a94');
+  a.rect(8, 0, 4, 3, '#2a2b2e'); a.px(9, 0, '#ff3b30');
+}, EX);
+retex('sticky_grenade', (a) => {
+  sphere(a, 5, 5, 5, { b: '#4f8fc8', h: '#9ad0f0', d: '#2a5a88', m: '#3a72a8' });
+  a.ring(5, 5, 5, 1, '#6fd17f'); a.px(1, 8, '#6fd17f'); a.px(8, 9, '#6fd17f'); a.px(5, 9, '#9af0a8');
+}, EX);
+retex('stick_grenade', (a) => {
+  const W = { b: '#a07a4a', h: '#c49a62', d: '#6a4e2c', m: '#8a6a3e' }, G = { b: '#5d6157', h: '#80857a', d: '#3a3d36', m: '#4c5047' };
+  a.rect(0, 2, 16, 3, W.b); a.hline(0, 15, 2, W.h); a.hline(0, 15, 4, W.d); woodGrain(a, 3, 14, 3, 3, W);
+  a.rect(0, 2, 2, 3, '#7a7e86'); a.px(0, 2, '#a8adb5');
+  a.rect(16, 0, 10, 7, G.b); a.hline(16, 25, 0, G.h); a.hline(16, 25, 1, G.m); a.hline(16, 25, 6, G.d); a.vline(16, 0, 6, G.d);
+  a.hline(18, 24, 3, '#d8d4c6');
+}, EX);
+retex('fireworks', (a) => {
+  const R = GX.red;
+  a.poly([[3, 0], [6, 4], [0, 4]], '#f2c230'); a.px(3, 1, '#fff0a0');
+  cylV(a, 0, 4, 6, 13, R);
+  a.hline(0, 5, 8, '#f4f0e8'); a.hline(0, 5, 12, '#f4f0e8'); a.px(2, 10, '#f2c230'); a.px(3, 14, '#f2c230');
+  a.rect(2, 17, 2, 7, '#a07a4a'); a.vline(2, 17, 23, '#c49a62');
+}, EX);
+retex('emp', (a) => {
+  const I = GX.iron;
+  a.rect(0, 5, 20, 11, I.b); a.hline(0, 19, 5, I.h); a.hline(0, 19, 15, I.d); a.vline(0, 5, 15, I.m);
+  // bobina y condensadores azules
+  a.rect(3, 8, 14, 5, '#122236'); for (let x = 4; x < 16; x += 2) a.vline(x, 8, 12, '#3fa0e8'); a.hline(4, 15, 10, '#bfe8ff');
+  a.rect(8, 1, 4, 4, I.m); a.hline(8, 11, 1, I.h); a.vline(10, 0, 1, '#9aa1a9'); a.px(10, 0, '#5fd0ff');
+  rivets(a, 2, 18, 6, 4, I.h); a.px(17, 14, '#6fd17f');
+}, EX);
+retex('naval_mine', (a) => {
+  const I = { b: '#4a4d53', h: '#73787f', d: '#26282c', m: '#3a3d42' };
+  // cuernos de contacto alrededor
+  for (let k = 0; k < 8; k++) {
+    const t = k * Math.PI / 4, x = 13 + Math.cos(t) * 11, y = 13 + Math.sin(t) * 11, x2 = 13 + Math.cos(t) * 9, y2 = 13 + Math.sin(t) * 9;
+    a.line(Math.round(x2), Math.round(y2), Math.round(x), Math.round(y), '#9aa1a9'); a.px(Math.round(x), Math.round(y), '#c3cad2');
+  }
+  sphere(a, 13, 13, 9.5, I);
+  a.hline(4, 22, 13, I.d); rivets(a, 5, 21, 14, 3, I.h);
+}, EX);
+retex('spike_grenade', (a) => {
+  const I = { b: '#4a4d53', h: '#73787f', d: '#26282c', m: '#3a3d42' };
+  for (let k = 0; k < 8; k++) { const t = k * Math.PI / 4 + 0.39; a.px(Math.round(6 + Math.cos(t) * 5.6), Math.round(6 + Math.sin(t) * 5.6), '#c3cad2'); }
+  sphere(a, 6, 6, 4.6, I);
+  a.rect(5, 0, 2, 2, '#7a7e86');
+}, EX);
+retex('blackhole', (a) => {
+  a.circle(8, 8, 8, '#3a2a60'); a.ring(8, 8, 8, 1, '#9a6ad8'); a.ring(8, 8, 6.6, 1, '#6a4aa8');
+  a.circle(8, 8, 5.4, '#1a1230'); a.circle(8, 8, 3.6, '#000000');
+  a.px(3, 4, '#d8c0ff'); a.px(12, 12, '#d8c0ff'); a.px(13, 5, '#b890f0');
+}, { edge: 0 });
+
+/* ---------------- proyectiles ---------------- */
+retex('rocket', (a) => {
+  const O = GX.olive;
+  a.rect(0, 0, 4, 6, '#2b2d31'); a.px(0, 0, CLR); a.px(0, 5, CLR);
+  a.rect(3, 1, 14, 4, O.b); a.hline(3, 16, 1, O.h); a.hline(3, 16, 4, O.d); a.hline(6, 13, 2, '#e1b928');
+  a.poly([[17, 1], [22, 3], [17, 5]], O.m); a.px(20, 2, O.h);
+}, EX);
+retex('gl_round', (a) => {
+  a.rect(0, 0, 4, 4, '#c9a24a'); a.hline(0, 3, 0, '#e8cc7a'); a.hline(0, 3, 3, '#8a6a2a');
+  a.rect(4, 0, 3, 4, '#5d6a3a'); a.px(6, 0, CLR); a.px(6, 3, CLR); a.px(4, 0, '#7c8a52');
+}, EX);
+retex('harpoon', (a) => {
+  a.hline(0, 26, 2, '#c3cad2'); a.hline(0, 26, 1, '#e3e8ed'); a.px(0, 2, '#6f767f');
+  a.poly([[26, 0], [30, 2], [30, 3], [26, 5]], '#d6dbe0'); a.px(27, 1, '#f4f6f8');
+  a.line(24, 0, 26, 1, '#9aa1a9'); a.line(24, 4, 26, 3, '#9aa1a9');
+}, EX);
+retex('cannonball', (a) => sphere(a, 5, 5, 5, { b: '#2f3135', h: '#5d6066', d: '#141517', m: '#232427' }), EX);
+retex('flare', (a) => {
+  cylV(a, 0, 3, 5, 15, GX.red);
+  a.rect(0, 0, 5, 3, '#2a2b2e'); a.hline(0, 4, 0, '#4a4d53'); a.hline(0, 4, 8, '#f4f0e8');
+}, EX);
+retex('spike_round', (a) => {
+  a.rect(0, 0, 3, 3, '#7a7e86'); a.px(0, 0, '#a8adb5');
+  a.hline(3, 17, 1, '#c3cad2'); a.hline(3, 17, 0, '#e3e8ed'); a.hline(3, 17, 2, '#8a929b');
+  a.poly([[17, 0], [20, 1], [20, 2], [17, 3]], '#c3cad2');
+}, EX);
+retex('missile', (a) => {
+  const W = GX.white;
+  a.rect(0, 0, 5, 6, '#4a4d53'); a.hline(0, 4, 0, '#6a6e75');
+  a.rect(5, 1, 16, 4, W.b); a.hline(5, 20, 1, W.h); a.hline(5, 20, 4, W.d); a.rect(9, 1, 2, 4, '#d8382c');
+  a.poly([[21, 1], [26, 3], [21, 5]], '#d8382c'); a.px(23, 2, '#f87a6a');
+}, EX);
+retex('tank_shell', (a) => {
+  a.rect(0, 0, 9, 5, '#c9a24a'); a.hline(0, 8, 0, '#e8cc7a'); a.hline(0, 8, 4, '#8a6a2a'); a.vline(0, 0, 4, '#8a6a2a');
+  a.poly([[9, 0], [14, 2], [14, 3], [9, 5]], '#4a4d53'); a.px(10, 1, '#73787f');
+}, EX);
+retex('bazooka_rocket', (a) => {
+  const O = GX.olive;
+  a.rect(0, 0, 3, 6, '#2b2d31'); a.rect(3, 1, 12, 4, O.b); a.hline(3, 14, 1, O.h); a.hline(3, 14, 4, O.d);
+  a.poly([[15, 1], [20, 3], [15, 5]], O.m); a.px(17, 2, O.h); a.hline(7, 10, 2, '#e1b928');
+}, EX);
+retex('shard', (a) => {
+  a.poly([[0, 0], [9, 1.5], [0, 3]], '#5fe0d0'); a.line(0, 0, 8, 1, '#d9fff8'); a.px(0, 2, '#2a9a8a');
+}, { edge: 0 });
+retex('spike_frag', (a) => {
+  a.rect(0, 0, 9, 3, '#8a929b'); a.hline(0, 8, 0, '#c3cad2'); a.hline(0, 8, 2, '#5d636b');
+  a.poly([[9, 0], [12, 1], [12, 2], [9, 3]], '#c3cad2');
+}, EX);
+retex('glass_shard', (a) => {
+  a.poly([[0, 0], [3, 1], [2, 7]], [170, 210, 230, 200]); a.line(0, 0, 2, 6, [235, 250, 255, 230]);
+}, { edge: 0 });
+
+/* ---------------- accesorios ---------------- */
+retex('att_scope', (a) => {
+  const K = '#1d1e21', k = '#2e3035', hi = '#4c5058';
+  a.rect(0, 0, 4, 5, k); a.rect(4, 1, 10, 3, k); a.rect(14, 0, 4, 5, k); a.hline(4, 13, 1, hi); a.hline(0, 3, 0, hi); a.hline(14, 17, 0, hi);
+  a.vline(17, 1, 3, GLASS); a.rect(8, 0, 2, 1, K); a.rect(5, 4, 2, 2, K); a.rect(11, 4, 2, 2, K);
+}, EX);
+retex('att_laser', (a) => {
+  a.rect(0, 0, 10, 4, '#a89068'); a.hline(0, 9, 0, '#c9b38b'); a.hline(0, 9, 3, '#7a6545');
+  a.px(9, 1, '#ff3b30'); a.px(9, 2, '#ff8a80'); a.px(2, 1, '#3a3d42');
+}, EX);
+retex('att_light', (a) => {
+  a.rect(0, 1, 9, 3, '#2e3035'); a.hline(0, 8, 1, '#4c5058'); a.rect(9, 0, 3, 5, '#3a3d42'); a.vline(11, 1, 3, '#f4f0c8'); a.px(3, 0, '#1d1e21');
+}, EX);
+retex('att_silencer', (a) => {
+  a.rect(0, 0, 12, 4, '#1c1d20'); a.hline(0, 11, 0, '#3a3d42'); a.hline(0, 11, 3, '#111214');
+  a.vline(3, 1, 2, '#111214'); a.vline(8, 1, 2, '#111214'); a.px(11, 1, '#08090a'); a.px(11, 2, '#08090a');
+}, EX);
+retex('att_explosive', (a) => {
+  const O = GX.olive;
+  a.rect(0, 0, 8, 8, O.b); a.hline(0, 7, 0, O.h); a.hline(0, 7, 7, O.d); a.vline(0, 0, 7, O.m);
+  a.rect(2, 2, 4, 4, '#d8382c'); a.px(2, 2, '#f87a6a'); a.px(4, 3, '#c9a24a'); a.px(4, 4, '#c9a24a');
+}, EX);
+retex('att_incendiary', (a) => {
+  const O = GX.olive;
+  a.rect(0, 0, 8, 8, O.b); a.hline(0, 7, 0, O.h); a.hline(0, 7, 7, O.d); a.vline(0, 0, 7, O.m);
+  a.rect(2, 2, 4, 4, '#e8801a'); a.px(3, 3, '#ffd08a'); a.px(4, 2, '#ffb05a');
+}, EX);
+
 /* ---- 99_main.js ---- */
 /* =========================================================================
    BUCLE PRINCIPAL
