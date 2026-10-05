@@ -6333,6 +6333,7 @@ const Renderer = {
     drawTerrain(ctx, Cam);
     Decals.draw(ctx, Cam);
     if (Settings.thermal) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(6,4,30,0.78)'; ctx.fillRect(0, 0, W, H); ctx.restore(); Cam.apply(ctx); }
+    else if (Settings.xray) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(2,10,22,0.74)'; ctx.fillRect(0, 0, W, H); ctx.restore(); Cam.apply(ctx); }
     // objetos ordenados por profundidad
     const list = [];
     for (const t of World.things) {
@@ -8090,7 +8091,7 @@ const UI = {
       <div><b>${K('activate')}</b> activar lo que señalas (mantener: uso continuo) · arrastrando a alguien por el brazo, <b>${K('activate')}</b> hace que su mano agarre lo que tenga cerca (otra vez: soltar)</div>
       <div><b>Clic derecho</b> menú (borrar, copiar, congelar una parte, poses, IA, fuerza de las máquinas...); con varias cosas seleccionadas, cada opción se aplica a todas las que la admiten · <b>Rueda</b> zoom · <b>apretar la rueda y arrastrar</b> (o las flechas) mover la cámara</div>
       <div><b>${K('delete')}</b> borrar · <b>${K('undo')}</b> deshacer · <b>${K('copy')}</b> copiar · <b>mantén ${K('paste')}</b> para ver la silueta y suelta para pegar · <b>Alt</b> ajustar a la cuadrícula</div>
-      <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas)</div>
+      <div><b>${K('pause')}</b> detener el tiempo (lo que muevas en pausa conserva su impulso) · <b>${K('slowmo')}</b> cámara lenta · <b>${K('info')}</b> vista detalle (vida de cada parte y alcance de los explosivos) · <b>${K('thermal')}</b> visión térmica (temperatura de lo que señalas) · <b>${K('xray')}</b> rayos X (los huesos y los órganos; señala un órgano para ver cómo está, agárralo y tira para arrancarlo, o dáñalo desde el menú)</div>
       <div><b>${K('toggleUI')}</b> ocultar la interfaz · <b>${K('pinSnap')}</b> con el pin: al centro de masa · <b>Esc</b> menú</div>
       <div class="sub">Puedes cambiar cualquier tecla en Ajustes → Teclas. Abajo a la izquierda: Ajustes, Entorno (gravedad, día y noche, temperatura, lluvia, nieve, niebla, tormenta), Borrar todo, Borrar restos y Borrar seres vivos.</div>
       <div class="sub">IA (se activa o desactiva en cada persona con clic derecho): corren para huir de los zombis activos, buscan un arma cercana a la que se pueda llegar (se agachan, la cogen de pie o saltan), disparan sin herir a quien esté en medio, pelean cuerpo a cuerpo (estocadas con las armas de punta, golpes desde arriba con las demás) y rematan a los zombis caídos, se apartan de explosivos y del fuego, saltan obstáculos y, con las piernas dañadas, se arrastran. Los zombis sólo contagian al morder o arañar; algunos corren y otros saltan.</div>
@@ -17474,6 +17475,8 @@ const ORGAN_SLOTS = [
 const ORGAN_BLEED = { liver: 1.6, kidney: 1, stomach: 0.6, intestines: 0.7, heart: 2, lung: 0.8 };
 // cuánto le hace a un órgano cada tipo de daño (si le da de lleno)
 const ORGAN_DMG = { bullet: 1.8, stab: 1.6, slice: 1.3, cut: 1.2, bite: 0.5, blunt: 0.22, crush: 1.0, explosion: 0.8, acid: 0.6, burn: 0.12 };
+// y lo delicado que es cada uno (el corazón: dos balazos que lo atraviesen lo paran)
+const ORGAN_FRAG = { heart: 1.6, kidney: 1.2, liver: 1.1 };
 
 // ¿usa órganos? (con Cuerpos realistas, o si es un cuerpo montado a mano: ver 45_v13_frankenstein.js)
 Human.prototype.orgOn = function () { return !!((Settings.realBodies || this.frank) && (this.kind === 'human' || this.kind === 'zombie') && !this.charred); };
@@ -17519,8 +17522,9 @@ function organItemHp(it) { return it && !it.dead && it.def.hp ? clamp(it.hp / it
 /* ---------------- qué órganos le funcionan ---------------- */
 // los de dentro (en partes unidas al cuerpo) y los que tiene unidos con una vena artificial
 Human.prototype.orgScan = function () {
-  const S = { brain: 0, brainIn: null, brainExt: null, heart: 0, lung: 0, liver: 0, kidney: 0, stomach: 0, intestines: 0, muscle: 0, cpb: false, ext: [] };
+  const S = { brain: 0, brainIn: null, brainExt: null, heart: 0, heartN: 0, lung: 0, liver: 0, kidney: 0, stomach: 0, intestines: 0, muscle: 0, cpb: false, ext: [] };
   const add = (t, hp) => {
+    if (t === 'heart') S.heartN++;
     if (t === 'lung' || t === 'kidney') S[t] += hp;
     else if (t === 'muscle') S.muscle += hp > 0.2 ? 1 : 0;
     else S[t] = Math.max(S[t], hp);
@@ -17561,7 +17565,7 @@ Human.prototype.orgScan = function () {
         // corazón: sin él (o destrozado) la sangre deja de circular
         const hp = S.cpb ? Math.max(S.heart, 0.45) : S.heart;
         this.heart = Math.min(this.heart, hp);
-        if (hp <= 0 && !S.cpb) this.deathWhy = this.deathWhy || 'Sin corazón';
+        if (hp <= 0 && !S.cpb) this.deathWhy = this.deathWhy || (S.heartN ? 'Corazón destrozado' : 'Sin corazón');
         // hígado y riñones: sin ellos se acumulan las toxinas
         const filt = Math.min(S.liver, Math.min(1, S.kidney));
         if (filt < 0.3) this.tox = (this.tox || 0) + dt * (0.3 - filt) / 48;
@@ -17610,25 +17614,37 @@ Human.prototype.orgScan = function () {
     ensureOrgans(this);
     const alive = this.alive, heart = this.heart, brain = this.brain;
     const r = hu1.call(this, L, amount, type, x, y, dx, dy, o);
-    if (!alive || this.dead) return r;
-    // el corazón y los pulmones sólo se dañan si el golpe les da (no al azar, como sin órganos)
-    if (type !== 'shock') this.heart = heart;
-    this.lungs = false;
-    // una cabeza vacía no tiene cerebro que dañar (si tiene uno de fuera, le cuenta lo que le pase a ése)
-    if (L.id === 'head' && !(L.organs && L.organs.some((g) => g.t === 'brain'))) this.brain = brain;
+    if (this.dead || L.destroyed) return r;
+    if (alive) {
+      // el corazón y los pulmones sólo se dañan si el golpe les da (no al azar, como sin órganos)
+      if (type !== 'shock') this.heart = heart;
+      this.lungs = false;
+      // una cabeza vacía no tiene cerebro que dañar (si tiene uno de fuera, le cuenta lo que le pase a ése)
+      if (L.id === 'head' && !(L.organs && L.organs.some((g) => g.t === 'brain'))) this.brain = brain;
+    }
     const k0 = ORGAN_DMG[type];
     if (!k0 || !L.organs || !L.organs.length || !(amount > 0)) return r;
-    let lp = null;
+    let lp = null, dir = null, depth = 0;
     if (x !== undefined) lp = L.localPx(x, y);
+    // una bala (o una hoja que se clava) no se queda en la piel: daña lo que encuentra en su recorrido por dentro
+    if (lp && (type === 'bullet' || type === 'stab') && (dx || dy)) {
+      if (o && o.exit) return r; // (la salida ya se ha contado desde la entrada)
+      const q = L.localPx(x + dx * 0.05, y + dy * 0.05), ux = q[0] - lp[0], uy = q[1] - lp[1], ul = Math.hypot(ux, uy);
+      if (ul > 1e-6) { dir = [ux / ul, uy / ul]; depth = type === 'bullet' ? Math.hypot(L.tpl.w, L.tpl.h) : 7; }
+    }
     for (const g of L.organs) {
       let k = 0;
-      if (lp) { const R = g.r + (type === 'bullet' || type === 'stab' ? 1 : 1.7), d = Math.hypot(lp[0] - g.x, lp[1] - g.y); if (d < R) k = 1 - (d / R) * 0.6; }
+      if (dir) {
+        const t = clamp((g.x - lp[0]) * dir[0] + (g.y - lp[1]) * dir[1], 0, depth), cx = lp[0] + dir[0] * t, cy = lp[1] + dir[1] * t;
+        const d = Math.hypot(g.x - cx, g.y - cy), R = g.r + 0.7;
+        if (d < R) k = 1 - (d / R) * 0.5;
+      } else if (lp) { const R = g.r + 1.7, d = Math.hypot(lp[0] - g.x, lp[1] - g.y); if (d < R) k = 1 - (d / R) * 0.6; }
       if (type === 'explosion' || type === 'crush') k = Math.max(k, 0.35);
       if (k <= 0) continue;
-      const a = amount * k0 * k;
-      if (g.t === 'brain') continue; // el cerebro ya lo lleva la cabeza
+      const a = amount * k0 * k * (ORGAN_FRAG[g.t] || 1);
+      if (g.t === 'brain' && alive) continue; // (en un cuerpo vivo, el cerebro lo lleva la cabeza)
       g.hp = Math.max(0, g.hp - a);
-      if (ORGAN_BLEED[g.t]) this.internal = Math.min(0.012, (this.internal || 0) + a * 0.004 * ORGAN_BLEED[g.t]);
+      if (alive && ORGAN_BLEED[g.t]) this.internal = Math.min(0.012, (this.internal || 0) + a * 0.004 * ORGAN_BLEED[g.t]);
       if (g.hp <= 0 && !g.dead) { g.dead = true; paintOrgan(L, g, false); }
     }
     return r;
@@ -18935,6 +18951,228 @@ Human.prototype.aiDualShoot = function (dt, g) {
 {
   const st = Human.prototype.aiStop;
   Human.prototype.aiStop = function () { const r = st.apply(this, arguments); if (this.aiAimB || (this.held.B && this.held.B._back) || (this.limbs.upperArmB && this.limbs.upperArmB._wide)) dropBackHold(this); return r; };
+}
+
+/* ---- 49_v13_rayosx.js ---- */
+/* =========================================================================
+   VERSIÓN 13 (7): VISIÓN DE RAYOS X (tecla X o el botón de arriba). Las
+   personas se ven por dentro: los huesos y los órganos, cada uno con su estado
+   (los dañados, más oscuros y con el borde rojo; los destrozados, grises).
+   Señalando un órgano se ve cuál es y cómo está; agarrándolo con el ratón y
+   tirando se arranca, y el menú contextual permite dañarlo o arrancarlo.
+   Además, los órganos sueltos que no están unidos a nada cuentan como restos:
+   «Borrar restos» los quita.
+   ========================================================================= */
+Settings.xray = false;
+KEY_ACTIONS.splice(KEY_ACTIONS.findIndex((a) => a[0] === 'thermal') + 1, 0, ['xray', 'Rayos X (ver, dañar y arrancar órganos)', 'x']);
+{
+  // si ya usabas la X para otra cosa, los rayos X se quedan sin tecla (se puede asignar en Ajustes)
+  const ls = loadSettings;
+  loadSettings = function () {
+    const r = ls();
+    const k = Settings.keys || {};
+    if (!k.xray && Object.entries(k).some(([a, v]) => a !== 'xray' && v === 'x')) k.xray = 'none';
+    return r;
+  };
+}
+ICONS.xray = ['............', '.....WW.....', '..c..WW..c..', '.cccWWWWccc.', '.c...WW...c.', '.cccWWWWccc.', '.c...WW...c.', '.cccWWWWccc.', '..c..WW..c..', '.....WW.....', '.....WW.....', '............'];
+
+/* ---------------- encender y apagar ---------------- */
+function xrayToggle() {
+  Settings.xray = !Settings.xray; saveSettings();
+  const any = Settings.realBodies || World.things.some((t) => t.isHuman && !t.dead && t.frank);
+  UI.toast(Settings.xray ? 'Rayos X: activados' + (any ? '' : ' (activa Cuerpos realistas en Entorno para ver los órganos)') : 'Rayos X: desactivados', 2600);
+  UI.refreshTop();
+}
+{
+  const da = Input.doAction.bind(Input);
+  Input.doAction = function (id, key) { if (id === 'xray') { xrayToggle(); return; } return da(id, key); };
+  const ui0 = UI.init.bind(UI);
+  UI.init = function () {
+    const r = ui0();
+    const th = this.statusEl && this.statusEl.querySelector('#stThermal');
+    if (th) {
+      const b = document.createElement('button');
+      b.className = 'st'; b.id = 'stXray'; b.title = `Rayos X (${keyLabel(keyOf('xray'))})`;
+      b.innerHTML = `<img src="${iconURL('xray')}">`;
+      b.onclick = () => Input.doAction('xray');
+      th.after(b);
+    }
+    this.refreshTop();
+    return r;
+  };
+  const rt = UI.refreshTop.bind(UI);
+  UI.refreshTop = function () { const r = rt(); const b = this.statusEl && this.statusEl.querySelector('#stXray'); if (b) b.classList.toggle('off', !Settings.xray); return r; };
+}
+
+/* ---------------- el dibujo por dentro ---------------- */
+// cada parte del cuerpo: carne translúcida, huesos claros y los órganos con su estado
+{
+  const cp = Limb.prototype.compose;
+  Limb.prototype.compose = function () { this._cmpN = (this._cmpN || 0) + 1; return cp.call(this); };
+}
+function xraySprite(L) {
+  const T = L.tpl, n = T.w * T.h;
+  let key = (L._cmpN || 0) + ':' + (L.broken ? 1 : 0);
+  if (L.organs) for (const g of L.organs) key += ',' + g.t + Math.round(g.hp * 20);
+  if (L._xr && L._xrKey === key && L._xr.w === T.w && L._xr.h === T.h) return L._xr;
+  const s = L._xr && L._xr.w === T.w && L._xr.h === T.h ? L._xr : new Sprite(T.w, T.h), d = s.data;
+  // y aparte, sólo los órganos: se dibujan otra vez encima de todo (que no los tape un brazo)
+  const so = L.organs && L.organs.length ? (L._xo && L._xo.w === T.w && L._xo.h === T.h ? L._xo : new Sprite(T.w, T.h)) : null, od = so && so.data;
+  if (od) od.fill(0);
+  const on = (x, y) => x >= 0 && y >= 0 && x < T.w && y < T.h && T.mask[y * T.w + x];
+  for (let i = 0; i < n; i++) {
+    const o = i * 4;
+    if (!T.mask[i]) { d[o + 3] = 0; continue; }
+    if (L.hole[i]) { d[o] = 8; d[o + 1] = 12; d[o + 2] = 20; d[o + 3] = 210; continue; }
+    // el contorno siempre es carne (así el hueso se ve por dentro)
+    const x = i % T.w, y = (i / T.w) | 0, edge = !on(x - 1, y) || !on(x + 1, y) || !on(x, y - 1) || !on(x, y + 1);
+    if (edge) { d[o] = 120; d[o + 1] = 160; d[o + 2] = 200; d[o + 3] = 170; continue; }
+    if (T.bone[i]) { const k = L.broken ? 0.72 : 1; d[o] = 214 * k; d[o + 1] = 228 * k; d[o + 2] = 242 * k; d[o + 3] = 235; continue; }
+    d[o] = 62; d[o + 1] = 92; d[o + 2] = 128; d[o + 3] = 95;
+  }
+  if (L.organs) for (const g of L.organs) {
+    const c = ORGAN_TYPES[g.t].col, px = organPx(L, g), dead = g.hp <= 0;
+    const mine = new Set(px);
+    for (const i of px) {
+      const o = i * 4, x = i % T.w, y = (i / T.w) | 0;
+      let r = c[0], gg = c[1], b = c[2];
+      if (dead) { r = gg = b = 78; } else { const k = (1 - g.hp) * 0.75; r = lerp(r, 70, k); gg = lerp(gg, 12, k); b = lerp(b, 12, k); }
+      // el borde de un órgano dañado, en rojo
+      const edge = !mine.has(i - 1) || !mine.has(i + 1) || !mine.has(i - T.w) || !mine.has(i + T.w);
+      if (edge && !dead && g.hp < 0.65) { r = 255; gg = 70; b = 60; }
+      d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 245;
+      od[o] = r; od[o + 1] = gg; od[o + 2] = b; od[o + 3] = 235;
+      void x; void y;
+    }
+  }
+  s.dirty = true; L._xr = s; L._xrKey = key;
+  if (so) so.dirty = true;
+  L._xo = so;
+  return s;
+}
+const XR = { queue: [] };
+{
+  const dp = Renderer.drawPart.bind(Renderer);
+  Renderer.drawPart0 = dp;
+  Renderer.drawPart = function (ctx, p, b) {
+    if (!Settings.xray || Settings.thermal) return dp(ctx, p, b);
+    const L = p.limb;
+    if (L && L.h && !L.destroyed && L.tpl && L.tpl.bone) {
+      const s0 = p.spr; p.spr = xraySprite(L);
+      try { dp(ctx, p, b); } finally { p.spr = s0; }
+      if (L._xo && L.organs.length) XR.queue.push({ p: { spr: L._xo, ox: p.ox, oy: p.oy, flip: p.flip, scale: p.scale }, b });
+      return;
+    }
+    // lo demás, apagado (como en una radiografía)
+    ctx.globalAlpha = 0.4; dp(ctx, p, b); ctx.globalAlpha = 1;
+  };
+}
+
+/* ---------------- señalar, arrancar y dañar ---------------- */
+// el órgano que hay bajo el cursor (en cualquier parte del cuerpo de esa posición, aunque la tape un brazo)
+function organAt(wx, wy) {
+  const P = V(wx, wy);
+  let best = null, bd = 1e9;
+  queryAABB(wx - 0.01, wy - 0.01, wx + 0.01, wy + 0.01, (f) => {
+    const ud = f.getUserData(), h = ud && ud.thing, L = ud && ud.part;
+    if (!h || !h.isHuman || h.dead || !L || L.destroyed || !L.organs || !L.organs.length || !f.testPoint(P)) return true;
+    const lp = L.localPx(wx, wy);
+    for (const g of L.organs) { const d = Math.hypot(lp[0] - g.x, lp[1] - g.y); if (d < g.r + 0.8 && d < bd) { bd = d; best = { h, L, g }; } }
+    return true;
+  });
+  return best;
+}
+// el rótulo, del mismo tamaño en pantalla con cualquier zoom
+function xrLabel(ctx, wx, wy, up, text, col) {
+  const p = Cam.toScreen(wx, wy), y = p[1] - up;
+  ctx.save(); ctx.setTransform(Cam.dpr, 0, 0, Cam.dpr, 0, 0);
+  ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(text).width + 10;
+  ctx.fillStyle = 'rgba(4,10,20,0.78)'; ctx.fillRect(p[0] - w / 2, y - 9, w, 18);
+  ctx.fillStyle = col; ctx.fillText(text, p[0], y + 0.5);
+  ctx.restore();
+}
+function organLabel(g) { const T = ORGAN_TYPES[g.t]; return `${T.name} · ${g.hp <= 0 ? 'destrozado' : Math.round(g.hp * 100) + ' %'}`; }
+function damageOrgan(h, L, g, amt) {
+  g.hp = Math.max(0, g.hp - amt);
+  if (g.t === 'brain' && L.id === 'head' && h.alive && !h.immortal) h.brain -= amt;
+  if (g.hp <= 0 && !g.dead) { g.dead = true; paintOrgan(L, g, false); }
+  for (const i of organPx(L, g)) L.dmg[i] = Math.max(L.dmg[i], 0.6);
+  L.dirty = true;
+  if (h.alive) { h.pain += 0.4 * h.painMul; if (ORGAN_BLEED[g.t]) h.internal = Math.min(0.012, (h.internal || 0) + amt * 0.004 * ORGAN_BLEED[g.t]); }
+  const w = L.worldPt(g.x, g.y);
+  if (h.bleedKind) Effects.blood(w[0], w[1], 0, -0.5, 5, 0.8, h.bleedKind);
+  Sound.play('impact_flesh', w[0], w[1], 0.6);
+}
+{
+  // agarrar un órgano y tirar: se arranca y se queda en la mano del ratón
+  const ld = Input.leftDown.bind(Input);
+  Input.leftDown = function (shift, ctrl) {
+    if (Settings.xray && !Settings.thermal && this.mode !== 'powers' && (this.tool === 'drag' || this.tool === 'gentle') && !shift && !this.spawnDef) {
+      const og = organAt(this.wx, this.wy);
+      if (og) { this._ripPend = { og, x: this.wx, y: this.wy }; return; }
+    }
+    return ld(shift, ctrl);
+  };
+  const lu = Input.leftUp.bind(Input);
+  Input.leftUp = function () { this._ripPend = null; return lu(); };
+  const dw = Input.drawWorld.bind(Input);
+  Input.drawWorld = function (ctx) {
+    // los órganos, otra vez encima de todo
+    const q = XR.queue; XR.queue = [];
+    if (q.length && Settings.xray && !Settings.thermal) {
+      ctx.save();
+      for (const e of q) Renderer.drawPart0(ctx, e.p, e.b);
+      ctx.restore(); Cam.apply(ctx);
+    }
+    dw(ctx);
+    if (!Settings.xray || Settings.thermal) { this._ripPend = null; return; }
+    const z = Cam.zoom;
+    // tirando del órgano agarrado: sale del cuerpo
+    const rp = this._ripPend;
+    if (rp) {
+      const og = rp.og;
+      if (!og.L || og.L.destroyed || og.h.dead || !(og.L.organs || []).includes(og.g)) this._ripPend = null;
+      else if (Math.hypot(this.wx - rp.x, this.wy - rp.y) > 0.07) {
+        this._ripPend = null;
+        const it = extractOrgan(og.h, og.L, og.g);
+        if (it && !it.dead) { it.main.setTransform(V(this.wx, this.wy), it.main.getAngle()); this.startDrag({ body: it.main, thing: it }, this.wx, this.wy); }
+      }
+    }
+    // el órgano señalado: su nombre y cómo está
+    const og = this.drag || rp ? null : organAt(this.wx, this.wy);
+    if (og) {
+      const w = og.L.worldPt(og.g.x, og.g.y);
+      ctx.save(); ctx.strokeStyle = og.g.hp > 0.65 ? '#7ad48a' : og.g.hp > 0 ? '#ff6a5a' : '#9aa3ad'; ctx.lineWidth = 1.5 / z;
+      ctx.beginPath(); ctx.arc(w[0], w[1], (og.g.r + 0.8) * PX, 0, TAU); ctx.stroke(); ctx.restore();
+      xrLabel(ctx, w[0], w[1], (og.g.r + 0.8) * PX * z + 14, organLabel(og.g), og.g.hp > 0.65 ? '#cfe9d4' : og.g.hp > 0 ? '#ffb4a8' : '#cfd5dc');
+    }
+  };
+  // en el menú contextual, con los rayos X: dañar o arrancar el órgano señalado
+  const ci = UI.ctxItems.bind(UI);
+  UI.ctxItems = function (t, hit, wx, wy) {
+    const items = ci(t, hit, wx, wy);
+    if (!Settings.xray || !t || !t.isHuman) return items;
+    const og = organAt(wx, wy);
+    if (!og || og.h !== t) return items;
+    const name = ORGAN_TYPES[og.g.t].name;
+    items.unshift(
+      { label: `Arrancar: ${name}`, fn: () => extractOrgan(og.h, og.L, og.g), once: true },
+      { label: `Dañar: ${name} (${og.g.hp <= 0 ? 'destrozado' : Math.round(og.g.hp * 100) + ' %'})`, fn: () => damageOrgan(og.h, og.L, og.g, 0.25), once: true },
+      '-');
+    return items;
+  };
+}
+
+/* ---------------- los órganos sueltos son restos ---------------- */
+{
+  const cd = Clear.debris.bind(Clear);
+  Clear.debris = function () {
+    // los que no están unidos a nada (ni con una vena ni en la mano de alguien) se borran con los demás restos
+    for (const t of World.things) if (!t.dead && t.def && t.def.organ && !t.conns.size && !t.holder) t.isDebris = true;
+    return cd();
+  };
 }
 
 /* ---- 99_main.js ---- */

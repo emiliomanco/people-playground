@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## Versión 13.1: rayos X (4 de octubre de 2026)
+
+- **Rayos X** (tecla **X**, o el botón de arriba junto a la visión térmica): las personas y los zombis se ven por dentro, con la carne translúcida, los huesos (más oscuros si están rotos) y los órganos encima de todo, aunque los tape un brazo. Cada órgano tiene su color según su estado: los dañados, más oscuros y con el borde rojo, y los destrozados, grises.
+  - Al señalar un órgano se ve cuál es y cómo está («Corazón · 35 %»). Agarrándolo con el ratón y tirando se arranca y se queda en la mano, y en el menú contextual aparecen **«Arrancar»** y **«Dañar»** para el órgano señalado. Sirve en vivos y en muertos.
+  - Sin Cuerpos realistas se ven sólo los huesos (avisa de que hay que activarlos para ver los órganos). Si ya usabas la X para otra acción, los rayos X se quedan sin tecla y se les puede poner una en Ajustes.
+- **Daño de los órganos según el recorrido**: los disparos y las puñaladas dañan los órganos por los que pasan dentro del cuerpo, no sólo el que está junto a la herida de entrada (antes cinco balazos en el pecho podían no tocar el corazón). El corazón es más delicado: dos balazos que lo atraviesen lo paran, y la causa de la muerte dice «Corazón destrozado» (o «Sin corazón» si no lo tiene).
+- **Los órganos sueltos son restos**: los que no están unidos a nada (ni con una vena ni en la mano de alguien) se borran con «Borrar restos», así no quedan cerebros y corazones por el suelo.
+
 ## Versión 13: Frankenstein (4 de octubre de 2026)
 
 - **Zombis resistentes** (Entorno → Seres vivos → Zombis: «Resistentes», lo normal ahora, o «Como antes»): un zombi sólo muere si le separas la cabeza del cuerpo, si le cortas al menos la mitad de la cabeza o si se la destrozas (un disparo, una puñalada o golpes que le destrocen el cerebro, una explosión o un peso que se la revienten, o quemarse hasta los huesos).
