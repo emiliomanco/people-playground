@@ -1,5 +1,19 @@
 # Historial de cambios
 
+## Versión 13.3: criaturas que saben andar y cirugía (5 de octubre de 2026)
+
+- **Las criaturas saben usar su cuerpo**: una creación con patas de más (un «caballo» de cuatro patas, una araña de seis, dos torsos con cuatro piernas...) se pone de pie sobre todas y anda moviéndolas al paso, la mitad hacia delante mientras la otra mitad empuja. Antes, un caballo de cuatro patas no sabía andar.
+  - Cada criatura calcula su postura con la forma real de su cuerpo: cuántas patas tiene, dónde están cosidas, cuánto miden y hacia dónde apuntan. Así se pone a la altura de sus patas, con el cuerpo tumbado si las patas cuelgan de un torso horizontal. Si pierde una pata se reajusta y, si pierde todas, se cae.
+  - Las que sólo tienen brazos andan apoyándose en ellos, y lo que no es pata resbala por el suelo en vez de frenarla.
+  - Funciona con su IA (huye de los zombis, persigue, corre...), con «Caminar» y con los poderes (con más pulmones y músculos, más rápido). Las personas normales andan como siempre.
+  - Al soltar una pierna junto a una criatura, se cose antes al torso que a otra pierna.
+- **Arrancar órganos desde el menú**: con clic derecho sobre una parte del cuerpo con órganos aparece «Arrancar órgano» para cada uno de los suyos («Arrancar órgano: Corazón», «Arrancar órgano: Pulmón (2)»...), igual que «Arrancar» con las partes del cuerpo. Sirve con o sin rayos X, y también para lo que hay debajo aunque delante haya un brazo. Con los rayos X se siguen pudiendo arrancar agarrándolos con el ratón.
+- **Cuchilla quirúrgica** (Órganos → Cirugía): atraviesa el cuerpo sin chocar con él y corta por dentro, dejando la incisión por donde pasa. Al agarrarla no cuelga: mantiene el ángulo, que se cambia con A/D.
+  - Con la punta sobre un órgano, el órgano se marca y se ve cuál es y cómo está («Pulmón · 100 % · F: sacarlo»).
+  - Activándola (F) lo saca entero, sin dañarlo, con una herida pequeña y poco dolor. Arrancarlo lo daña y duele mucho más.
+- **Zombi sin cerebro**: ya no muere, queda incapacitado. Sigue vivo, pero tirado: no se mueve, no ataca y no contagia a nadie (sólo da algún espasmo), y su información lo dice. Si se le vuelve a meter un cerebro, se levanta otra vez.
+- Arreglado: con la IA activada, una criatura de cuatro patas dejaba de andar al momento.
+
 ## Versión 13.2: criaturas y poderes de los órganos (5 de octubre de 2026)
 
 - **Las criaturas viven con cualquier forma**: un cuerpo montado a mano sólo necesita una cabeza, cerebro, corazón, pulmón, riñón e hígado (dentro o unidos con venas). Los torsos, brazos y piernas son opcionales, y la sangre la pone en marcha la descarga.
