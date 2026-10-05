@@ -21922,6 +21922,62 @@ retex('att_incendiary', (a) => {
   a.rect(2, 2, 4, 4, '#e8801a'); a.px(3, 3, '#ffd08a'); a.px(4, 2, '#ffb05a');
 }, EX);
 
+/* ---- 58_v135_suspension.js ---- */
+/* =========================================================================
+   VERSIÓN 13.5: SUSPENSIÓN DE LOS VEHÍCULOS. El muelle de cada rueda se
+   calculaba con la masa de la rueda y no con el peso que sostiene, así que la
+   carrocería se hundía sobre las ruedas (el coche, 8 px con ruedas de 13 de
+   radio; el camión, hasta 17). Ahora cada muelle aguanta su parte del peso
+   del vehículo con un recorrido corto, está precargado (en reposo cada rueda
+   queda justo en su hueco) y amortigua como un coche de verdad: al saltar o
+   chocar la suspensión trabaja y vuelve a su sitio sin quedarse rebotando.
+   ========================================================================= */
+// recorrido de referencia (m): marca la dureza del muelle; zeta: amortiguación de la carrocería
+const SUSP = { travel: 0.09, zeta: 0.5 };
+function tuneSuspension(it) {
+  const ch = it && !it.dead && it.main, wj = it && it.vars && it.vars.wj;
+  if (!ch || !wj || !wj.length) return;
+  const springs = wj.filter((j) => j && typeof j.setSpringFrequencyHz === 'function' && j.getBodyB && j.getBodyB().getMass() > 0);
+  if (!springs.length) return;
+  const M = ch.getMass(); if (!(M > 0)) return;
+  const gw = Phys.world.getGravity().y * ch.getGravityScale();
+  // la dureza se calcula con una gravedad mínima (sin gravedad las ruedas siguen teniendo muelle)
+  const gk = Math.max(Math.abs(gw), GRAVITY * 0.3), n = springs.length, lc = ch.getLocalCenter();
+  for (const j of springs) if (!j._a0) j._a0 = { x: j.m_localAnchorA.x, y: j.m_localAnchorA.y };
+  // el peso que lleva cada rueda según dónde está el centro de masa (suma el peso y equilibra el giro)
+  const xs = springs.map((j) => { const ax = j.getLocalAxisA(); return j._a0.x * ax.y - j._a0.y * ax.x; });
+  const ax0 = springs[0].getLocalAxisA(), xc = lc.x * ax0.y - lc.y * ax0.x, xm = xs.reduce((s, x) => s + x, 0) / n;
+  const vv = xs.reduce((s, x) => s + (x - xm) * (x - xm), 0);
+  const shares = xs.map((x) => Math.max(0.25 * M / n, M / n + (vv > 1e-6 ? (M * (xc - xm) * (x - xm)) / vv : 0)));
+  springs.forEach((j, i) => {
+    const share = shares[i], k = (share * gk) / SUSP.travel, c = 2 * SUSP.zeta * Math.sqrt(k * share);
+    const a0 = j._a0, ax = j.getLocalAxisA(), mW = j.getBodyB().getMass();
+    // masa del muelle tal como la usa la unión (la rueda, la carrocería y su giro)
+    const rx = (a0.x - lc.x) * ax.y - (a0.y - lc.y) * ax.x;
+    const sm = 1 / (1 / M + 1 / mW + rx * rx * (ch.m_invI || 0)), w = Math.sqrt(k / sm);
+    j.setSpringFrequencyHz(w / (2 * Math.PI));
+    j.setSpringDampingRatio(c / (2 * sm * w));
+    // precarga: el punto de equilibrio baja lo que el peso comprime, y la rueda reposa en su hueco
+    const pre = (share * gw) / k;
+    j.m_localAnchorA = V(a0.x + ax.x * pre, a0.y + ax.y * pre);
+    for (const b of [ch, j.getBodyB()]) b.setAwake(true);
+  });
+}
+{
+  const vb = vehicleBuild;
+  vehicleBuild = function (it, x, y, ang, flip, o) {
+    const r = vb(it, x, y, ang, flip, o);
+    tuneSuspension(it);
+    return r;
+  };
+  // con otra gravedad, o sin peso, la precarga se ajusta
+  const retune = () => { for (const t of World.things) if (!t.dead && t.vars && t.vars.wj) tuneSuspension(t); };
+  const sg = Phys.setGravity;
+  Phys.setGravity = function (g) { const r = sg.call(this, g); retune(); return r; };
+  const sw = Thing.prototype.setWeightless;
+  Thing.prototype.setWeightless = function (on) { const r = sw.call(this, on); if (this.vars && this.vars.wj) tuneSuspension(this); return r; };
+}
+
 /* ---- 99_main.js ---- */
 /* =========================================================================
    BUCLE PRINCIPAL
