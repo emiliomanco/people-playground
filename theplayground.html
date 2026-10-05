@@ -8098,7 +8098,7 @@ const UI = {
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones). Estos cables de activación son invisibles: sólo se ven, todos los colores a la vez, mientras tienes equipada una de sus herramientas.</div>
       <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo. Las armas con filo, las motosierras, los rotores y los láseres cortan por donde pasan, siguiendo la trayectoria del golpe: un tajo fuerte de katana parte a una persona en dos, y los trozos se pueden volver a cortar. Las explosiones y los aplastamientos rompen el cuerpo en trozos.</div>
-      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona; de cada órgano, todos los que quieras). Una parte se cose soltándola junto a su sitio de otro cuerpo (y se mueve como siempre) o tocando cualquier otro sitio, donde queda cosida tal como la pusiste: brazos en la cabeza, piernas en el pecho, varios torsos juntos... Una parte cosida se separa con «Descoser esta parte» en su menú (o se borra sola con la tecla de borrar). Con una cabeza, cerebro, corazón, pulmón, riñón e hígado, una descarga eléctrica le da vida, tenga la forma que tenga: tu propio Frankenstein. Los órganos de más dan poderes: corazones (fuerza y aguante), cerebros (esquivar, reflejos y lanzar cosas con la mente), pulmones y músculos (correr y saltar), riñones e hígados (inmunidad a venenos y al virus zombi), estómagos (ácido) e intestinos (regeneración).</div>
+      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona; de cada órgano, todos los que quieras). Una parte se cose soltándola junto a su sitio de otro cuerpo (y se mueve como siempre) o tocando cualquier otro sitio, donde queda cosida tal como la pusiste: brazos en la cabeza, piernas en el pecho, varios torsos juntos... Una parte cosida se separa con «Descoser esta parte» en su menú (o se borra sola con la tecla de borrar). Con una cabeza, cerebro, corazón, pulmón, riñón e hígado, una descarga eléctrica le da vida, tenga la forma que tenga: tu propio Frankenstein. Los órganos de más dan poderes: corazones (fuerza y aguante), cerebros (esquivar, reflejos y lanzar cosas con la mente), pulmones y músculos (correr y saltar), riñones e hígados (inmunidad a venenos y al virus zombi), estómagos (ácido) e intestinos (regeneración). Las criaturas con patas de más (un caballo de cuatro, una araña de seis...) se ponen de pie y andan con todas, y las que sólo tienen brazos andan con ellos. Clic derecho sobre una parte con órganos: «Arrancar órgano». La cuchilla quirúrgica (Órganos → Cirugía) atraviesa el cuerpo sin herirlo y, con la punta sobre un órgano, F lo saca entero. Un zombi sin cerebro no muere: queda incapacitado (no se mueve, no ataca ni contagia).</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
@@ -17562,6 +17562,7 @@ Human.prototype.orgScan = function () {
     if (this.alive && !this.immortal) {
       // el cerebro: el de dentro sigue lo que le pasa a la cabeza; uno de fuera, lo que le pase a él
       // (con varios cerebros en la cabeza manda el que mejor está, y lo que le pase a la cabeza se lo lleva él)
+      this._zIncap = false;
       const hd = this.limbs.head, hb = hd && !hd.destroyed && hd.connected && hd.organs ? hd.organs.filter((g) => g.t === 'brain') : [];
       if (hb.length) {
         const cur = this._brainOrg && hb.includes(this._brainOrg) ? this._brainOrg : hb.length === 1 ? hb[0] : null;
@@ -17571,6 +17572,8 @@ Human.prototype.orgScan = function () {
         this._brainOrg = best; S.brainIn = best; S.brain = best.hp;
       }
       else if (S.brainExt) this.brain = organItemHp(S.brainExt);
+      // (un zombi sin cerebro no muere: queda incapacitado, ver 54_v133_cirugia.js)
+      else if (this.zombie) this._zIncap = true;
       else { this.brain = 0; this.deathWhy = 'Sin cerebro'; }
       if (!zh) {
         // corazón: sin él (o destrozado) la sangre deja de circular
@@ -17587,7 +17590,7 @@ Human.prototype.orgScan = function () {
       } else this._musK = 1;
     }
     const r = uv1.call(this, dt);
-    if (this.alive && !this.immortal && !S.brainIn && !S.brainExt && this.orgOn()) this.die('Sin cerebro');
+    if (this.alive && !this.immortal && !S.brainIn && !S.brainExt && this.orgOn() && !this.zombie) this.die('Sin cerebro');
     return r;
   };
   // los pulmones dan el aire (con uno solo se respira peor; sin ninguno, se asfixia)
@@ -17756,7 +17759,7 @@ function blowOrgans(h, M, dx, dy) {
     const r = he1.apply(this, arguments);
     for (const L of this.limbList) if (L.organs) for (const g of L.organs) { g.hp = 1; if (g.dead) { g.dead = false; paintOrgan(L, g, true); } }
     this.tox = 0;
-    if (this.orgOn() && this.alive) { const S = this.orgScan(); if (!S.brainIn && !S.brainExt) { this.alive = false; this.consc = 0; this.deathReason = 'Sin cerebro'; } }
+    if (this.orgOn() && this.alive && !this.zombie) { const S = this.orgScan(); if (!S.brainIn && !S.brainExt) { this.alive = false; this.consc = 0; this.deathReason = 'Sin cerebro'; } }
     return r;
   };
   // al volverse zombi se rehace el dibujo: los órganos siguen ahí
@@ -18498,6 +18501,8 @@ function bodySnap(h) {
     if (!L || L.destroyed) continue;
     if (L.pal && L.pal !== h.pal) { let i = s.pals.indexOf(L.pal); if (i < 0) { i = s.pals.length; s.pals.push(L.pal); } s.pl[d.id] = i; odd = true; }
     if (L._st && L._st.length) { s.st[d.id] = L._st.map((q) => q.slice()); odd = true; }
+    // la postura en que se cosió (para que una criatura sepa cómo ponerse de pie: 53_v133_criaturas.js)
+    if (L.restA) { (s.ra || (s.ra = {}))[d.id] = +L.restA.toFixed(3); odd = true; }
     // una parte de las de siempre cosida en otro sitio (una cabeza de más que pasó a ser la suya)
     if ((L.sj && L.joint && L.parent && !L.parent.frag) || L.flipRel) {
       const j = L.sj && L.joint ? L.sj : null;
@@ -18581,6 +18586,7 @@ function applyBodySnap(h, s, r) {
     h.makeJoint(L); L.severed = false;
   }
   if (xs.length) relinkLimbs(h);
+  if (s.ra) for (const id in s.ra) { const L = h.limbs[id]; if (L) L.restA = s.ra[id]; }
   canonBodies(h);
   for (const id in s.st) { const L = h.limbs[id]; if (L && !L.destroyed) for (const q of s.st[id]) stitchAt(L, q[0], q[1], q[2]); }
   if (s.oi) {
@@ -19559,6 +19565,9 @@ function findFreeSew(A, comp, maxD) {
         if (Math.hypot(p.x - q.x, p.y - q.y) > R + Math.hypot(Y.tpl.w, Y.tpl.h) * PX / 2) continue;
         const g = limbGap(Y, Q);
         if (!g || g.d > maxD) continue;
+        // (una pierna o un brazo que toca a la vez el tronco y otra pierna, mejor al tronco)
+        const same = /^(upper|lower)(Leg|Arm)|^foot/.test(limbBase(Y)) && /^(upper|lower)(Leg|Arm)|^foot/.test(limbBase(Q));
+        if (same) g.d += 0.03;
         // (a igualdad, por la parte de arriba de lo que coses: así no hay que darle la vuelta)
         if (!best || g.d < best.d - 0.004 || (g.d <= best.d + 0.004 && Y === comp[0] && best.X !== comp[0])) best = { d: g.d, X: Y, P: Q, T, a: g.a, b: g.b };
       }
@@ -20156,6 +20165,415 @@ function detachPart(h, X) {
     d2.innerHTML = this.settingsRows([['check', 'autoSew', 'Coser las partes al soltarlas junto a otro cuerpo']]);
     div.after(d2);
     this.bindSettings(d2);
+  };
+}
+
+/* ---- 53_v133_criaturas.js ---- */
+/* =========================================================================
+   VERSIÓN 13.3: LAS CRIATURAS SABEN USAR SU CUERPO. Un cuerpo que no es el de
+   una persona normal (un caballo de cuatro patas, una araña de seis, un torso
+   con piernas cosidas donde sea...) entiende cómo es: mira hacia dónde apuntan
+   sus piernas para saber cómo ponerse de pie, a qué altura queda el cuerpo y
+   cómo mover cada pata. Se levanta, se sostiene con sus piernas, anda y corre
+   moviéndolas por turnos (las de cada lado alternadas, como un caballo al
+   trote). Sin piernas, anda con los brazos.
+   ========================================================================= */
+const LEG_BASES = new Set(['upperLegF', 'upperLegB', 'lowerLegF', 'lowerLegB', 'footF', 'footB']);
+const ARM_BASES = new Set(['upperArmF', 'upperArmB', 'lowerArmF', 'lowerArmB']);
+const isLegL = (L) => LEG_BASES.has(limbBase(L));
+const isArmL = (L) => ARM_BASES.has(limbBase(L));
+// las uniones de un cuerpo como un grafo (cada articulación con las dos partes que une)
+function jointEdges(live) {
+  const set = new Set(live), out = [];
+  for (const L of live) if (L.joint && L.parent && set.has(L.parent) && !L.severed) out.push({ j: L.joint, A: L.parent, B: L, owner: L });
+  return out;
+}
+// la postura de descanso de todas las partes, vistas desde la parte «base» (en su sistema, con ángulo 0)
+function restPose(base, live, edges) {
+  const pose = new Map([[base, { x: 0, y: 0, a: 0 }]]), q = [base];
+  const R = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+  while (q.length) {
+    const C = q.shift(), pc = pose.get(C);
+    for (const e of edges) {
+      const other = e.A === C ? e.B : e.B === C ? e.A : null;
+      if (!other || pose.has(other)) continue;
+      const la = e.j.getLocalAnchorA(), lb = e.j.getLocalAnchorB(), ref = e.j.getReferenceAngle(), r = e.owner.restA || 0;
+      if (e.A === C) {
+        const a = pc.a + ref + r, p1 = R(la.x, la.y, pc.a), p2 = R(lb.x, lb.y, a);
+        pose.set(other, { x: pc.x + p1[0] - p2[0], y: pc.y + p1[1] - p2[1], a });
+      } else {
+        const a = pc.a - ref - r, p1 = R(lb.x, lb.y, pc.a), p2 = R(la.x, la.y, a);
+        pose.set(other, { x: pc.x + p1[0] - p2[0], y: pc.y + p1[1] - p2[1], a });
+      }
+      q.push(other);
+    }
+  }
+  return pose;
+}
+// puntos del contorno de una parte en una postura dada
+function shapePts(L, ps) {
+  const f = L.body.getFixtureList(); if (!f) return [[ps.x, ps.y]];
+  const s = f.getShape(), vs = s.m_vertices, n = s.m_count || 0, out = [];
+  for (let i = 0; i < n; i++) { const v = vs[i], c = Math.cos(ps.a), si = Math.sin(ps.a); out.push([ps.x + v.x * c - v.y * si, ps.y + v.x * si + v.y * c]); }
+  return out.length ? out : [[ps.x, ps.y]];
+}
+// cómo es su cuerpo: sus patas (cadenas de partes de pierna; sin piernas, los brazos), con qué se unen al resto,
+// hacia dónde apuntan y a qué altura queda el cuerpo de pie
+function buildGait(h) {
+  const live = h.limbList.filter((L) => !L.destroyed && L.connected && L.body && !L.frag);
+  if (live.length < 2) return null;
+  const edges = jointEdges(live);
+  const legLike = (pred) => {
+    const parts = live.filter(pred); if (!parts.length) return [];
+    const inLeg = new Set(parts), chains = [], seen = new Set();
+    for (const L of parts) {
+      if (seen.has(L)) continue;
+      const comp = [L]; seen.add(L);
+      for (let i = 0; i < comp.length; i++) for (const e of edges) {
+        const o = e.A === comp[i] ? e.B : e.B === comp[i] ? e.A : null;
+        if (o && inLeg.has(o) && !seen.has(o)) { seen.add(o); comp.push(o); }
+      }
+      // la unión con el resto del cuerpo (la cadera)
+      const hip = edges.find((e) => (comp.includes(e.A) && !inLeg.has(e.B)) || (comp.includes(e.B) && !inLeg.has(e.A)));
+      if (hip) chains.push({ limbs: comp, hip });
+    }
+    return chains;
+  };
+  let legs = legLike(isLegL), onArms = false;
+  if (!legs.length) { legs = legLike(isArmL); onArms = true; }
+  if (!legs.length) return null;
+  const legSet = new Set(legs.flatMap((c) => c.limbs));
+  const core = live.filter((L) => !legSet.has(L));
+  if (!core.length) return null;
+  // ¿es una persona normal? (las dos piernas de siempre, en su sitio y rectas): entonces anda como siempre
+  const std = !onArms && legs.length === 2 && legs.every((c) => c.limbs.every((L) => !L.def.extra && !L.sj && Math.abs(L.restA || 0) < 0.4) && (c.hip.A === h.limbs.lowerBody || c.hip.B === h.limbs.lowerBody));
+  if (std) return null;
+  const base = h.limbs.upperBody && core.includes(h.limbs.upperBody) ? h.limbs.upperBody : core.includes(h.root) ? h.root : core[0];
+  const pose = restPose(base, live, edges);
+  // cada pata: su cadera, su punta (lo más lejos de la cadera) y las articulaciones de dentro
+  let mx = 0, my = 0;
+  for (const c of legs) {
+    const top = c.limbs.includes(c.hip.A) ? c.hip.A : c.hip.B, body = top === c.hip.A ? c.hip.B : c.hip.A;
+    const pb = pose.get(body), pt = pose.get(top); if (!pb || !pt) { c.bad = true; continue; }
+    const la = top === c.hip.B ? c.hip.j.getLocalAnchorA() : c.hip.j.getLocalAnchorB();
+    const hx = pb.x + la.x * Math.cos(pb.a) - la.y * Math.sin(pb.a), hy = pb.y + la.x * Math.sin(pb.a) + la.y * Math.cos(pb.a);
+    let fx = hx, fy = hy, fd = 0, tipL = top;
+    for (const L of c.limbs) { const ps = pose.get(L); if (!ps) continue; for (const [x, y] of shapePts(L, ps)) { const d = Math.hypot(x - hx, y - hy); if (d > fd) { fd = d; fx = x; fy = y; tipL = L; } } }
+    c.top = top; c.body = body; c.hipP = [hx, hy]; c.foot = [fx, fy]; c.len = fd; c.tipL = tipL;
+    c.hipSign = top === c.hip.B ? 1 : -1;
+    // las articulaciones dentro de la pata, de la cadera hacia la punta (rodilla, tobillo...)
+    c.inner = [];
+    const order = [top];
+    for (let i = 0; i < order.length; i++) for (const e of edges) {
+      const o = e.A === order[i] ? e.B : e.B === order[i] ? e.A : null;
+      if (!o || !c.limbs.includes(o) || order.includes(o)) continue;
+      order.push(o); c.inner.push({ e, sign: o === e.B ? 1 : -1, dist: order.length });
+    }
+    if (fd > 0.05) { mx += (fx - hx) / fd; my += (fy - hy) / fd; }
+  }
+  legs = legs.filter((c) => !c.bad && c.len > 0.05);
+  if (!legs.length) return null;
+  // de pie, las patas apuntan hacia abajo: el ángulo de la base que lo consigue y la altura que queda
+  const theta = angWrap(Math.PI / 2 - Math.atan2(my, mx));
+  const rot = (x, y) => [x * Math.cos(theta) - y * Math.sin(theta), x * Math.sin(theta) + y * Math.cos(theta)];
+  let height = 0;
+  for (const c of legs) { const f = rot(...c.foot), hp = rot(...c.hipP); c.hipW = hp; c.footW = f; height = Math.max(height, f[1]); }
+  // las patas se reparten por turnos: de delante atrás, y las de los dos lados alternadas (trote)
+  const fwd = (c) => c.hipW[0] * h.facing;
+  const sorted = legs.slice().sort((a, b) => fwd(b) - fwd(a));
+  sorted.forEach((c, i) => { const back = c.limbs.some((L) => limbBase(L).endsWith('B')); c.phase = ((i >> 1) + (back ? 1 : 0)) % 2 ? Math.PI : 0; if (sorted.length === 1) c.phase = 0; });
+  return { legs, core, base, theta, height: Math.max(0.2, height - 0.02), onArms, phase: 0, live };
+}
+// (se rehace cuando cambia el cuerpo: coser, descoser, cortar, voltear...)
+Human.prototype.creatureGait = function () {
+  if (this.kind === 'android' || this.kind === 'dummy' || this.kind === 'skeleton' || this.dead) return null;
+  const k = (this._topoV || 0) + ':' + this.facing + ':' + this.limbList.length;
+  if (this._gaitK === k) return this._gait;
+  this._gaitK = k;
+  this._gait = null;
+  // sólo los cuerpos montados a mano o con piernas cosidas de más; una persona normal anda como siempre
+  if (!(this.frank || this.limbList.some((L) => !L.destroyed && L.def.extra && (isLegL(L) || isArmL(L))))) return null;
+  try { this._gait = buildGait(this); } catch (e) { this._gait = null; }
+  return this._gait;
+};
+{
+  const uc = Human.prototype.updateConnectivity;
+  Human.prototype.updateConnectivity = function () { this._topoV = (this._topoV || 0) + 1; return uc.call(this); };
+  const ff = Human.prototype.flipFacing;
+  Human.prototype.flipFacing = function (...a) { const r = ff.apply(this, a); this._topoV = (this._topoV || 0) + 1; return r; };
+}
+// lo que queda debajo del cuerpo (el suelo, o lo que sea que no es él)
+function groundBelow(h, x, y, len) {
+  const hit = rayFirst(x, y, x, y + len, (f) => { if (f.isSensor()) return false; const d = f.getUserData(); return !(d && d.thing === h); });
+  return hit ? hit.y : null;
+}
+function gaitLegsOk(h, G) { return G.legs.filter((c) => c.limbs.every((L) => !L.destroyed && L.connected && L.health > 0.15 && !(L.broken && L === c.top))).length; }
+{
+  // ¿puede estar de pie? con al menos una pata sana (y consciente)
+  const cs = Human.prototype.canStand;
+  Human.prototype.canStand = function () {
+    const G = this.alive && this.creatureGait(); if (!G) return cs.call(this);
+    if (!this.alive || this.consc < 0.5 || this.frozenSolid || this.shock > 0) return false;
+    if (this.fire > 0.3 && this.painMul > 0) return false;
+    return gaitLegsOk(this, G) >= 1;
+  };
+  const gr = Human.prototype.grounded;
+  Human.prototype.grounded = function () {
+    const G = this.alive && this.creatureGait(); if (!G) return gr.call(this);
+    const p = G.base.body.getPosition(), gy = groundBelow(this, p.x, p.y, G.height + 0.35);
+    if (gy !== null) return true;
+    for (const c of G.legs) for (const L of c.limbs) for (let ce = L.body.getContactList(); ce; ce = ce.next) { if (!ce.contact.isTouching()) continue; const od = ce.other.getUserData(); if (!od || od.thing !== this) return true; }
+    return false;
+  };
+  const ti = Human.prototype.tilt;
+  Human.prototype.tilt = function () { const G = this.alive && this.creatureGait(); return G ? angWrap(G.base.body.getAngle() - G.theta) : ti.call(this); };
+  // sin el equilibrio de dos piernas (lo lleva su propio control)
+  const cp = Human.prototype.computePose;
+  Human.prototype.computePose = function (dt) { const r = cp.call(this, dt); if (r && this.alive && this.creatureGait()) r.bal = 0; return r; };
+  const fo = Human.prototype.forces;
+  Human.prototype.forces = function (dt) {
+    const r = fo.call(this, dt);
+    const G = !this.dead && this.alive && this.creatureGait();
+    if (G) creatureForces(this, G, dt);
+    return r;
+  };
+}
+// el control de la criatura: sostenerse sobre sus patas, ponerse derecha, andar y mover las patas por turnos
+function creatureForces(h, G, dt) {
+  if (h.frozenSolid || h.dragged) return;
+  const st = h.state, m = h.muscle(), P = h.powers ? h.powers() : null;
+  const up = st === 'stand' ? 1 : st === 'getup' ? smooth(clamp(h.stateT / 1.0, 0, 1)) : 0;
+  const g = GRAVITY * Settings.gravity;
+  const base = G.base.body, bp = base.getPosition();
+  // masas: lo que sostiene (todo el cuerpo) y dónde
+  let M = 0, vx = 0, vy = 0;
+  for (const L of G.live) { if (L.destroyed || !L.body) continue; const b = L.body, mm = b.getMass(); M += mm; const v = b.getLinearVelocity(); vx += v.x * mm; vy += v.y * mm; }
+  if (M <= 0) return;
+  vx /= M; vy /= M;
+  const legsOk = gaitLegsOk(h, G);
+  if (up > 0 && m > 0.15 && legsOk) {
+    const gy = groundBelow(h, bp.x, bp.y, G.height + 0.6);
+    if (gy !== null) {
+      // a la altura de sus patas (como un muelle), con el peso de todo el cuerpo
+      const want = gy - G.height, e = bp.y - want;
+      const k = up * clamp(m, 0, 1.3) * Math.min(1, 0.35 + 0.65 * legsOk / G.legs.length);
+      const ay = clamp(-e * 45 - vy * 9, -g * 1.6, g * 0.9) * k - g * k;
+      const coreM = G.core.reduce((s, L) => s + (L.destroyed ? 0 : L.body.getMass()), 0) || 1;
+      for (const L of G.core) { if (L.destroyed) continue; const b = L.body, mm = b.getMass(); b.applyForceToCenter(V(0, ay * M * mm / coreM), true); }
+      // derecho según sus patas
+      const a = angWrap(base.getAngle() - G.theta), w = base.getAngularVelocity();
+      const I = M * 0.16;
+      const tq = clamp(-a * 70 - w * 11, -40, 40) * I * k;
+      for (const L of G.core) { if (L.destroyed) continue; L.body.applyTorque(tq * L.body.getMass() / coreM, true); }
+      // andar: cuanto más rápido, más rápido mueve las patas
+      if (h.walking) {
+        const sp = (h.walkSpeed || 0.75) * (P ? P.spd : 1) * (G.onArms ? 0.55 : 1), am = sp > 1.3 ? 5 : 3;
+        const acc = clamp((h.walkDir * sp - vx) * 3, -am, am) * Math.min(k, 1);
+        for (const L of G.live) { if (L.destroyed) continue; L.body.applyForceToCenter(V(L.body.getMass() * acc, 0), true); }
+      } else {
+        const acc = clamp(-vx * 2.5, -2.5, 2.5) * k;
+        for (const L of G.live) { if (L.destroyed) continue; L.body.applyForceToCenter(V(L.body.getMass() * acc, 0), true); }
+      }
+    }
+  }
+  // andando, lo que no es pata resbala si roza el suelo (un cuerpo con las patas cortas se arrastra con ellas)
+  const slide = !!(h.walking && up > 0);
+  if (slide !== !!G.slide) {
+    G.slide = slide;
+    for (const L of G.core) {
+      if (L.destroyed || !L.body) continue;
+      for (let f = L.body.getFixtureList(); f; f = f.getNext()) { if (f._f0 === undefined) f._f0 = f.getFriction(); f.setFriction(slide ? 0.08 : f._f0); }
+      for (let ce = L.body.getContactList(); ce; ce = ce.next) ce.contact.resetFriction();
+    }
+  }
+  // las patas: de pie, firmes en su postura; andando, por turnos (la pata adelanta y dobla la rodilla al avanzar)
+  const moving = h.walking && st === 'stand';
+  G.phase += dt * (moving ? 5 + 4 * Math.min(2.5, Math.abs(vx)) : 0);
+  const amp = moving ? 0.42 : 0, str = Math.max(0.05, m) * (P ? P.str : 1);
+  for (const c of G.legs) {
+    const ph = G.phase + c.phase, s = Math.sin(ph), co = Math.cos(ph);
+    // hacia dónde avanza el pie al girar la pata: así da el paso hacia donde anda
+    const hp = c.top.body.getPosition(), tip = c.tipL.body.getPosition();
+    const dirSign = -(h.walkDir || h.facing) * Math.sign((tip.y - hp.y) || 1);
+    const setM = (j, L, tgt) => {
+      const a = j.getJointAngle(), lo = j.getLowerLimit(), hi = j.getUpperLimit();
+      const t2 = clamp(tgt, lo + 0.02, hi - 0.02);
+      j.setMotorSpeed(clamp((t2 - a) * 12, -15, 15));
+      j.setMaxMotorTorque(Math.max(L.def.str || 0, 140) * str * HUMAN_MASS_MUL * (st === 'lying' ? 0.25 : 1));
+    };
+    const hipL = c.hip.owner;
+    if (!hipL.destroyed && hipL.joint === c.hip.j) setM(c.hip.j, hipL, (hipL.restA || 0) + c.hipSign * amp * s * dirSign);
+    for (const q of c.inner) {
+      const L = q.e.owner; if (L.destroyed || L.joint !== q.e.j) continue;
+      const rest = L.restA || 0, lo = q.e.j.getLowerLimit(), hi = q.e.j.getUpperLimit();
+      const bend = hi - rest > rest - lo ? 1 : -1;
+      setM(q.e.j, L, rest + (q.dist === 2 ? bend * 0.75 * Math.max(0, co) * (moving ? 1 : 0) : 0));
+    }
+  }
+}
+// cuando se cose una pata en su hueco de siempre, recuerda en qué postura (para estar de pie así)
+{
+  const sl = sewLimb;
+  sewLimb = function (R, A, T, S) { const r = sl(R, A, T, S); if (r && R.joint) R.restA = Math.abs(R.joint.getJointAngle()) > 0.05 ? R.joint.getJointAngle() : 0; return r; };
+}
+
+/* ---- 54_v133_cirugia.js ---- */
+/* =========================================================================
+   VERSIÓN 13.3 (2): CIRUGÍA.
+   - Clic derecho sobre una parte del cuerpo con órganos: «Arrancar órgano»
+     de cada uno (como «Arrancar» con las partes), con o sin rayos X.
+   - Cuchilla quirúrgica (categoría Órganos → Cirugía): atraviesa el cuerpo
+     sin herirlo y corta por dentro (deja la incisión). Con la punta sobre un
+     órgano se ve cuál es; activándola (F) lo saca entero, sin dañarlo.
+   - Un zombi sin cerebro no muere: queda incapacitado (sigue vivo, pero no se
+     mueve, no ataca y no contagia). Si se le devuelve un cerebro, vuelve.
+   ========================================================================= */
+
+/* ---------------- zombis sin cerebro: incapacitados ---------------- */
+{
+  const uv = Human.prototype.updateVitals;
+  Human.prototype.updateVitals = function (dt) {
+    const r = uv.call(this, dt);
+    if (!this._zIncap || !this.zombie || !this.alive || this.dead) return r;
+    // sin cerebro no hay quien lo mueva: tirado, sin consciencia (y de vez en cuando, un espasmo)
+    this.knock = Math.max(this.knock, 0.6);
+    this.walking = false; this.crawling = false; this.zAtk = null; this.target = null;
+    this._twT = (this._twT || rand(1, 3)) - dt;
+    if (this._twT <= 0) {
+      this._twT = rand(1.5, 4);
+      const L = pick(this.limbList.filter((X) => !X.destroyed && X.connected && X.body));
+      if (L) { const b = L.body, m = b.getMass(); b.applyLinearImpulse(V(rand(-0.6, 0.6) * m, -rand(0.2, 0.8) * m), b.getWorldCenter(), true); }
+    }
+    return r;
+  };
+  const inf = Human.prototype.info;
+  Human.prototype.info = function () {
+    const lines = inf.call(this);
+    if (this._zIncap && this.zombie && this.alive && Array.isArray(lines)) lines.unshift(['Incapacitado: sin cerebro (no se mueve, no ataca ni contagia)', '#e0b34f']);
+    return lines;
+  };
+}
+
+/* ---------------- arrancar órganos desde el menú ---------------- */
+{
+  const ci = UI.ctxItems.bind(UI);
+  UI.ctxItems = function (t, hit, wx, wy) {
+    const items = ci(t, hit, wx, wy);
+    if (!t || !t.isHuman || t.dead) return items;
+    // con rayos X y un órgano señalado ya están «Arrancar» y «Dañar» de ése
+    if (items.some((m) => m && m.label && m.label.startsWith('Dañar: '))) return items;
+    // las partes de esa persona bajo el clic (aunque delante haya un brazo) y la señalada
+    const limbs = new Set(), h0 = hit && (hit.limb || (hit.body && t.limbOfBody(hit.body)));
+    if (h0 && !h0.destroyed) limbs.add(h0);
+    if (wx !== undefined) queryAABB(wx - 0.01, wy - 0.01, wx + 0.01, wy + 0.01, (f) => { const d = f.getUserData(); if (d && d.thing === t && d.part && !d.part.destroyed && f.testPoint(V(wx, wy))) limbs.add(d.part); return true; });
+    // uno por tipo: el más cercano a donde has hecho clic
+    const by = new Map();
+    for (const L of limbs) {
+      if (!L.organs || !L.organs.length || !L.body) continue;
+      const lp = wx !== undefined ? L.localPx(wx, wy) : [L.tpl.w / 2, L.tpl.h / 2];
+      for (const g of L.organs) { const d = Math.hypot(g.x - lp[0], g.y - lp[1]), b = by.get(g.t); if (!b) by.set(g.t, { g, L, d, n: 1 }); else { b.n++; if (d < b.d) { b.g = g; b.L = L; b.d = d; } } }
+    }
+    const add = [];
+    for (const t2 of ORGAN_ORDER) { const b = by.get(t2); if (!b) continue; add.push({ label: `Arrancar órgano: ${ORGAN_TYPES[t2].name}${b.n > 1 ? ' (' + b.n + ')' : ''}`, fn: () => { if ((b.L.organs || []).includes(b.g)) extractOrgan(t, b.L, b.g); }, once: true }); }
+    if (add.length) items.unshift(...add, '-');
+    return items;
+  };
+}
+
+/* ---------------- cuchilla quirúrgica ---------------- */
+const SCALPEL_TIP = [15, 1.5];
+// saca un órgano entero (sin dañarlo): queda suelto al lado, con una herida pequeña
+function extractClean(h, L, g) {
+  const i = L.organs ? L.organs.indexOf(g) : -1; if (i < 0) return null;
+  const c = L.body.getWorldCenter(), w = L.worldPt(g.x, g.y), bv = L.body.getLinearVelocity();
+  L.organs.splice(i, 1);
+  paintOrgan(L, g, false);
+  const it = g.hp >= 0.04 ? spawnOrgan(g.t, g.hp, w[0], w[1], bv.x + (w[0] - c.x) * 4 + h.facing * 0.3, bv.y - 0.8, { z: g.z || (h.zombie ? 1 : 0) }) : null;
+  if (it) {
+    // sale sin chocar con el cuerpo del que sale
+    const ib = it.main;
+    for (const b of h.bodies) setNoCollide(ib, b, true);
+    setTimeout(() => { for (const b of h.bodies) if (ib._nc && ib._nc.has(b)) Stuck.pend.push({ a: ib, b, t: 0.05 }); }, 600);
+  }
+  h.addWound(L, g.x, g.y, 0.003, false);
+  if (h.bleedKind) Effects.blood(w[0], w[1], 0, -0.4, 4, 0.5, h.bleedKind);
+  if (h.alive) h.pain += 0.25 * h.painMul;
+  L.dirty = true;
+  Sound.play('slice', w[0], w[1], 0.5);
+  return it;
+}
+function scalpelTip(it) { return it.worldPt(SCALPEL_TIP[0], SCALPEL_TIP[1]); }
+function scalpelOrgan(it) { const p = scalpelTip(it); return organAt(p[0], p[1]); }
+def('scalpel', {
+  name: 'Cuchilla quirúrgica', cat: 'organs', sub: 'Cirugía', mat: 'metal', mass: 0.08,
+  desc: 'Para operar: atraviesa el cuerpo sin herirlo y corta por dentro. Con la punta sobre un órgano se ve cuál es; actívala (F) para sacarlo entero, sin dañarlo.',
+  sprite: () => drawSprite(16, 3, (a) => {
+    a.rect(0, 0, 8, 3, '#2f6fa3'); a.hline(1, 6, 0, '#4f8fc3'); a.px(2, 1, '#245a85'); a.px(5, 1, '#245a85');
+    a.rect(8, 1, 1, 1, '#8a929b');
+    a.poly([[9, 0.6], [14, 0.8], [16, 1.5], [14, 2.2], [9, 2.4]], '#dfe5eb'); a.hline(9, 14, 1, '#f4f7fa');
+    a.edge(0.8);
+  }),
+  shapes: [{ box: [0, 0, 8, 3] }, { poly: [[8, 0.6], [14, 0.8], [16, 1.5], [14, 2.2], [8, 2.4]] }],
+  grip: [3, 1.5],
+  activate(it) {
+    const og = scalpelOrgan(it);
+    if (!og) { UI.toast('No hay ningún órgano bajo la punta de la cuchilla'); return; }
+    const name = ORGAN_TYPES[og.g.t].name;
+    UI.toast(extractClean(og.h, og.L, og.g) ? `Sacado entero: ${name}` : `${name}: estaba destrozado`, 1400);
+  },
+  update(it, dt) {
+    const b = it.main; if (!b) return;
+    const p = scalpelTip(it);
+    // atraviesa los cuerpos (no choca con ellos)
+    queryAABB(p[0] - 0.6, p[1] - 0.6, p[0] + 0.6, p[1] + 0.6, (f) => {
+      const d = f.getUserData(), t = d && d.thing;
+      if (t && t.isHuman && !t.dead) for (const ob of t.bodies) if (!(b._nc && b._nc.has(ob))) setNoCollide(b, ob, true);
+      return true;
+    });
+    // por dentro corta: deja la incisión por donde pasa la punta
+    let L = null, h = null;
+    queryAABB(p[0] - 0.005, p[1] - 0.005, p[0] + 0.005, p[1] + 0.005, (f) => {
+      const d = f.getUserData(); if (!d || !d.thing || !d.thing.isHuman || d.thing.dead || !d.part || d.part.destroyed || !f.testPoint(V(p[0], p[1]))) return true;
+      L = d.part; h = d.thing; return false;
+    });
+    const v = it.vars, prev = v._tp;
+    v._tp = L ? { L, h, x: p[0], y: p[1] } : null;
+    if (L && prev && prev.L === L && Math.hypot(p[0] - prev.x, p[1] - prev.y) > PX * 0.6) {
+      const a = L.localPx(prev.x, prev.y), c = L.localPx(p[0], p[1]), n = Math.ceil(Math.hypot(c[0] - a[0], c[1] - a[1])) + 1;
+      for (let k = 0; k <= n; k++) {
+        const x = lerp(a[0], c[0], k / n), y = lerp(a[1], c[1], k / n);
+        L.paint(x, y, 0.55, (i) => { L.dmg[i] = Math.max(L.dmg[i], 0.42); L.bloodMap[i] = Math.max(L.bloodMap[i], 0.35); });
+      }
+      L.dirty = true;
+      v._cutT = (v._cutT || 0) - dt;
+      if (v._cutT <= 0) { v._cutT = 0.6; if (h.alive) h.pain += 0.04 * h.painMul; if (h.bleedKind && Math.random() < 0.5) Effects.blood(p[0], p[1], 0, 0, 1, 0.3, h.bleedKind); }
+    }
+    v._org = scalpelOrgan(it);
+  },
+  info(it) { const og = it.vars._org; return og ? [[`Bajo la punta: ${organLabel(og.g)} (F: sacarlo)`, '#cfe9d4']] : [['Pasa la punta por dentro de un cuerpo para ver sus órganos', '#9aa3ad']]; },
+  menu(it) { return [{ label: 'Sacar el órgano de la punta', fn: () => it.activate() }]; },
+});
+{
+  // al agarrarla no cuelga: mantiene el ángulo (se gira con A/D) para poder operar con precisión
+  const sd = Input.startDrag.bind(Input);
+  Input.startDrag = function (hit, wx, wy, gentle) {
+    const r = sd(hit, wx, wy, gentle), d = this.drag;
+    if (d && d.kind === 'drag' && d.thing && d.thing.def && d.thing.def.id === 'scalpel' && d.holdAngle == null) this.rotateHeld(0);
+    return r;
+  };
+  // el órgano bajo la punta de cada cuchilla, señalado
+  const dw = Input.drawWorld.bind(Input);
+  Input.drawWorld = function (ctx) {
+    dw(ctx);
+    const z = Cam.zoom;
+    for (const it of World.things) {
+      if (it.dead || !it.def || it.def.id !== 'scalpel') continue;
+      const og = it.vars._org; if (!og || og.L.destroyed || !(og.L.organs || []).includes(og.g)) continue;
+      const w = og.L.worldPt(og.g.x, og.g.y);
+      ctx.save(); ctx.strokeStyle = '#7ad48a'; ctx.lineWidth = 1.5 / z; ctx.setLineDash([3 / z, 2 / z]);
+      ctx.beginPath(); ctx.arc(w[0], w[1], (og.g.r + 0.8) * PX, 0, TAU); ctx.stroke(); ctx.restore();
+      xrLabel(ctx, w[0], w[1], (og.g.r + 0.8) * PX * z + 14, `${organLabel(og.g)} · F: sacarlo`, '#cfe9d4');
+    }
   };
 }
 
