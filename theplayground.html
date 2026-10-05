@@ -8098,7 +8098,7 @@ const UI = {
       <div class="sub">Entorno → Colisiones entre seres: elige si humanos, zombis y androides chocan entre sí, sólo con los vivos o nunca. Lo que arde acaba hecho ceniza y las personas, esqueletos carbonizados.</div>
       <div class="sub">Electricidad: une baterías o generadores con el cable a lámparas, motores, máquinas... o a una persona. Señales: botones, palancas, interruptores, sensores, puertas lógicas (AND, OR, XOR, NOT), contadores y cajas de retraso se unen con los cables de propagación, que llevan la señal del primer objeto que unes al segundo (los destructibles se rompen con tirones, golpes, balas o explosiones). Estos cables de activación son invisibles: sólo se ven, todos los colores a la vez, mientras tienes equipada una de sus herramientas.</div>
       <div class="sub">Tirar muy fuerte de alguien (con el ratón, cuerdas, vehículos...) puede arrancarle partes del cuerpo. Las armas con filo, las motosierras, los rotores y los láseres cortan por donde pasan, siguiendo la trayectoria del golpe: un tajo fuerte de katana parte a una persona en dos, y los trozos se pueden volver a cortar. Las explosiones y los aplastamientos rompen el cuerpo en trozos.</div>
-      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona; de cada órgano, todos los que quieras). Una parte se cose soltándola junto a su sitio de otro cuerpo (y se mueve como siempre) o tocando cualquier otro sitio, donde queda cosida tal como la pusiste: brazos en la cabeza, piernas en el pecho, varios torsos juntos... Una parte cosida se separa con «Descoser esta parte» en su menú (o se borra sola con la tecla de borrar). Con una cabeza, cerebro, corazón, pulmón, riñón e hígado, una descarga eléctrica le da vida, tenga la forma que tenga: tu propio Frankenstein. Los órganos de más dan poderes: corazones (fuerza y aguante), cerebros (esquivar, reflejos y lanzar cosas con la mente), pulmones y músculos (correr y saltar), riñones e hígados (inmunidad a venenos y al virus zombi), estómagos (ácido) e intestinos (regeneración). Las criaturas con patas de más (un caballo de cuatro, una araña de seis...) se ponen de pie y andan con todas, y las que sólo tienen brazos andan con ellos. Clic derecho sobre una parte con órganos: «Arrancar órgano». La cuchilla quirúrgica (Órganos → Cirugía) atraviesa el cuerpo sin herirlo y, con la punta sobre un órgano, F lo saca entero. Un zombi sin cerebro no muere: queda incapacitado (no se mueve, no ataca ni contagia).</div>
+      <div class="sub">Zombis (Entorno → Seres vivos): resistentes, sólo mueren si les separas la cabeza del cuerpo, les cortas la mitad de la cabeza o se la destrozas; lo demás no los para y siguen persiguiéndote arrastrándose con lo que les quede (o como antes). Cuerpos realistas: órganos dentro (cerebro, corazón, pulmones, hígado, estómago, riñones, intestinos) que se dañan, hacen su función y se salen con los cortes y las explosiones. Categoría Órganos: órganos, músculos y partes del cuerpo. Un órgano unido al cuerpo con un conductor de líquido (vena artificial) funciona como trasplante (o mételo dentro desde su menú, o con «Órganos…» en el menú de la persona; de cada órgano, todos los que quieras). Una parte se cose soltándola junto a su sitio de otro cuerpo (y se mueve como siempre) o tocando cualquier otro sitio, donde queda cosida tal como la pusiste: brazos en la cabeza, piernas en el pecho, varios torsos juntos... Una parte cosida se separa con «Descoser esta parte» en su menú (o se borra sola con la tecla de borrar). Con una cabeza, cerebro, corazón, pulmón, riñón e hígado, una descarga eléctrica le da vida, tenga la forma que tenga: tu propio Frankenstein. Los órganos de más dan poderes: corazones (fuerza y aguante), cerebros (esquivar, reflejos y lanzar cosas con la mente), pulmones y músculos (correr y saltar), riñones e hígados (inmunidad a venenos y al virus zombi), estómagos (ácido) e intestinos (regeneración). Las criaturas con patas de más (un caballo de cuatro, una araña de seis...) se ponen de pie y andan con todas, y las que sólo tienen brazos andan con ellos. Clic derecho sobre una parte con órganos: «Arrancar órgano». La cuchilla quirúrgica (Órganos → Cirugía) atraviesa el cuerpo sin herirlo y, con la punta sobre un órgano, F lo saca entero. Un zombi sin cerebro no muere: queda incapacitado (no se mueve, no ataca ni contagia). Vehículos → «Crear vehículo»: monta el tuyo (cuerpo, tamaño, color, ruedas y sus tamaños, tipo de rueda y potencia) y guárdalo en «Mis vehículos».</div>
       <div class="sub">Líquidos: los matraces vierten al inclinarlos y recogen lo que les cae dentro. Las jeringas inyectan al clavarse (F cambia a extraer) y, si les disparas, revientan y salpican a quien esté cerca.</div>
       <div class="sub">Táctil: un dedo arrastra, dos dedos mueven y hacen zoom, mantener pulsado abre el menú. Con un objeto elegido, toca un hueco o usa los botones Q/E para colocarlo; el botón F activa.</div>
     </div><div class="row"><button class="btn" id="hBack">Cerrar</button></div>`;
@@ -21976,6 +21976,590 @@ function tuneSuspension(it) {
   Phys.setGravity = function (g) { const r = sg.call(this, g); retune(); return r; };
   const sw = Thing.prototype.setWeightless;
   Thing.prototype.setWeightless = function (on) { const r = sw.call(this, on); if (this.vars && this.vars.wj) tuneSuspension(this); return r; };
+}
+
+/* ---- 59_v136_creador.js ---- */
+/* =========================================================================
+   VERSIÓN 13.6: CREADOR DE VEHÍCULOS. En el catálogo (Vehículos → «Crear
+   vehículo») se abre un menú para montar tu propio vehículo, con vista previa:
+   - el cuerpo (sedán, compacto, deportivo, todoterreno, camioneta, furgoneta,
+     autobús, camión, buggy, plataforma o moto), su tamaño, su largo y su color;
+   - cuántas ruedas lleva por lado, el tamaño de las de delante y el de las de
+     detrás, y el tipo de rueda (normal, deportiva, todoterreno, monstruo o
+     clásica, cada una con su agarre);
+   - la potencia del motor.
+   Se coloca con un clic, como cualquier objeto, y se puede guardar en «Mis
+   vehículos» del catálogo. Tiene motor, freno, marcha atrás, ruedas que se
+   pinchan, la suspensión nueva y asientos para subir pasajeros. Cada vehículo
+   lleva su diseño en su identificador, así que se copia, se pega y se guarda
+   en escenas y artefactos como cualquier otro objeto.
+   ========================================================================= */
+const VB_KEY = 'theplayground_vehiculos_v1', VB_PREFIX = 'veh~';
+const VB_GLASS = [150, 190, 210, 120], VB_GLASS2 = [214, 234, 244, 150], VB_DARK = '#2a2d32', VB_TIRE = '#26272a';
+const VB_COLORS = ['#3a6ea5', '#c0392b', '#e0b42e', '#2e8b57', '#f2f2f0', '#1d1e21', '#8e44ad', '#e67e22', '#7f8c8d', '#5dade2', '#ff6fa8', '#6b4e32'];
+// tipos de rueda: agarre al suelo y dibujo
+const VB_WHEELS = {
+  normal: { name: 'Normal', fr: 1.4 },
+  deportiva: { name: 'Deportiva', fr: 1.6 },
+  todoterreno: { name: 'Todoterreno', fr: 1.9 },
+  monster: { name: 'Monstruo', fr: 2.1 },
+  clasica: { name: 'Clásica (banda blanca)', fr: 1.3 },
+};
+/* ---------------- cuerpos (x: 0 detrás → 1 delante; y: 0 arriba → 1 abajo) ---------------- */
+// lower: carrocería; cabin: techo y pilares; win: ventanillas; phys: piezas físicas convexas (la cabina queda hueca
+// para los pasajeros); seats: superficie de los asientos; belt/bottom: línea de cintura y bajos; doors: líneas de puertas
+const VB_BODIES = {
+  sedan: {
+    name: 'Sedán', L: 200, H: 58, r: 13, m: 1100, wx: [0.2, 0.8], belt: 0.47, bottom: 0.97, light: 0.6, tail: 0.58,
+    lower: [[0.01, 0.5], [0.24, 0.47], [0.76, 0.47], [0.93, 0.53], [0.99, 0.62], [0.99, 0.9], [0.96, 0.97], [0.03, 0.97], [0.01, 0.88]],
+    cabin: [[0.24, 0.49], [0.33, 0.05], [0.63, 0.05], [0.77, 0.49]],
+    win: [[[0.28, 0.46], [0.345, 0.12], [0.475, 0.12], [0.475, 0.46]], [[0.495, 0.46], [0.495, 0.12], [0.615, 0.12], [0.72, 0.46]]],
+    doors: [0.27, 0.485, 0.735],
+    phys: [[[0.01, 0.78], [0.99, 0.78], [0.99, 0.9], [0.96, 0.97], [0.03, 0.97], [0.01, 0.88]], [[0.01, 0.5], [0.25, 0.47], [0.26, 0.78], [0.01, 0.78]],
+      [[0.75, 0.47], [0.93, 0.53], [0.99, 0.62], [0.99, 0.78], [0.75, 0.78]], [[0.33, 0.05], [0.63, 0.05], [0.63, 0.11], [0.33, 0.11]],
+      [[0.3, 0.05], [0.345, 0.05], [0.28, 0.47], [0.24, 0.47]], [[0.615, 0.05], [0.65, 0.05], [0.79, 0.47], [0.74, 0.47]]],
+    seats: [[0.58, 0.78], [0.4, 0.78]], roofY: 0.11,
+  },
+  hatch: {
+    name: 'Compacto', L: 170, H: 58, r: 12, m: 900, wx: [0.18, 0.81], belt: 0.46, bottom: 0.97, light: 0.6, tail: 0.5,
+    lower: [[0.01, 0.47], [0.62, 0.46], [0.86, 0.52], [0.985, 0.62], [0.99, 0.9], [0.96, 0.97], [0.03, 0.97], [0.01, 0.88]],
+    cabin: [[0.015, 0.47], [0.05, 0.06], [0.55, 0.05], [0.7, 0.47]],
+    win: [[[0.07, 0.44], [0.095, 0.12], [0.29, 0.12], [0.29, 0.44]], [[0.31, 0.44], [0.31, 0.12], [0.53, 0.12], [0.645, 0.44]]],
+    doors: [0.3, 0.665],
+    phys: [[[0.01, 0.78], [0.99, 0.78], [0.99, 0.9], [0.96, 0.97], [0.03, 0.97], [0.01, 0.88]], [[0.01, 0.08], [0.06, 0.06], [0.07, 0.78], [0.01, 0.78]],
+      [[0.64, 0.46], [0.86, 0.52], [0.985, 0.62], [0.99, 0.78], [0.64, 0.78]], [[0.05, 0.05], [0.55, 0.05], [0.55, 0.11], [0.05, 0.11]],
+      [[0.53, 0.05], [0.57, 0.05], [0.72, 0.46], [0.67, 0.46]]],
+    seats: [[0.48, 0.78], [0.25, 0.78]], roofY: 0.11,
+  },
+  sport: {
+    name: 'Deportivo', L: 210, H: 46, r: 12, m: 1250, wx: [0.19, 0.8], belt: 0.5, bottom: 0.97, light: 0.66, tail: 0.6, spoiler: true,
+    lower: [[0, 0.5], [0.3, 0.48], [0.72, 0.48], [0.97, 0.6], [1, 0.72], [0.99, 0.92], [0.95, 0.97], [0.03, 0.97], [0, 0.86]],
+    cabin: [[0.28, 0.5], [0.42, 0.06], [0.6, 0.06], [0.78, 0.5]],
+    win: [[[0.34, 0.46], [0.44, 0.14], [0.52, 0.14], [0.52, 0.46]], [[0.54, 0.46], [0.54, 0.14], [0.59, 0.14], [0.72, 0.46]]],
+    doors: [0.32, 0.725],
+    phys: [[[0, 0.8], [1, 0.8], [0.99, 0.92], [0.95, 0.97], [0.03, 0.97], [0, 0.86]], [[0, 0.5], [0.3, 0.48], [0.31, 0.8], [0, 0.8]],
+      [[0.72, 0.48], [0.97, 0.6], [1, 0.72], [1, 0.8], [0.72, 0.8]], [[0.42, 0.06], [0.6, 0.06], [0.6, 0.13], [0.42, 0.13]],
+      [[0.39, 0.06], [0.44, 0.06], [0.32, 0.48], [0.27, 0.48]], [[0.58, 0.06], [0.62, 0.06], [0.8, 0.48], [0.75, 0.48]]],
+    seats: [[0.56, 0.8], [0.42, 0.8]], roofY: 0.13,
+  },
+  suv: {
+    name: 'Todoterreno', L: 200, H: 76, r: 16, m: 1900, wx: [0.2, 0.8], belt: 0.47, bottom: 0.95, light: 0.56, tail: 0.55, rack: true, spare: true, grille: true,
+    lower: [[0.01, 0.48], [0.8, 0.47], [0.97, 0.52], [0.995, 0.6], [0.995, 0.88], [0.97, 0.95], [0.02, 0.95], [0.005, 0.88]],
+    cabin: [[0.015, 0.48], [0.035, 0.08], [0.66, 0.07], [0.8, 0.48]],
+    win: [[[0.06, 0.44], [0.07, 0.14], [0.26, 0.14], [0.26, 0.44]], [[0.28, 0.44], [0.28, 0.14], [0.46, 0.14], [0.46, 0.44]], [[0.48, 0.44], [0.48, 0.14], [0.645, 0.14], [0.75, 0.44]]],
+    doors: [0.27, 0.47, 0.78],
+    phys: [[[0.005, 0.76], [0.995, 0.76], [0.995, 0.88], [0.97, 0.95], [0.02, 0.95], [0.005, 0.88]], [[0.005, 0.09], [0.04, 0.08], [0.05, 0.76], [0.005, 0.76]],
+      [[0.79, 0.47], [0.97, 0.52], [0.995, 0.6], [0.995, 0.76], [0.79, 0.76]], [[0.035, 0.07], [0.66, 0.07], [0.66, 0.13], [0.035, 0.13]],
+      [[0.64, 0.07], [0.68, 0.07], [0.82, 0.47], [0.77, 0.47]]],
+    seats: [[0.56, 0.76], [0.36, 0.76], [0.16, 0.76]], roofY: 0.13,
+  },
+  pickup: {
+    name: 'Camioneta', fem: true, L: 240, H: 66, r: 15, m: 1700, wx: [0.2, 0.79], belt: 0.42, bottom: 0.97, light: 0.56, tail: 0.52, grille: true,
+    lower: [[0.01, 0.44], [0.42, 0.44], [0.43, 0.4], [0.78, 0.4], [0.96, 0.48], [0.995, 0.58], [0.995, 0.9], [0.97, 0.97], [0.02, 0.97], [0.01, 0.88]],
+    cabin: [[0.43, 0.42], [0.45, 0.04], [0.66, 0.04], [0.78, 0.42]],
+    win: [[[0.465, 0.38], [0.47, 0.1], [0.555, 0.1], [0.555, 0.38]], [[0.57, 0.38], [0.57, 0.1], [0.65, 0.1], [0.73, 0.38]]],
+    doors: [0.445, 0.745], bed: [0.03, 0.42, 0.5, 0.75],
+    phys: [[[0.01, 0.75], [0.995, 0.75], [0.995, 0.9], [0.97, 0.97], [0.02, 0.97], [0.01, 0.88]], [[0.01, 0.44], [0.03, 0.44], [0.03, 0.75], [0.01, 0.75]],
+      [[0.42, 0.4], [0.47, 0.4], [0.47, 0.75], [0.42, 0.75]], [[0.74, 0.4], [0.96, 0.48], [0.995, 0.58], [0.995, 0.75], [0.74, 0.75]],
+      [[0.45, 0.04], [0.66, 0.04], [0.66, 0.1], [0.45, 0.1]], [[0.43, 0.04], [0.47, 0.04], [0.47, 0.4], [0.43, 0.4]], [[0.64, 0.04], [0.68, 0.04], [0.8, 0.4], [0.75, 0.4]]],
+    seats: [[0.62, 0.75], [0.3, 0.75], [0.14, 0.75]], roofY: 0.1,
+  },
+  van: {
+    name: 'Furgoneta', fem: true, L: 210, H: 84, r: 14, m: 2000, wx: [0.18, 0.8], belt: 0.42, bottom: 0.97, light: 0.58, tail: 0.5, grille: true,
+    lower: [[0.01, 0.06], [0.7, 0.04], [0.84, 0.28], [0.97, 0.42], [0.995, 0.52], [0.995, 0.9], [0.97, 0.97], [0.02, 0.97], [0.005, 0.9]],
+    win: [[[0.72, 0.1], [0.83, 0.3], [0.83, 0.4], [0.72, 0.4]], [[0.46, 0.1], [0.69, 0.1], [0.69, 0.38], [0.46, 0.38]], [[0.06, 0.1], [0.2, 0.1], [0.2, 0.38], [0.06, 0.38]]],
+    doors: [0.45, 0.705, 0.85],
+    phys: [[[0.005, 0.78], [0.995, 0.78], [0.995, 0.9], [0.97, 0.97], [0.02, 0.97], [0.005, 0.9]], [[0.01, 0.06], [0.05, 0.06], [0.05, 0.78], [0.005, 0.78]],
+      [[0.01, 0.04], [0.7, 0.04], [0.7, 0.1], [0.01, 0.1]], [[0.7, 0.04], [0.84, 0.28], [0.97, 0.42], [0.995, 0.52], [0.995, 0.78], [0.8, 0.78], [0.72, 0.1]]],
+    seats: [[0.6, 0.78], [0.4, 0.78], [0.2, 0.78]], roofY: 0.1,
+  },
+  bus: { name: 'Autobús', L: 400, H: 126, r: 18, m: 9000, wx: [0.17, 0.83], belt: 0.5, bottom: 0.97, light: 0.82, tail: 0.8, custom: 'bus', roofY: 0.07 },
+  truck: { name: 'Camión', L: 320, H: 110, r: 17, m: 6000, wx: [0.15, 0.86], belt: 0.84, bottom: 0.92, light: 0.74, tail: 0.8, custom: 'truck' },
+  buggy: { name: 'Buggy', L: 170, H: 64, r: 15, m: 600, wx: [0.17, 0.82], belt: 0.62, bottom: 0.9, light: 0.68, tail: 0.66, custom: 'buggy', wt: 'todoterreno' },
+  flatbed: { name: 'Plataforma', fem: true, L: 260, H: 50, r: 14, m: 1500, wx: [0.12, 0.86], belt: 0.5, bottom: 0.8, light: 0.5, tail: 0.6, custom: 'flatbed' },
+  moto: { name: 'Moto', fem: true, L: 120, H: 62, r: 14, m: 220, wx: [0.16, 0.84], belt: 0.5, bottom: 0.76, light: 0.3, tail: 0.38, custom: 'moto', noArch: true, axleY: 0.76, maxN: 2 },
+};
+const VB_ORDER = ['sedan', 'hatch', 'sport', 'suv', 'pickup', 'van', 'bus', 'truck', 'buggy', 'flatbed', 'moto'];
+/* ---------------- diseño: valores por defecto, codificado y descodificado ---------------- */
+function vbDefault(b = 'sedan') { const B = VB_BODIES[b]; return { b, s: 1, l: 1, c: b === 'bus' ? '#e0b42e' : b === 'truck' ? '#c0392b' : '#3a6ea5', n: 2, wf: 1, wr: 1, wt: B.wt || 'normal', p: 1, name: '' }; }
+function vbClean(d) {
+  const o = Object.assign(vbDefault(), d || {});
+  if (!VB_BODIES[o.b]) o.b = 'sedan';
+  const num = (v, a, b, def) => { v = +v; return Number.isFinite(v) ? clamp(Math.round(v * 100) / 100, a, b) : def; };
+  o.s = num(o.s, 0.4, 3, 1); o.l = num(o.l, 0.6, 2, 1); o.n = Math.round(num(o.n, 2, Math.min(6, VB_BODIES[o.b].maxN || 6), 2));
+  o.wf = num(o.wf, 0.4, 3.5, 1); o.wr = num(o.wr, 0.4, 3.5, 1); o.p = num(o.p, 0.2, 4, 1);
+  o.c = /^#[0-9a-f]{6}$/i.test(o.c) ? o.c.toLowerCase() : '#3a6ea5';
+  if (!VB_WHEELS[o.wt]) o.wt = 'normal';
+  o.name = String(o.name || '').replace(/[~<>]/g, '').slice(0, 40);
+  return o;
+}
+function vbId(d) { d = vbClean(d); return VB_PREFIX + [d.b, d.s, d.l, d.c.slice(1), d.n, d.wf, d.wr, d.wt, d.p].join(',') + '~' + encodeURIComponent(d.name); }
+function vbParse(id) {
+  if (typeof id !== 'string' || !id.startsWith(VB_PREFIX)) return null;
+  const [core, nm] = id.slice(VB_PREFIX.length).split('~');
+  const v = (core || '').split(',');
+  if (v.length < 9 || !VB_BODIES[v[0]]) return null;
+  let name = ''; try { name = decodeURIComponent(nm || ''); } catch (e) {}
+  return vbClean({ b: v[0], s: v[1], l: v[2], c: '#' + v[3], n: v[4], wf: v[5], wr: v[6], wt: v[7], p: v[8], name });
+}
+function vbName(d) { return d.name || vbDefName(d.b); }
+function vbDefName(b) { const B = VB_BODIES[b]; return B.name + (B.fem ? ' personalizada' : ' personalizado'); }
+
+/* ---------------- geometría: medidas, ruedas y piezas físicas ---------------- */
+function vbGeo(dz) {
+  const B = VB_BODIES[dz.b];
+  const W = Math.max(30, Math.round(B.L * dz.s * dz.l)), H = Math.max(16, Math.round(B.H * dz.s));
+  const X = (f) => f * W, Y = (f) => f * H, P = (pts) => pts.map(([x, y]) => [X(x), Y(y)]);
+  const rF = Math.max(4, Math.round(B.r * dz.s * dz.wf)), rR = Math.max(4, Math.round(B.r * dz.s * dz.wr));
+  const n = dz.n, xr = X(B.wx[0]), xf = X(B.wx[1]), yb = Y(B.bottom), yBelt = Y(B.belt);
+  const wheels = [];
+  for (let i = 0; i < n; i++) {
+    const x = n === 1 ? (xr + xf) / 2 : xr + ((xf - xr) * i) / (n - 1), r = i === n - 1 ? rF : rR;
+    // el eje: la rueda asoma por debajo (0,7 de su radio); si es muy grande, la carrocería va subida
+    const y = B.noArch ? Y(B.axleY) : Math.max(yb - 0.3 * r, Math.min(yb + r * 0.6, yBelt + 3 + r + 2));
+    wheels.push([x, y, r]);
+  }
+  // piezas físicas (polígonos convexos de 8 vértices como mucho)
+  const shapes = [];
+  const add = (pts) => { const h = simplifyHull(convexHull(pts), 8); if (h.length >= 3 && polyArea(h) > 4) shapes.push({ poly: h }); };
+  if (B.phys) for (const p of B.phys) add(P(p));
+  else if (B.custom === 'bus') {
+    add(P([[0.005, 0.8], [0.997, 0.8], [0.997, 0.94], [0.985, 0.97], [0.005, 0.97]])); add(P([[0.005, 0.02], [0.985, 0.02], [0.997, 0.06], [0.997, 0.07], [0.005, 0.07]]));
+    add(P([[0.005, 0.07], [0.02, 0.07], [0.02, 0.8], [0.005, 0.8]])); add(P([[0.98, 0.07], [0.997, 0.07], [0.997, 0.8], [0.98, 0.8]]));
+  } else if (B.custom === 'truck') {
+    add(P([[0, 0.01], [0.68, 0.01], [0.68, 0.84], [0, 0.84]])); add(P([[0.7, 0.28], [0.85, 0.28], [0.95, 0.5], [0.995, 0.58], [0.995, 0.92], [0.7, 0.92]])); add(P([[0, 0.84], [1, 0.84], [1, 0.92], [0, 0.92]]));
+  } else if (B.custom === 'buggy') {
+    add(P([[0.04, 0.62], [0.8, 0.6], [0.98, 0.7], [0.99, 0.8], [0.94, 0.9], [0.06, 0.9], [0.02, 0.8]]));
+    add(P([[0.31, 0.07], [0.65, 0.07], [0.65, 0.12], [0.31, 0.12]])); add(P([[0.3, 0.08], [0.34, 0.08], [0.26, 0.6], [0.22, 0.6]])); add(P([[0.62, 0.08], [0.66, 0.08], [0.78, 0.6], [0.74, 0.6]]));
+  } else if (B.custom === 'flatbed') {
+    add(P([[0, 0.5], [0.8, 0.5], [0.8, 0.8], [0, 0.8]])); add(P([[0.8, 0.05], [0.92, 0.05], [0.99, 0.35], [0.995, 0.8], [0.8, 0.8]])); add(P([[0, 0.34], [0.02, 0.34], [0.02, 0.5], [0, 0.5]]));
+  } else if (B.custom === 'moto') {
+    add(P([[0.24, 0.3], [0.66, 0.24], [0.78, 0.3], [0.64, 0.74], [0.38, 0.76], [0.2, 0.44]]));
+  }
+  // asientos: sólo si cabe alguien sentado (de la superficie del asiento al techo)
+  let seats = [];
+  if (B.custom === 'bus') seats = [0.9, 0.76, 0.64, 0.52, 0.4, 0.28, 0.16].map((x) => [X(x), Y(0.8)]);
+  else if (B.custom === 'buggy') seats = [[X(0.47), Y(0.62)]];
+  else if (B.custom === 'flatbed') seats = [0.62, 0.42, 0.22].map((x) => [X(x), Y(0.5)]);
+  else if (B.custom === 'moto') seats = [[X(0.37), Y(0.34)]];
+  else if (B.seats) seats = B.seats.map(([x, y]) => [X(x), Y(y)]);
+  const room = B.roofY !== undefined ? Y((B.seats && B.seats[0] ? B.seats[0][1] : 0.8)) - Y(B.roofY) : 99;
+  if (B.custom !== 'flatbed' && B.custom !== 'moto' && B.custom !== 'buggy' && room < 36) seats = B.bed ? seats.filter((s) => s[0] < X(B.bed[1])) : [];
+  // masa, fuerza y velocidad (como los vehículos del catálogo: el coche pesa 1100 kg y llega a 13 m/s)
+  const mass = Math.round(B.m * dz.s * dz.s * dz.l);
+  const rM = Math.max(rF, rR) * PX;
+  return {
+    B, W, H, X, Y, P, wheels, shapes, seats, mass, rF, rR,
+    torque: (8 * mass * rM * dz.p * 2) / n, speed: (13 * Math.sqrt(dz.p)) / rM,
+    lights: [W - 2, Y(B.light)], exhaust: [2, Y(B.bottom) - 2], tankPt: [X(0.12), Y((B.belt + B.bottom) / 2)],
+    hp: Math.round(70 * Math.sqrt(mass / 1100)),
+  };
+}
+
+/* ---------------- dibujo ---------------- */
+function vbPal(hex) { const c = hexToRgb(hex); return { b: c, h: shadeRgb(c, 1.18), hh: shadeRgb(c, 1.4), d: shadeRgb(c, 0.72), m: shadeRgb(c, 0.86), dd: shadeRgb(c, 0.52) }; }
+// pinta una línea sólo donde ya hay carrocería
+function vbLine(a, x0, y0, x1, y1, c) {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+  for (let i = 0; i <= n; i++) { const x = Math.round(lerp(x0, x1, i / n)), y = Math.round(lerp(y0, y1, i / n)); if (a.s.a(x, y) === 255) a.px(x, y, c); }
+}
+function vbWindow(a, pts) {
+  a.poly(pts, VB_GLASS);
+  // reflejo en diagonal
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  for (let k = 0; k < 2; k++) {
+    const sx = x0 + (x1 - x0) * (0.3 + k * 0.18);
+    for (let y = Math.ceil(y0) + 1; y < y1 - 1; y++) { const x = Math.round(sx - (y - y0) * 0.5); if (x > x0 && x < x1 && a.s.a(x, y) > 0 && a.s.a(x, y) < 255) a.px(x, y, VB_GLASS2); }
+  }
+}
+// detalles comunes de un coche: cintura, bajos, puertas, tiradores, luces, parachoques, retrovisor
+function vbCarDetails(a, G, Pal, B) {
+  const { W, X, Y } = G, yBelt = Y(B.belt), yb = Y(B.bottom);
+  for (let x = 0; x < W; x++) { const y = Math.round(yBelt) + 1; if (a.s.a(x, y) === 255) a.px(x, y, Pal.h); }
+  for (let x = 0; x < W; x++) { const y = Math.round(yb) - 2; if (a.s.a(x, y) === 255) a.px(x, y, Pal.d); }
+  const crease = Math.round((yBelt + yb) / 2);
+  for (let x = 0; x < W; x++) if (a.s.a(x, crease) === 255) a.px(x, crease, Pal.m);
+  for (const dx of B.doors || []) {
+    vbLine(a, X(dx), yBelt + 2, X(dx), yb - 4, Pal.d);
+    a.rect(Math.round(X(dx)) - 6, Math.round(yBelt) + 4, 4, 1, Pal.dd);
+  }
+  // faro, piloto y parachoques
+  const ly = Math.round(Y(B.light)), ty = Math.round(Y(B.tail));
+  a.rect(W - 4, ly - 1, 4, 3, '#f4f0c8'); a.px(W - 2, ly, '#ffffff');
+  a.rect(0, ty - 2, 3, 4, '#d8302a'); a.px(1, ty - 1, '#ff7a6a');
+  a.rect(W - 9, Math.round(yb) - 6, 9, 4, VB_DARK); a.rect(0, Math.round(yb) - 6, 9, 4, VB_DARK);
+  if (B.grille) { a.rect(W - 3, ly + 3, 3, Math.max(3, Math.round(G.H * 0.12)), '#1d1e21'); for (let y = ly + 4; y < ly + 3 + Math.max(3, Math.round(G.H * 0.12)); y += 2) a.px(W - 2, y, '#5a5d63'); }
+  if (B.cabin) { const fb = B.cabin[3]; a.rect(Math.round(X(fb[0])) - 2, Math.round(Y(fb[1])) - 4, 3, 3, VB_DARK); }
+}
+function vbDrawBody(a, G, dz) {
+  const { B, W, H, X, Y, P } = G, Pal = vbPal(dz.c);
+  switch (B.custom) {
+    case 'bus': {
+      a.poly(P([[0.005, 0.02], [0.985, 0.02], [0.997, 0.06], [0.997, 0.94], [0.985, 0.97], [0.005, 0.97]]), Pal.b);
+      a.hline(1, W - 4, Math.round(Y(0.02)), Pal.hh); a.rect(1, Math.round(Y(0.52)), W - 2, Math.max(2, Math.round(H * 0.06)), Pal.d);
+      a.hline(1, W - 2, Math.round(Y(0.52)) - 1, Pal.h);
+      for (let x = 0.05; x < 0.84; x += 0.1) vbWindow(a, P([[x, 0.12], [x + 0.085, 0.12], [x + 0.085, 0.46], [x, 0.46]]));
+      vbWindow(a, P([[0.93, 0.1], [0.99, 0.12], [0.995, 0.5], [0.93, 0.5]]));
+      vbWindow(a, P([[0.865, 0.12], [0.915, 0.12], [0.915, 0.88], [0.865, 0.88]])); vbLine(a, X(0.89), Y(0.12), X(0.89), Y(0.88), Pal.dd);
+      a.rect(W - 5, Math.round(Y(0.82)), 5, 4, '#f4f0c8'); a.rect(0, Math.round(Y(0.8)), 4, 5, '#d8302a');
+      a.rect(W - 10, Math.round(Y(0.93)), 10, 4, VB_DARK); a.rect(0, Math.round(Y(0.93)), 10, 4, VB_DARK);
+      for (let y = Math.round(Y(0.62)); y < Y(0.92); y += 3) vbLine(a, 1, y, X(0.84), y, Pal.m);
+      break;
+    }
+    case 'truck': {
+      const box = [0.84, 0.86, 0.9], gr = { b: [214, 218, 222], h: [236, 238, 240], d: [150, 156, 162] };
+      a.rect(0, Math.round(Y(0.01)), Math.round(X(0.68)), Math.round(Y(0.84) - Y(0.01)), gr.b); a.hline(0, Math.round(X(0.68)) - 1, Math.round(Y(0.01)), gr.h);
+      for (let x = 0.06; x < 0.66; x += 0.06) vbLine(a, X(x), Y(0.04), X(x), Y(0.8), gr.d);
+      a.rect(Math.round(X(0.04)), Math.round(Y(0.3)), Math.round(X(0.58)), Math.max(3, Math.round(H * 0.12)), Pal.b); a.hline(Math.round(X(0.04)), Math.round(X(0.62)), Math.round(Y(0.3)), Pal.h);
+      a.poly(P([[0.7, 0.28], [0.85, 0.28], [0.95, 0.5], [0.995, 0.58], [0.995, 0.92], [0.7, 0.92]]), Pal.b);
+      a.hline(Math.round(X(0.7)), Math.round(X(0.85)), Math.round(Y(0.28)), Pal.hh);
+      vbWindow(a, P([[0.775, 0.33], [0.845, 0.33], [0.92, 0.52], [0.775, 0.52]]));
+      vbLine(a, X(0.765), Y(0.32), X(0.765), Y(0.84), Pal.d); a.rect(Math.round(X(0.79)), Math.round(Y(0.58)), 4, 1, Pal.dd);
+      a.rect(0, Math.round(Y(box[0])), W, Math.max(3, Math.round(Y(box[2]) - Y(box[0]))), VB_DARK);
+      a.rect(W - 4, Math.round(Y(0.72)), 4, 3, '#f4f0c8'); a.rect(0, Math.round(Y(0.78)), 3, 4, '#d8302a');
+      a.rect(W - 3, Math.round(Y(0.6)), 3, Math.max(3, Math.round(H * 0.08)), '#1d1e21');
+      break;
+    }
+    case 'buggy': {
+      const T = '#3a3d42', Th = '#6a6e75';
+      // jaula antivuelco
+      const tube = (x0, y0, x1, y1) => { a.line(X(x0), Y(y0), X(x1), Y(y1), T); a.line(X(x0) + 1, Y(y0), X(x1) + 1, Y(y1), Th); };
+      tube(0.24, 0.62, 0.32, 0.08); tube(0.32, 0.08, 0.64, 0.08); tube(0.64, 0.08, 0.76, 0.6); tube(0.32, 0.08, 0.1, 0.62); tube(0.33, 0.1, 0.52, 0.6);
+      // motor al aire y tubos de escape
+      a.rect(Math.round(X(0.05)), Math.round(Y(0.44)), Math.round(X(0.15)), Math.round(Y(0.18)), '#4a4d53'); for (let x = X(0.06); x < X(0.19); x += 2) vbLine(a, x, Y(0.46), x, Y(0.6), '#2a2b2e');
+      a.line(X(0.05), Y(0.5), X(0.0), Y(0.42), '#9aa1a9');
+      // asiento
+      a.rect(Math.round(X(0.4)), Math.round(Y(0.38)), Math.round(X(0.05)), Math.round(Y(0.24)), '#1d1e21'); a.rect(Math.round(X(0.4)), Math.round(Y(0.56)), Math.round(X(0.12)), Math.round(Y(0.06)), '#1d1e21');
+      // bañera de la carrocería
+      a.poly(P([[0.04, 0.62], [0.8, 0.6], [0.98, 0.7], [0.99, 0.8], [0.94, 0.9], [0.06, 0.9], [0.02, 0.8]]), Pal.b);
+      a.line(X(0.04), Y(0.62), X(0.8), Y(0.6), Pal.hh); a.line(X(0.8), Y(0.6), X(0.98), Y(0.7), Pal.h);
+      for (let x = 0; x < W; x++) { const y = Math.round(Y(0.86)); if (a.s.a(x, y) === 255) a.px(x, y, Pal.d); }
+      a.rect(W - 4, Math.round(Y(0.68)) - 1, 4, 3, '#f4f0c8'); a.rect(0, Math.round(Y(0.66)) - 1, 3, 3, '#d8302a');
+      break;
+    }
+    case 'flatbed': {
+      // plataforma de tablones, bastidor y cabina pequeña delante
+      a.rect(0, Math.round(Y(0.5)), Math.round(X(0.8)), Math.round(Y(0.16)), '#9a7046'); a.hline(0, Math.round(X(0.8)) - 1, Math.round(Y(0.5)), '#c49a62');
+      for (let x = X(0.08); x < X(0.8); x += X(0.08)) vbLine(a, x, Y(0.52), x, Y(0.65), '#6a4e2c');
+      a.rect(0, Math.round(Y(0.66)), W, Math.round(Y(0.14)), VB_DARK); a.hline(0, W - 1, Math.round(Y(0.66)), '#4a4d53');
+      a.rect(0, Math.round(Y(0.34)), Math.max(2, Math.round(X(0.02))), Math.round(Y(0.16)), '#6a4e2c');
+      a.poly(P([[0.8, 0.05], [0.92, 0.05], [0.99, 0.35], [0.995, 0.8], [0.8, 0.8]]), Pal.b); a.hline(Math.round(X(0.8)), Math.round(X(0.92)), Math.round(Y(0.05)), Pal.hh);
+      vbWindow(a, P([[0.82, 0.12], [0.91, 0.12], [0.96, 0.35], [0.82, 0.35]]));
+      vbLine(a, X(0.815), Y(0.4), X(0.815), Y(0.64), Pal.d);
+      a.rect(W - 4, Math.round(Y(0.48)), 4, 3, '#f4f0c8'); a.rect(0, Math.round(Y(0.6)), 3, 3, '#d8302a');
+      break;
+    }
+    case 'moto': {
+      const M = '#4a4d53', Mh = '#6a6e75', C = '#c3cad2', Cd = '#8a929b';
+      const bar = (x0, y0, x1, y1, c, c2) => { a.line(X(x0), Y(y0), X(x1), Y(y1), c); a.line(X(x0), Y(y0) + 1, X(x1), Y(y1) + 1, c2 || c); };
+      // basculante, cuadro, horquilla y manillar
+      bar(0.16, 0.74, 0.44, 0.66, M, '#2a2b2e'); bar(0.4, 0.44, 0.74, 0.3, Mh, M); bar(0.4, 0.44, 0.44, 0.66, M);
+      a.line(X(0.74), Y(0.2), X(0.84), Y(0.76), C); a.line(X(0.75), Y(0.2), X(0.85), Y(0.76), Cd); a.line(X(0.76), Y(0.2), X(0.86), Y(0.76), Cd);
+      a.line(X(0.68), Y(0.13), X(0.78), Y(0.17), '#1d1e21'); a.line(X(0.68), Y(0.14), X(0.78), Y(0.18), '#1d1e21');
+      // guardabarros
+      a.poly(P([[0.06, 0.46], [0.2, 0.44], [0.3, 0.5], [0.26, 0.54], [0.16, 0.5], [0.06, 0.52]]), Pal.d);
+      a.poly(P([[0.76, 0.48], [0.9, 0.48], [0.95, 0.56], [0.9, 0.54], [0.78, 0.54]]), Pal.b);
+      // motor con aletas y escape
+      a.rect(Math.round(X(0.38)), Math.round(Y(0.48)), Math.round(X(0.25)), Math.round(Y(0.27)), M); a.hline(Math.round(X(0.38)), Math.round(X(0.63)), Math.round(Y(0.48)), Mh);
+      for (let y = Y(0.52); y < Y(0.73); y += 2) vbLine(a, X(0.39), y, X(0.62), y, '#2a2b2e');
+      a.line(X(0.42), Y(0.72), X(0.07), Y(0.62), C); a.line(X(0.42), Y(0.73), X(0.07), Y(0.63), Cd); a.line(X(0.42), Y(0.74), X(0.07), Y(0.64), Cd);
+      // depósito, asiento, colín y carenado con el faro
+      a.ellipse(X(0.54), Y(0.33), X(0.14), Y(0.1), Pal.b); a.ellipse(X(0.52), Y(0.29), X(0.09), Y(0.045), Pal.hh); a.hline(Math.round(X(0.42)), Math.round(X(0.66)), Math.round(Y(0.41)), Pal.d);
+      a.poly(P([[0.24, 0.3], [0.43, 0.31], [0.43, 0.38], [0.26, 0.38]]), '#1d1e21'); a.hline(Math.round(X(0.25)), Math.round(X(0.42)), Math.round(Y(0.3)), '#3a3d42');
+      a.poly(P([[0.08, 0.27], [0.27, 0.3], [0.27, 0.39], [0.14, 0.4]]), Pal.b); a.line(X(0.08), Y(0.27), X(0.27), Y(0.3), Pal.hh);
+      a.poly(P([[0.7, 0.16], [0.86, 0.2], [0.87, 0.34], [0.76, 0.36], [0.72, 0.3]]), Pal.b); a.line(X(0.7), Y(0.16), X(0.86), Y(0.2), Pal.hh);
+      a.rect(Math.round(X(0.84)), Math.round(Y(0.24)), 3, Math.max(3, Math.round(Y(0.07))), '#f4f0c8'); a.rect(Math.round(X(0.07)), Math.round(Y(0.28)), 2, 3, '#d8302a');
+      break;
+    }
+    default: {
+      if (B.cabin) a.poly(P(B.cabin), Pal.b);
+      a.poly(P(B.lower), Pal.b);
+      if (B.bed) { const [x0, x1, y0, y1] = B.bed; for (let y = Math.round(Y(y0)); y < Math.round(Y(y1)); y++) for (let x = Math.round(X(x0)); x < Math.round(X(x1)); x++) a.clear(x, y); a.hline(Math.round(X(x0)), Math.round(X(x1)) - 1, Math.round(Y(y1)), Pal.dd); }
+      for (const w of B.win || []) vbWindow(a, P(w));
+      if (B.cabin) { const c = P(B.cabin); a.line(c[1][0], c[1][1], c[2][0], c[2][1], Pal.hh); }
+      else a.line(X(B.lower[0][0]), Y(B.lower[0][1]), X(B.lower[1][0]), Y(B.lower[1][1]), Pal.hh);
+      vbCarDetails(a, G, Pal, B);
+      if (B.spoiler) { a.rect(0, Math.round(Y(0.3)), Math.round(X(0.1)), Math.max(2, Math.round(Y(0.07))), Pal.d); a.rect(Math.round(X(0.05)), Math.round(Y(0.37)), 2, Math.round(Y(0.12)), VB_DARK); }
+      if (B.rack) { a.hline(Math.round(X(0.08)), Math.round(X(0.6)), Math.round(Y(0.03)), VB_DARK); for (const x of [0.1, 0.34, 0.58]) a.rect(Math.round(X(x)), Math.round(Y(0.03)), 2, Math.max(2, Math.round(Y(0.04))), VB_DARK); }
+      if (B.spare) { const r = Math.max(4, Math.round(B.r * dz.s * 0.8)); a.circle(r * 0.3, Y(0.62), r, VB_TIRE); a.circle(r * 0.3, Y(0.62), r * 0.5, '#7a7e86'); }
+    }
+  }
+}
+// rueda según su tipo (cacheada por radio y tipo)
+const VB_WCACHE = new Map();
+function vbWheel(r, st) {
+  const k = r + ':' + st; if (VB_WCACHE.has(k)) return VB_WCACHE.get(k);
+  const d = r * 2;
+  const s = drawSprite(d, d, (a) => {
+    const c = r, ring = (rr, th, col) => a.ring(c, c, rr, th, col);
+    a.circle(c, c, r, VB_TIRE); ring(r, 1, '#141517'); ring(r - 1, 1, '#34363a');
+    if (st === 'todoterreno' || st === 'monster') {
+      // tacos del dibujo
+      const n = st === 'monster' ? 10 : 14, dep = st === 'monster' ? Math.max(2, r * 0.18) : Math.max(1.2, r * 0.1);
+      for (let k = 0; k < n; k++) { const an = (k / n) * TAU; for (let t = 0; t < dep; t += 0.6) a.px(Math.floor(c + Math.cos(an) * (r - t - 0.5)), Math.floor(c + Math.sin(an) * (r - t - 0.5)), '#141517'); }
+    }
+    const rim = st === 'deportiva' ? 0.7 : st === 'todoterreno' ? 0.5 : st === 'monster' ? 0.46 : 0.56;
+    const rc = st === 'monster' ? '#c0392b' : st === 'todoterreno' ? '#6a6e75' : st === 'deportiva' ? '#c3cad2' : '#9aa1a9';
+    if (st === 'clasica') { ring(r * 0.78, Math.max(1, r * 0.14), '#ece9df'); }
+    a.circle(c, c, r * rim, rc); ring(r * rim, 1, shadeRgb(hexToRgb(rc), 0.62));
+    if (st === 'deportiva') {
+      for (let k = 0; k < 6; k++) { const an = (k / 6) * TAU; a.line(c + Math.cos(an) * r * 0.18, c + Math.sin(an) * r * 0.18, c + Math.cos(an) * r * rim * 0.92, c + Math.sin(an) * r * rim * 0.92, '#3a3d42'); }
+    } else {
+      const lug = st === 'monster' ? 6 : 5;
+      for (let k = 0; k < lug; k++) { const an = (k / lug) * TAU; a.px(Math.floor(c + Math.cos(an) * r * rim * 0.62), Math.floor(c + Math.sin(an) * r * rim * 0.62), shadeRgb(hexToRgb(rc), 0.6)); }
+    }
+    a.circle(c, c, Math.max(1, r * 0.17), st === 'clasica' ? '#f4f6f8' : shadeRgb(hexToRgb(rc), 0.72));
+    a.px(Math.floor(c - r * rim * 0.4), Math.floor(c - r * rim * 0.4), '#ffffff');
+  });
+  VB_WCACHE.set(k, s);
+  return s;
+}
+function vbBodySprite(dz, G) {
+  return drawSprite(G.W, G.H, (a) => {
+    vbDrawBody(a, G, dz);
+    a.edge(0.82);
+    if (G.B.noArch) return;
+    // pasos de rueda: hueco con su borde oscuro
+    for (const [wx, wy, r] of G.wheels) {
+      const ra = r + 2;
+      for (let y = Math.floor(wy - ra - 2); y <= Math.ceil(wy + ra + 2); y++) for (let x = Math.floor(wx - ra - 2); x <= Math.ceil(wx + ra + 2); x++) {
+        if (!a.s.inb(x, y) || !a.s.a(x, y)) continue;
+        const dd = Math.hypot(x + 0.5 - wx, y + 0.5 - wy);
+        if (dd <= ra) a.clear(x, y); else if (dd <= ra + 1.5 && a.s.a(x, y) === 255) a.px(x, y, '#1d1e21');
+      }
+    }
+  });
+}
+// la carrocería con sus ruedas (vista previa y miniatura del catálogo)
+function vbComposite(dz, G) {
+  G = G || vbGeo(dz);
+  const body = vbBodySprite(dz, G);
+  const H = Math.ceil(Math.max(G.H, ...G.wheels.map((w) => w[1] + w[2] + 1)));
+  return composeSprites(G.W, H, [{ spr: body, x: 0, y: 0 }, ...G.wheels.map(([x, y, r]) => ({ spr: vbWheel(r, dz.wt), x: x - r, y: y - r }))], [G.W / 2, H / 2]);
+}
+
+/* ---------------- definición del objeto ---------------- */
+function vbBuild(it, x, y, ang, flip, o, G, dz) {
+  const spr = o.sprite();
+  const ch = it.makeBody(x, y, ang, spr, o.shapes, 'metal', { mass: o.mass, angularDamping: 0.05, zOff: 0 });
+  it.vars.wheels = []; it.vars.wj = [];
+  const rRef = Math.max(G.rF, G.rR); it.vars.wk = [];
+  for (const [wx, wy, r] of G.wheels) {
+    const p = it.worldPt(wx, wy, 0);
+    const wb = it.makeBody(p[0], p[1], ang, vbWheel(r, dz.wt), [{ circle: [r, r, r] }], 'rubber', { mass: 25 * (r / 13) ** 2 * Math.max(0.6, dz.s), flip: false, zOff: 0.05, friction: VB_WHEELS[dz.wt].fr });
+    setNoCollide(ch, wb, true);
+    for (const ob of it.vars.wheels) setNoCollide(ob, wb, true);
+    const j = it.joint(pl.WheelJoint({ enableMotor: true, maxMotorTorque: 0, motorSpeed: 0, frequencyHz: 4, dampingRatio: 0.7 }, ch, wb, V(p[0], p[1]), ch.getWorldVector(V(0, 1))));
+    it.vars.wheels.push(wb); it.vars.wj.push(j); it.vars.wk.push(rRef / r);
+  }
+  it.vars.dir = 1; it.vars.torque = o.torque; it.vars.speed = o.speed; it.vars.hp = o.hp; it.vars.brake = false;
+  tuneSuspension(it);
+}
+// con ruedas de distinto tamaño, cada una gira a la velocidad que le toca (para que no se frenen entre ellas)
+{
+  const vd = vehicleDrive;
+  vehicleDrive = function (it, o) {
+    vd(it, o);
+    const k = it.vars && it.vars.wk; if (!k) return;
+    it.vars.wj.forEach((j, i) => { if (!k[i]) return; j.setMotorSpeed(j.getMotorSpeed() * k[i]); j.setMaxMotorTorque(j.getMaxMotorTorque() / k[i]); });
+  };
+}
+function vbMakeDef(dz, tmp) {
+  dz = vbClean(dz);
+  const id = vbId(dz);
+  if (Object.prototype.hasOwnProperty.call(DEFS, id)) { const d = DEFS[id]; if (!tmp) d._tmp = false; return d; }
+  const G = vbGeo(dz), B = G.B, seats = v11Seats(G.seats.length ? G.seats : []);
+  const o = {
+    sprite: () => vbBodySprite(dz, G), mass: G.mass, wr: Math.max(G.rF, G.rR), wmass: 25, torque: G.torque, speed: G.speed, freq: 4,
+    wheels: G.wheels.map((w) => [w[0], w[1]]), exhaust: G.exhaust, lights: G.lights, tankPt: G.tankPt, hp: G.hp, shapes: G.shapes,
+  };
+  const beh = vehicleBehavior(o), mn = beh.menu, inf = beh.info;
+  const d = def(id, Object.assign({
+    name: vbName(dz), cat: 'vehicles', sub: 'Mis vehículos',
+    desc: `${B.name} creado con el creador de vehículos (${G.wheels.length} ruedas por lado, ${G.mass} kg). Actívalo para arrancar.${G.seats.length ? ' Menú: subir a bordo.' : ''}`,
+    sprite: o.sprite, vb: dz,
+  }, beh, {
+    build(it, x, y, ang, flip) { vbBuild(it, x, y, ang, flip, o, G, dz); },
+    thumb: () => vbComposite(dz, G),
+    menu(it) {
+      const m = mn(it);
+      if (G.seats.length) m.push({ label: 'Subir a bordo a la persona más cercana', fn: () => seats.board(it) }, { label: 'Bajar a todos', fn: () => seats.unboard(it) });
+      m.push({ label: 'Editar en el creador de vehículos', fn: () => VB.open(dz, it) });
+      return m;
+    },
+    info(it) { const l = inf(it); const n = G.seats.length ? seats.count(it) : 0; if (n) l.push([`${n} a bordo`, '#cfd5dc']); return l; },
+  }));
+  d._tmp = !!tmp;
+  return d;
+}
+// los vehículos de escenas, artefactos o del portapapeles se crean al pedirlos (su diseño va en el identificador)
+Object.setPrototypeOf(DEFS, new Proxy(Object.prototype, {
+  get(t, k, r) {
+    if (typeof k === 'string' && k.startsWith(VB_PREFIX)) { const dz = vbParse(k); if (dz) { try { const d = vbMakeDef(dz, true); if (d.id === k) return d; DEFS[k] = d; return d; } catch (e) { console.error(e); } } }
+    return Reflect.get(t, k, r);
+  },
+}));
+
+/* ---------------- «Mis vehículos» (guardados en el navegador) ---------------- */
+const VB = {
+  list() { try { const l = JSON.parse(localStorage.getItem(VB_KEY) || '[]'); return Array.isArray(l) ? l.map(vbClean) : []; } catch (e) { return []; } },
+  store(l) { try { localStorage.setItem(VB_KEY, JSON.stringify(l)); return true; } catch (e) { UI.toast('No se pudo guardar (almacenamiento lleno)'); return false; } },
+  saved(dz) { const id = vbId(dz); return this.list().some((x) => vbId(x) === id); },
+  save(dz, replaceId) {
+    dz = vbClean(dz); const id = vbId(dz);
+    const l = this.list().filter((x) => vbId(x) !== id && vbId(x) !== replaceId);
+    l.push(dz);
+    if (!this.store(l)) return null;
+    if (replaceId && replaceId !== id && Object.prototype.hasOwnProperty.call(DEFS, replaceId)) DEFS[replaceId]._tmp = true;
+    return vbMakeDef(dz, false);
+  },
+  remove(dz) {
+    const id = vbId(dz);
+    this.store(this.list().filter((x) => vbId(x) !== id));
+    if (Object.prototype.hasOwnProperty.call(DEFS, id)) DEFS[id]._tmp = true;
+  },
+  // el menú del creador (dz: diseño de partida; veh: el vehículo que se está editando, si hay)
+  open(dz0, veh) {
+    let dz = vbClean(dz0 || vbDefault());
+    const editingId = dz0 && this.saved(dz0) ? vbId(dz0) : null;
+    const opt = (v, l, cur) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${l}</option>`;
+    const rng = (id, label, min, max, step, v, unit) => `<label class="srow"><span>${label}</span><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${v}"><em id="${id}V"></em></label>`;
+    const html = `<h2>Crear vehículo</h2>
+      <div class="vb-prev"><canvas id="vbCan" width="520" height="160"></canvas><div class="vb-stats" id="vbStats"></div></div>
+      <div class="settings">
+        <label class="srow chk"><span>Cuerpo</span><select id="vbB">${VB_ORDER.map((k) => opt(k, VB_BODIES[k].name, dz.b)).join('')}</select></label>
+        ${rng('vbS', 'Tamaño del cuerpo', 0.5, 2.5, 0.05, dz.s)}
+        ${rng('vbL', 'Largo del cuerpo', 0.6, 1.8, 0.05, dz.l)}
+        <div class="srow chk"><span>Color</span><span class="vb-cols">${VB_COLORS.map((c) => `<button class="vb-sw" data-c="${c}" style="background:${c}"></button>`).join('')}<input type="color" id="vbC" value="${dz.c}"></span></div>
+        <label class="srow chk"><span>Ruedas por lado</span><select id="vbN">${[2, 3, 4, 5, 6].map((k) => opt(String(k), String(k), String(dz.n))).join('')}</select></label>
+        ${rng('vbWF', 'Tamaño de las ruedas delanteras', 0.4, 3.5, 0.05, dz.wf)}
+        ${rng('vbWR', 'Tamaño de las ruedas traseras', 0.4, 3.5, 0.05, dz.wr)}
+        <label class="srow chk"><span>Tipo de rueda</span><select id="vbWT">${Object.keys(VB_WHEELS).map((k) => opt(k, VB_WHEELS[k].name, dz.wt)).join('')}</select></label>
+        ${rng('vbP', 'Potencia del motor', 0.2, 4, 0.1, dz.p)}
+        <label class="srow chk"><span>Nombre</span><input type="text" id="vbName" maxlength="40" placeholder="${vbDefName(dz.b)}" value="${dz.name.replace(/"/g, '&quot;')}"></label>
+      </div>
+      <div class="row vb-actions">
+        <button class="btn" id="vbClose">Cerrar</button>
+        ${veh ? '<button class="btn" id="vbRep">Cambiar este vehículo</button>' : ''}
+        <button class="btn" id="vbSave">${editingId ? 'Guardar cambios' : 'Guardar en Mis vehículos'}</button>
+        <button class="btn danger" id="vbMake">Crear y colocar</button>
+      </div>
+      <div id="vbMine"></div>`;
+    const box = UI.openModal(html, { cls: 'vbmodal' });
+    const $ = (s) => box.querySelector(s);
+    const read = () => {
+      dz = vbClean({ b: $('#vbB').value, s: $('#vbS').value, l: $('#vbL').value, c: $('#vbC').value, n: $('#vbN').value, wf: $('#vbWF').value, wr: $('#vbWR').value, wt: $('#vbWT').value, p: $('#vbP').value, name: $('#vbName').value.trim() });
+      return dz;
+    };
+    const draw = () => {
+      read();
+      const max = VB_BODIES[dz.b].maxN || 6;
+      for (const o of $('#vbN').options) o.disabled = +o.value > max;
+      const G = vbGeo(dz), spr = vbComposite(dz, G), cv = $('#vbCan'), g = cv.getContext('2d');
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.fillStyle = '#20242a'; g.fillRect(0, 0, cv.width, cv.height);
+      const sc = Math.min((cv.width - 30) / spr.w, (cv.height - 34) / spr.h, 4);
+      const w = spr.w * sc, h = spr.h * sc, x = (cv.width - w) / 2, gy = cv.height - 16;
+      g.fillStyle = '#3a3f46'; g.fillRect(0, gy, cv.width, 16); g.fillStyle = '#545a62'; g.fillRect(0, gy, cv.width, 2);
+      g.imageSmoothingEnabled = sc < 1; g.drawImage(spr.canvas, x, gy - h, w, h);
+      const m = (v, u, d = 2) => `${(+v).toFixed(d)}${u}`;
+      $('#vbSV').textContent = m(dz.s, '×'); $('#vbLV').textContent = m(dz.l, '×'); $('#vbWFV').textContent = m(dz.wf, '×'); $('#vbWRV').textContent = m(dz.wr, '×'); $('#vbPV').textContent = m(dz.p, '×', 1);
+      $('#vbName').placeholder = vbDefName(dz.b);
+      $('#vbStats').textContent = `${(G.W * PX).toFixed(1)} m de largo · ${G.mass} kg · ${Math.round(13 * Math.sqrt(dz.p) * 3.6)} km/h · ${G.seats.length ? G.seats.length + ' asiento' + (G.seats.length > 1 ? 's' : '') : 'sin asientos'}`;
+    };
+    const mine = () => {
+      const l = this.list(), el = $('#vbMine');
+      el.innerHTML = l.length ? `<h2 style="margin-top:14px">Mis vehículos</h2><div class="vb-mine">${l.map((v, i) => `<div class="vb-row"><span>${vbName(v).replace(/</g, '&lt;')}</span><button class="btn" data-e="${i}">Editar</button><button class="btn" data-x="${i}">Borrar</button></div>`).join('')}</div>` : '';
+      for (const b of el.querySelectorAll('[data-e]')) b.onclick = () => { UI.closeModal(); this.open(l[+b.dataset.e]); };
+      for (const b of el.querySelectorAll('[data-x]')) b.onclick = () => { this.remove(l[+b.dataset.x]); UI.toast('Borrado de Mis vehículos'); mine(); if (UI.cat === 'vehicles') UI.buildItems(); };
+    };
+    for (const el of box.querySelectorAll('select, input')) { el.oninput = draw; el.onchange = draw; }
+    let prevB = dz.b;
+    $('#vbB').onchange = () => {
+      // al cambiar de cuerpo, su rueda típica y su color de siempre (si no lo habías cambiado)
+      const nb = $('#vbB').value, d0 = vbDefault(nb);
+      if (VB_BODIES[nb].wt || VB_BODIES[prevB].wt) $('#vbWT').value = VB_BODIES[nb].wt || 'normal';
+      if ($('#vbC').value === vbDefault(prevB).c) $('#vbC').value = d0.c;
+      if (+$('#vbN').value > (VB_BODIES[nb].maxN || 6)) $('#vbN').value = String(VB_BODIES[nb].maxN || 6);
+      prevB = nb;
+      draw();
+    };
+    for (const b of box.querySelectorAll('.vb-sw')) b.onclick = () => { $('#vbC').value = b.dataset.c; draw(); };
+    $('#vbClose').onclick = () => UI.closeModal();
+    $('#vbSave').onclick = () => {
+      const d = this.save(read(), editingId); if (!d) return;
+      UI.toast(`Guardado en Mis vehículos: ${d.name}`); UI.closeModal();
+      UI.cat = 'vehicles'; UI.buildItems(); Input.setSpawn(d); UI.refreshCatalogSel();
+    };
+    $('#vbMake').onclick = () => {
+      const d = vbMakeDef(read(), !this.saved(dz));
+      UI.closeModal(); Input.setSpawn(d); UI.refreshCatalogSel();
+      UI.toast(`${d.name}: haz clic donde quieras ponerlo`, 2200);
+    };
+    if (veh) $('#vbRep').onclick = () => {
+      if (veh.dead) { UI.toast('Ese vehículo ya no está'); return; }
+      const d = vbMakeDef(read(), !this.saved(dz)), p = veh.main.getPosition(), fl = veh.flip;
+      UI.closeModal();
+      Input.deleteThings([veh]);
+      const n = new Item(d, p.x, p.y - 0.4, { flip: fl });
+      Undo.push({ type: 'spawn', thing: n }); Sound.play('spawn', p.x, p.y);
+    };
+    draw(); mine();
+  },
+};
+// los guardados aparecen en el catálogo desde el principio
+for (const dz of VB.list()) { try { vbMakeDef(dz, false); } catch (e) { console.error(e); } }
+
+/* ---------------- en el catálogo: «Crear vehículo» y el apartado «Mis vehículos» ---------------- */
+{
+  const iconSpr = drawSprite(40, 26, (a) => {
+    a.poly([[2, 12], [12, 10], [16, 3], [30, 3], [34, 10], [38, 12], [38, 19], [2, 19]], '#3a6ea5'); a.hline(16, 30, 3, '#6a9ad0');
+    a.poly([[17, 9], [19, 5], [23, 5], [23, 9]], VB_GLASS); a.poly([[25, 9], [25, 5], [29, 5], [32, 9]], VB_GLASS);
+    a.edge(0.8);
+    for (const x of [10, 30]) { a.circle(x, 19, 5, VB_TIRE); a.circle(x, 19, 2.4, '#9aa1a9'); }
+    a.rect(30, 0, 9, 9, '#2f8a44'); a.rect(33, 1, 3, 7, '#ffffff'); a.rect(31, 3, 7, 3, '#ffffff');
+  });
+  const bi = UI.buildItems;
+  UI.buildItems = function () {
+    bi.call(this);
+    const grid = this.$('#igrid');
+    // los vehículos de escenas o del portapapeles que no has guardado no salen en el catálogo
+    for (const b of [...grid.querySelectorAll('.item')]) { const d = DEFS[b.dataset.id]; if (d && d.vb && d._tmp) b.remove(); }
+    if (this.filter.trim() || this.cat !== 'vehicles') return;
+    // botón para abrir el creador, el primero
+    const b = this.el('button', 'item vb-new');
+    const c = makeCanvas(64, 64), g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(iconSpr.canvas, 4, 14, 56, 36.4);
+    b.appendChild(c);
+    b.onclick = () => { Sound.unlock(); Sound.play('ui'); VB.open(); };
+    b.onmouseenter = () => this.showItemTip(b, 'Crear vehículo', 'Monta tu propio vehículo: cuerpo, tamaño, color, ruedas y sus tamaños, tipo de rueda y potencia.');
+    b.onmouseleave = () => { this.itip.style.display = 'none'; };
+    grid.insertBefore(b, grid.firstChild);
+    // el apartado de los tuyos, con «editar» en el clic derecho
+    let last = null;
+    for (const t of [...grid.querySelectorAll('.item')]) {
+      const d = DEFS[t.dataset.id], s = d && d.sub;
+      if (s && s !== last) { last = s; grid.insertBefore(this.el('div', 'isub', s), t); }
+      if (d && d.vb) t.oncontextmenu = (ev) => { ev.preventDefault(); VB.open(d.vb); };
+    }
+  };
+  // estilos del menú
+  const st = document.createElement('style');
+  st.textContent = `.vbmodal .mbox { max-width: min(600px, 96vw); padding-bottom: 0; }
+    .vbmodal .srow { padding: 2px 0; }
+    .vb-actions { position: sticky; bottom: 0; background: var(--panel2); padding: 10px 0 14px; margin-top: 10px; border-top: 1px solid var(--line2); z-index: 2; }
+    #vbMine { padding-bottom: 14px; }
+    .vb-prev { position: relative; margin-bottom: 10px; }
+    .vb-prev canvas { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line2); display: block; }
+    .vb-stats { position: absolute; left: 10px; top: 8px; font-size: 11.5px; color: #cfd5dc; text-shadow: 0 1px 2px #000; }
+    .vb-cols { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: flex-end; max-width: 300px; }
+    .vb-sw { width: 20px; height: 20px; min-width: 0; padding: 0; border-radius: 5px; border: 1px solid #0006; }
+    .vb-cols input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px solid var(--line2); border-radius: 5px; background: none; }
+    .srow input[type=text] { background: #20242a; color: var(--text); border: 1px solid var(--line2); border-radius: 5px; padding: 5px 8px; font: inherit; font-size: 13px; width: 220px; }
+    .vb-mine { display: flex; flex-direction: column; gap: 6px; }
+    .vb-row { display: flex; gap: 8px; align-items: center; }
+    .vb-row span { flex: 1; color: #cfd5dc; }
+    .vb-row .btn { min-width: 0; padding: 5px 10px; font-size: 12.5px; }`;
+  document.head.appendChild(st);
 }
 
 /* ---- 99_main.js ---- */
