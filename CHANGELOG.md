@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## Versión 13.5: suspensión de los vehículos (5 de octubre de 2026)
+
+- **Las ruedas ya no se hunden en la carrocería**: el muelle de cada rueda se calculaba con la masa de la rueda y no con el peso que sostiene. Así, en reposo, la carrocería bajaba sobre las ruedas: el coche 8,5 px (con ruedas de 13 px de radio), la camioneta 10,6, el autobús 11,8 y el camión hasta 17,6, inclinado y con el parachoques en el suelo.
+  - Ahora cada muelle aguanta el peso que le toca según dónde está el centro de masa del vehículo. Además está precargado, así que en reposo cada rueda queda justo en su paso de rueda (0 px en todos los vehículos).
+  - La suspensión amortigua como la de un coche de verdad: al caer desde 3 m se comprime y en un segundo vuelve a su sitio, sin quedarse rebotando. Al acelerar se agacha un poco de atrás.
+  - Al cambiar la gravedad o hacerlo ingrávido, la suspensión se reajusta.
+- Como la carrocería ya no roza el suelo, los vehículos andan bien. El autobús, que antes no avanzaba, recorre 28 m en 3 s; la camioneta, 32 en vez de 11, y el camión, 26 en vez de 19.
+
 ## Versión 13.4: texturas nuevas (5 de octubre de 2026)
 
 - **Armas antiguas redibujadas**: las armas de antes de las armas reales (versión 11) tienen texturas nuevas con el mismo estilo que las reales. Tienen luz arriba y sombra abajo, contorno, miras, guardamontes, cargadores, vetas de la madera, empuñaduras rugosas, remaches y bobinas que brillan.
