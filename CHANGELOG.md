@@ -1,5 +1,27 @@
 # Historial de cambios
 
+## Versión 13.6: creador de vehículos (5 de octubre de 2026)
+
+- **Crea tu propio vehículo**: en el catálogo, Vehículos → **«Crear vehículo»** (el primero) abre un menú con vista previa en el que eliges:
+  - **Cuerpo**: sedán, compacto, deportivo (con alerón), todoterreno (con baca y rueda de repuesto), camioneta (con caja abierta para cargar), furgoneta, autobús, camión (con caja de carga), buggy (con jaula antivuelco y motor al aire), plataforma o moto.
+  - **Tamaño** y **largo** del cuerpo, y **color**: doce colores rápidos o el que quieras.
+  - **Ruedas por lado**: de 2 a 6, repartidas a lo largo del vehículo (la moto, 2).
+  - **Tamaño de las ruedas delanteras** y **de las traseras** por separado. Con ruedas grandes la carrocería va subida, como en un monster truck, y con las de detrás más grandes queda inclinada.
+  - **Tipo de rueda**, cada una con su agarre: normal, deportiva (llanta de radios), todoterreno (con tacos), monstruo (tacos grandes y llanta roja) o clásica (banda blanca).
+  - **Potencia del motor**.
+  - **Nombre**.
+- La vista previa enseña cómo queda, cuánto mide y pesa, su velocidad máxima y cuántos asientos tiene.
+- **Crear y colocar**: lo pone en la mano para colocarlo con un clic, como cualquier objeto del catálogo.
+- **Guardar en Mis vehículos**: queda en el catálogo, en el apartado «Mis vehículos», también la próxima vez que juegues. Con clic derecho sobre uno de ellos se edita, y desde el menú se pueden editar o borrar.
+- Los vehículos creados se comportan como los del catálogo:
+  - motor (F), marcha atrás, freno de mano, averiar y reparar, la fuerza ajustable;
+  - ruedas que se pinchan de un disparo y depósito que explota;
+  - la suspensión nueva, con las ruedas en su hueco.
+  - Con ruedas de distinto tamaño, cada una gira a la velocidad que le toca, para que no se frenen entre ellas.
+- **Pasajeros**: los que tienen sitio dentro (coches, furgoneta, autobús, la caja de la camioneta, el buggy, la plataforma y la moto) tienen en su menú «Subir a bordo a la persona más cercana» y «Bajar a todos». Su información dice cuántos van a bordo.
+- En el menú de un vehículo creado, **«Editar en el creador de vehículos»** abre el menú con su diseño, y **«Cambiar este vehículo»** lo cambia por el nuevo en el mismo sitio (se puede deshacer).
+- Cada vehículo lleva su diseño dentro, así que se copia, se pega, se duplica y se guarda en escenas y artefactos como los demás, aunque luego lo borres de «Mis vehículos».
+
 ## Versión 13.5: suspensión de los vehículos (5 de octubre de 2026)
 
 - **Las ruedas ya no se hunden en la carrocería**: el muelle de cada rueda se calculaba con la masa de la rueda y no con el peso que sostiene. Así, en reposo, la carrocería bajaba sobre las ruedas: el coche 8,5 px (con ruedas de 13 px de radio), la camioneta 10,6, el autobús 11,8 y el camión hasta 17,6, inclinado y con el parachoques en el suelo.
